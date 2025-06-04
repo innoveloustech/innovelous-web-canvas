@@ -1,9 +1,9 @@
-
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Brain, Cpu, Wifi, Mail, Phone, Instagram, Linkedin } from 'lucide-react';
+import { ArrowRight, Brain, Cpu, Wifi, Mail, Phone, Instagram, Linkedin, ExternalLink } from 'lucide-react';
 
 const Index = () => {
   const services = [
@@ -43,11 +43,14 @@ const Index = () => {
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
               <span className="gradient-text">Innovelous Tech</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto leading-relaxed">
-              Building the future with cutting-edge IoT, Machine Learning, and AI solutions. 
-              We transform ideas into intelligent, connected experiences.
+            <p className="text-2xl md:text-3xl text-blue-400 mb-4 font-semibold">
+              "Turning big ideas into small screens"
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto leading-relaxed">
+              We are a passionate team committed to delivering innovative IoT, Machine Learning, and AI-based technology solutions. 
+              Our mission is to bring futuristic ideas into practical solutions that help our clients grow and stand out in the tech world.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/portfolio">
                 <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200">
                   View Our Work
@@ -59,6 +62,16 @@ const Index = () => {
                   Start Your Project
                 </Button>
               </Link>
+            </div>
+            
+            {/* Services offered */}
+            <div className="text-center mb-8">
+              <p className="text-lg text-gray-300 mb-4">Our Services:</p>
+              <div className="flex flex-wrap justify-center gap-4">
+                <Badge className="bg-blue-600/20 text-blue-300 border-blue-500/30 px-4 py-2">Custom Project Development</Badge>
+                <Badge className="bg-purple-600/20 text-purple-300 border-purple-500/30 px-4 py-2">Ready-made Solutions</Badge>
+                <Badge className="bg-cyan-600/20 text-cyan-300 border-cyan-500/30 px-4 py-2">Project Consultancy</Badge>
+              </div>
             </div>
           </div>
         </div>
@@ -92,6 +105,24 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Values Section */}
+      <section className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-8">
+            Our <span className="gradient-text">Values</span>
+          </h2>
+          <div className="grid md:grid-cols-4 gap-8">
+            {['Innovation', 'Integrity', 'Simplicity', 'Client Satisfaction'].map((value, index) => (
+              <Card key={index} className="glass-effect">
+                <CardContent className="p-6 text-center">
+                  <h3 className="text-xl font-bold text-white">{value}</h3>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Contact Section */}
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
@@ -108,7 +139,9 @@ const Index = () => {
                 <Mail className="h-6 w-6 text-blue-400" />
                 <div>
                   <p className="font-semibold text-white">Email</p>
-                  <p className="text-gray-400">contact@innovelous.tech</p>
+                  <a href="mailto:innoveloustechno@gmail.com" className="text-gray-400 hover:text-blue-400 transition-colors">
+                    innoveloustechno@gmail.com
+                  </a>
                 </div>
               </CardContent>
             </Card>
@@ -118,25 +151,44 @@ const Index = () => {
                 <Phone className="h-6 w-6 text-blue-400" />
                 <div>
                   <p className="font-semibold text-white">Phone</p>
-                  <p className="text-gray-400">+1 (555) 123-4567</p>
+                  <a href="tel:+923332186309" className="text-gray-400 hover:text-blue-400 transition-colors">
+                    +92 333 2186309
+                  </a>
                 </div>
               </CardContent>
             </Card>
           </div>
           
-          <div className="flex justify-center space-x-6">
-            <a href="#" className="text-gray-400 hover:text-pink-400 transform hover:scale-110 transition-all duration-200">
+          <div className="flex justify-center space-x-6 mb-8">
+            <a 
+              href="https://instagram.com/innoveloustech" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-pink-400 transform hover:scale-110 transition-all duration-200"
+            >
               <Instagram className="h-8 w-8" />
             </a>
-            <a href="#" className="text-gray-400 hover:text-blue-400 transform hover:scale-110 transition-all duration-200">
+            <a 
+              href="https://linkedin.com/company/innovelous-technology" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-gray-400 hover:text-blue-400 transform hover:scale-110 transition-all duration-200"
+            >
               <Linkedin className="h-8 w-8" />
             </a>
-            <a href="#" className="text-gray-400 hover:text-green-400 transform hover:scale-110 transition-all duration-200">
-              <svg className="h-8 w-8" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M24 12c0 6.627-5.373 12-12 12S0 18.627 0 12 5.373 0 12 0s12 5.373 12 12zm-7.753-.022c0-1.229-.947-2.3-2.357-2.3-1.357 0-2.357 1.071-2.357 2.3 0 1.229 1 2.3 2.357 2.3 1.41 0 2.357-1.071 2.357-2.3zm-10.484 0c0-1.229.947-2.3 2.357-2.3 1.357 0 2.357 1.071 2.357 2.3 0 1.229-1 2.3-2.357 2.3-1.41 0-2.357-1.071-2.357-2.3z"/>
-              </svg>
-            </a>
           </div>
+          
+          <a 
+            href="https://fiverr.com/innoveloustech" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="inline-block"
+          >
+            <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full text-lg font-semibold">
+              <ExternalLink className="mr-2 h-5 w-5" />
+              Hire us on Fiverr
+            </Button>
+          </a>
         </div>
       </section>
 
