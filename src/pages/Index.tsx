@@ -1,3 +1,4 @@
+
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,7 +31,7 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative pt-20 pb-32 overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 via-purple-600/20 to-cyan-600/20" />
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/20 via-purple-800/30 to-black/50" />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16">
           <div className="text-center">
             <div className="mb-8 floating-animation">
@@ -43,7 +44,7 @@ const Index = () => {
             <h1 className="text-5xl md:text-7xl font-bold mb-6">
               <span className="gradient-text">Innovelous Tech</span>
             </h1>
-            <p className="text-2xl md:text-3xl text-blue-400 mb-4 font-semibold">
+            <p className="text-2xl md:text-3xl text-purple-400 mb-4 font-semibold">
               "Turning big ideas into small screens"
             </p>
             <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-4xl mx-auto leading-relaxed">
@@ -52,13 +53,13 @@ const Index = () => {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Link to="/portfolio">
-                <Button size="lg" className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200">
+                <Button size="lg" className="bg-gradient-to-r from-purple-600 to-purple-800 hover:from-purple-700 hover:to-purple-900 text-white px-8 py-4 rounded-full text-lg font-semibold shadow-lg transform hover:scale-105 transition-all duration-200">
                   View Our Work
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Button>
               </Link>
               <Link to="/place-order">
-                <Button variant="outline" size="lg" className="border-2 border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-black px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all duration-200">
+                <Button variant="outline" size="lg" className="border-2 border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-black px-8 py-4 rounded-full text-lg font-semibold transform hover:scale-105 transition-all duration-200">
                   Start Your Project
                 </Button>
               </Link>
@@ -68,9 +69,9 @@ const Index = () => {
             <div className="text-center mb-8">
               <p className="text-lg text-gray-300 mb-4">Our Services:</p>
               <div className="flex flex-wrap justify-center gap-4">
-                <Badge className="bg-blue-600/20 text-blue-300 border-blue-500/30 px-4 py-2">Custom Project Development</Badge>
-                <Badge className="bg-purple-600/20 text-purple-300 border-purple-500/30 px-4 py-2">Ready-made Solutions</Badge>
-                <Badge className="bg-cyan-600/20 text-cyan-300 border-cyan-500/30 px-4 py-2">Project Consultancy</Badge>
+                <Badge className="bg-purple-600/30 text-purple-300 border-purple-500/50 px-4 py-2">Custom Project Development</Badge>
+                <Badge className="bg-purple-700/30 text-purple-300 border-purple-500/50 px-4 py-2">Ready-made Solutions</Badge>
+                <Badge className="bg-purple-800/30 text-purple-300 border-purple-500/50 px-4 py-2">Project Consultancy</Badge>
               </div>
             </div>
           </div>
@@ -91,9 +92,9 @@ const Index = () => {
           
           <div className="grid md:grid-cols-3 gap-8">
             {services.map((service, index) => (
-              <Card key={index} className="glass-effect group hover:bg-white/10 transition-all duration-300 transform hover:scale-105">
+              <Card key={index} className="glass-effect group hover:bg-black/60 transition-all duration-300 transform hover:scale-105">
                 <CardContent className="p-8 text-center">
-                  <div className="text-blue-400 mb-6 group-hover:text-purple-400 transition-colors duration-300">
+                  <div className="text-purple-400 mb-6 group-hover:text-purple-300 transition-colors duration-300">
                     {service.icon}
                   </div>
                   <h3 className="text-2xl font-bold mb-4 text-white">{service.title}</h3>
@@ -136,10 +137,10 @@ const Index = () => {
           <div className="grid md:grid-cols-2 gap-8 mb-12">
             <Card className="glass-effect">
               <CardContent className="p-6 flex items-center space-x-4">
-                <Mail className="h-6 w-6 text-blue-400" />
+                <Mail className="h-6 w-6 text-purple-400" />
                 <div>
                   <p className="font-semibold text-white">Email</p>
-                  <a href="mailto:innoveloustechno@gmail.com" className="text-gray-400 hover:text-blue-400 transition-colors">
+                  <a href="mailto:innoveloustechno@gmail.com" className="text-gray-400 hover:text-purple-400 transition-colors">
                     innoveloustechno@gmail.com
                   </a>
                 </div>
@@ -148,10 +149,10 @@ const Index = () => {
             
             <Card className="glass-effect">
               <CardContent className="p-6 flex items-center space-x-4">
-                <Phone className="h-6 w-6 text-blue-400" />
+                <Phone className="h-6 w-6 text-purple-400" />
                 <div>
                   <p className="font-semibold text-white">Phone</p>
-                  <a href="tel:+923332186309" className="text-gray-400 hover:text-blue-400 transition-colors">
+                  <a href="tel:+923332186309" className="text-gray-400 hover:text-purple-400 transition-colors">
                     +92 333 2186309
                   </a>
                 </div>
@@ -172,7 +173,7 @@ const Index = () => {
               href="https://linkedin.com/company/innovelous-technology" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="text-gray-400 hover:text-blue-400 transform hover:scale-110 transition-all duration-200"
+              className="text-gray-400 hover:text-purple-400 transform hover:scale-110 transition-all duration-200"
             >
               <Linkedin className="h-8 w-8" />
             </a>
@@ -193,7 +194,7 @@ const Index = () => {
       </section>
 
       {/* Footer */}
-      <footer className="py-8 border-t border-white/10">
+      <footer className="py-8 border-t border-purple-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-gray-400">
             © 2024 Innovelous Tech. All rights reserved. Building the future, one innovation at a time.

@@ -39,13 +39,13 @@ const Navigation = () => {
                 to={item.path}
                 className={`relative px-3 py-2 text-sm font-medium transition-colors duration-200 ${
                   isActive(item.path)
-                    ? 'text-blue-400'
+                    ? 'text-purple-400'
                     : 'text-gray-300 hover:text-white'
                 }`}
               >
                 {item.name}
                 {isActive(item.path) && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-blue-400 to-purple-500" />
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-purple-400 to-purple-600" />
                 )}
               </Link>
             ))}
@@ -74,7 +74,7 @@ const Navigation = () => {
                   to={item.path}
                   className={`block px-3 py-2 text-base font-medium transition-colors duration-200 ${
                     isActive(item.path)
-                      ? 'text-blue-400'
+                      ? 'text-purple-400'
                       : 'text-gray-300 hover:text-white'
                   }`}
                   onClick={() => setIsOpen(false)}
