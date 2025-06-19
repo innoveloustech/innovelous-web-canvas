@@ -1,13 +1,15 @@
-
 import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Upload, CheckCircle } from 'lucide-react';
-import { useState } from 'react';
+import { Upload, CheckCircle, Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supbaseClient';
+
+// Initialize Supabase client
 
 interface OrderForm {
   name: string;
@@ -19,6 +21,20 @@ interface OrderForm {
   timeline: string;
   files: File[];
 }
+
+interface DatabaseOrder {
+  name: string;
+  email: string;
+  phone?: string;
+  project_title: string;
+  description: string;
+  budget?: string;
+  timeline?: string;
+  file_urls?: string[];
+  status: string;
+  submitted_at: string;
+}
+
 
 const PlaceOrder = () => {
   const { toast } = useToast();
@@ -33,6 +49,17 @@ const PlaceOrder = () => {
     files: [],
   });
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filePreviews, setFilePreviews] = useState<string[]>([]);
+
+  useEffect(() => {
+    return () => {
+      filePreviews.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [filePreviews]);
+
+
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -45,25 +72,116 @@ const PlaceOrder = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    // Save order to localStorage (in production, send to backend)
-    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-    const newOrder = {
-      id: Date.now().toString(),
-      ...formData,
-      status: 'pending',
-      submittedAt: new Date().toISOString(),
-    };
-    orders.push(newOrder);
-    localStorage.setItem('orders', JSON.stringify(orders));
-    
-    setIsSubmitted(true);
-    toast({
-      title: "Order Submitted Successfully!",
-      description: "We'll get back to you within 24 hours.",
+  const uploadFiles = async (files: File[]): Promise<string[]> => {
+    const uploadPromises = files.map(async (file) => {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `order-attachments/${fileName}`;
+
+      const { data, error } = await supabase.storage
+        .from('project-files')
+        .upload(filePath, file);
+
+      if (error) {
+        console.error('Error uploading file:', error);
+        throw error;
+      }
+
+      // Get public URL for the uploaded file
+      const { data: { publicUrl } } = supabase.storage
+        .from('project-files')
+        .getPublicUrl(filePath);
+
+      return publicUrl;
     });
+
+    return Promise.all(uploadPromises);
+  };
+
+  const removeFile = (indexToRemove: number) => {
+    // Revoke the specific object URL to free memory
+    URL.revokeObjectURL(filePreviews[indexToRemove]);
+
+    setFormData(prev => ({
+      ...prev,
+      files: prev.files.filter((_, index) => index !== indexToRemove),
+    }));
+    setFilePreviews(prev => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Upload files if any
+      let fileUrls: string[] = [];
+      if (formData.files.length > 0) {
+        try {
+          fileUrls = await uploadFiles(formData.files);
+        } catch (error) {
+          console.error('File upload failed:', error);
+          toast({
+            title: "File Upload Failed",
+            description: "Some files couldn't be uploaded, but we'll still process your order.",
+            variant: "destructive",
+          });
+        }
+      }
+
+      // Prepare order data for database
+      const orderData: DatabaseOrder = {
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone || null,
+        project_title: formData.projectTitle,
+        description: formData.description,
+        budget: formData.budget || null,
+        timeline: formData.timeline || null,
+        file_urls: fileUrls.length > 0 ? fileUrls : null,
+        status: 'pending',
+        submitted_at: new Date().toISOString(),
+      };
+
+      // Insert order into Supabase
+      const { data, error } = await supabase
+        .from('orders')
+        .insert([orderData])
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      console.log('Order submitted successfully:', data);
+      setIsSubmitted(true);
+      toast({
+        title: "Order Submitted Successfully!",
+        description: "We'll get back to you within 24 hours.",
+      });
+
+      // Reset form
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        projectTitle: '',
+        description: '',
+        budget: '',
+        timeline: '',
+        files: [],
+      });
+
+    } catch (error) {
+      console.error('Error submitting order:', error);
+      toast({
+        title: "Submission Failed",
+        description: "There was an error submitting your order. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (isSubmitted) {
@@ -127,6 +245,7 @@ const PlaceOrder = () => {
                       onChange={handleInputChange}
                       className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                       placeholder="John Doe"
+                      disabled={isSubmitting}
                     />
                   </div>
                   <div>
@@ -140,6 +259,7 @@ const PlaceOrder = () => {
                       onChange={handleInputChange}
                       className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                       placeholder="john@example.com"
+                      disabled={isSubmitting}
                     />
                   </div>
                 </div>
@@ -154,6 +274,7 @@ const PlaceOrder = () => {
                     onChange={handleInputChange}
                     className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                     placeholder="+1 (555) 123-4567"
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -169,6 +290,7 @@ const PlaceOrder = () => {
                     onChange={handleInputChange}
                     className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                     placeholder="Smart Home Automation System"
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -183,6 +305,7 @@ const PlaceOrder = () => {
                     onChange={handleInputChange}
                     className="bg-white/5 border-white/20 text-white placeholder:text-gray-400"
                     placeholder="Describe your project in detail. Include requirements, features, and any specific technologies you'd like us to use..."
+                    disabled={isSubmitting}
                   />
                 </div>
 
@@ -194,7 +317,8 @@ const PlaceOrder = () => {
                       name="budget"
                       value={formData.budget}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-white"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-gray-400"
+                      disabled={isSubmitting}
                     >
                       <option value="">Select budget range</option>
                       <option value="under-5k">Under $5,000</option>
@@ -212,7 +336,8 @@ const PlaceOrder = () => {
                       name="timeline"
                       value={formData.timeline}
                       onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-white"
+                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-gray-400"
+                      disabled={isSubmitting}
                     >
                       <option value="">Select timeline</option>
                       <option value="asap">ASAP</option>
@@ -256,13 +381,21 @@ const PlaceOrder = () => {
                     )}
                   </div>
                 </div>
-
+                
                 <Button
                   type="submit"
                   size="lg"
-                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 text-lg font-semibold"
+                  className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white py-4 text-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={isSubmitting}
                 >
-                  Submit Project Request
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Submitting...
+                    </>
+                  ) : (
+                    'Submit Project Request'
+                  )}
                 </Button>
               </form>
             </CardContent>

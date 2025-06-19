@@ -1,9 +1,9 @@
-
 import Navigation from '@/components/Navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Eye, ExternalLink } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supbaseClient';
 
 interface Project {
   id: string;
@@ -16,37 +16,43 @@ interface Project {
 
 const Portfolio = () => {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Load projects from localStorage
-    const savedProjects = localStorage.getItem('portfolio_projects');
-    if (savedProjects) {
-      setProjects(JSON.parse(savedProjects));
-    } else {
-      // Default projects for demo
-      const defaultProjects: Project[] = [
-        {
-          id: '1',
-          name: 'Smart Home IoT System',
-          description: 'Complete home automation system with temperature, lighting, and security controls accessible via mobile app.',
-          technologies: ['IoT', 'React Native', 'Node.js', 'MongoDB', 'Arduino'],
-        },
-        {
-          id: '2',
-          name: 'AI-Powered Analytics Dashboard',
-          description: 'Machine learning dashboard that provides predictive analytics for business intelligence and decision making.',
-          technologies: ['Python', 'TensorFlow', 'React', 'FastAPI', 'PostgreSQL'],
-        },
-        {
-          id: '3',
-          name: 'Industrial IoT Monitoring',
-          description: 'Real-time monitoring system for industrial equipment with predictive maintenance capabilities.',
-          technologies: ['LoRaWAN', 'Python', 'InfluxDB', 'Grafana', 'Docker'],
-        },
-      ];
-      setProjects(defaultProjects);
-      localStorage.setItem('portfolio_projects', JSON.stringify(defaultProjects));
-    }
+    const fetchProjects = async () => {
+      try {
+
+        // Fetch projects from Supabase
+        const { data, error: supabaseError } = await supabase
+          .from('projects')
+          .select('id, name, description, technologies, image_url, demo_url')
+          .order('created_at', { ascending: false });
+
+        if (supabaseError) {
+          throw supabaseError;
+        }
+
+        // Map Supabase data to Project interface
+        const mappedProjects = data.map(project => ({
+          id: project.id,
+          name: project.name,
+          description: project.description,
+          technologies: project.technologies || [],
+          image: project.image_url || undefined,
+          demoUrl: project.demo_url || undefined
+        }));
+
+        setProjects(mappedProjects);
+      } catch (err) {
+        console.error('Error fetching projects:', err);
+        setError('Failed to load projects. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
   }, []);
 
   return (
@@ -70,9 +76,18 @@ const Portfolio = () => {
         {/* Projects Grid */}
         <section className="py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {projects.length === 0 ? (
+            {loading ? (
               <div className="text-center py-20">
-                <p className="text-2xl text-gray-400 mb-4">No projects added yet</p>
+                <p className="text-2xl text-gray-400 mb-4">Loading projects...</p>
+              </div>
+            ) : error ? (
+              <div className="text-center py-20">
+                <p className="text-2xl text-gray-400 mb-4">{error}</p>
+                <p className="text-gray-500">Please refresh the page or contact support.</p>
+              </div>
+            ) : projects.length === 0 ? (
+              <div className="text-center py-20">
+                <p className="text-2xl text-gray-400 mb-4">No projects found</p>
                 <p className="text-gray-500">Check back soon for our latest work!</p>
               </div>
             ) : (

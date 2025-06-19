@@ -1,10 +1,10 @@
-
 import Navigation from '@/components/Navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Download, FileText, Smartphone, Monitor } from 'lucide-react';
 import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supbaseClient';
 
 interface DownloadableProduct {
   id: string;
@@ -18,43 +18,34 @@ interface DownloadableProduct {
 
 const Downloads = () => {
   const [products, setProducts] = useState<DownloadableProduct[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Load products from localStorage
-    const savedProducts = localStorage.getItem('downloadable_products');
-    if (savedProducts) {
-      setProducts(JSON.parse(savedProducts));
-    } else {
-      // Default products for demo
-      const defaultProducts: DownloadableProduct[] = [
-        {
-          id: '1',
-          name: 'IoT Device Manager',
-          description: 'Complete software solution for managing multiple IoT devices with real-time monitoring and control features.',
-          fileSize: '45.2 MB',
-          fileType: 'ZIP',
-          category: 'Software',
-        },
-        {
-          id: '2',
-          name: 'Smart Home Mobile App',
-          description: 'Cross-platform mobile application for home automation control with voice commands and AI integration.',
-          fileSize: '28.7 MB',
-          fileType: 'APK',
-          category: 'Mobile App',
-        },
-        {
-          id: '3',
-          name: 'ML Analytics Dashboard',
-          description: 'Web-based dashboard template for machine learning model monitoring and data visualization.',
-          fileSize: '12.3 MB',
-          fileType: 'ZIP',
-          category: 'Web Template',
-        },
-      ];
-      setProducts(defaultProducts);
-      localStorage.setItem('downloadable_products', JSON.stringify(defaultProducts));
-    }
+    const fetchDownloads = async () => {
+      const { data, error } = await supabase
+        .from('downloads') // your Supabase table name
+        .select('*');
+
+      if (error) {
+        console.error('Failed to fetch downloads:', error.message);
+        setProducts([]);
+      } else {
+        const mapped = data.map((item: any) => ({
+          id: item.id,
+          name: item.title || item.name,
+          description: item.description,
+          fileSize: item.file_size || 'Unknown',
+          fileType: item.file_type || 'Unknown',
+          category: item.category || 'Software',
+          downloadUrl: item.file_url,
+        }));
+        setProducts(mapped);
+      }
+
+      setLoading(false);
+    };
+
+    fetchDownloads();
   }, []);
 
   const getIcon = (category: string) => {
@@ -69,10 +60,11 @@ const Downloads = () => {
   };
 
   const handleDownload = (product: DownloadableProduct) => {
-    // In a real app, this would initiate the actual download
-    console.log(`Downloading: ${product.name}`);
-    // For demo purposes, we'll just show an alert
-    alert(`Download started: ${product.name}`);
+    if (product.downloadUrl) {
+      window.open(product.downloadUrl, '_blank');
+    } else {
+      alert('Download URL not available.');
+    }
   };
 
   return (
@@ -96,7 +88,9 @@ const Downloads = () => {
         {/* Products Grid */}
         <section className="py-12">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            {products.length === 0 ? (
+            {loading ? (
+              <p className="text-center text-gray-400">Loading downloads...</p>
+            ) : products.length === 0 ? (
               <div className="text-center py-20">
                 <p className="text-2xl text-gray-400 mb-4">No downloads available yet</p>
                 <p className="text-gray-500">Check back soon for our latest tools and software!</p>

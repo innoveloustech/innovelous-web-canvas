@@ -197,7 +197,11 @@ const Index = () => {
       <footer className="py-8 border-t border-purple-500/20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-gray-400">
-            © 2024 Innovelous Tech. All rights reserved. Building the future, one innovation at a time.
+            © 2024 {' '}
+            <Link to="/admin/dashboard" className="text-gray-400">
+              Innovelous Tech.
+            </Link>
+            {' '}All rights reserved. Building the future, one innovation at a time.
           </p>
         </div>
       </footer>
