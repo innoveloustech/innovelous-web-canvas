@@ -113,7 +113,7 @@ const Index = () => {
             Our <span className="gradient-text">Values</span>
           </h2>
           <div className="grid md:grid-cols-4 gap-8">
-            {['Innovation', 'Integrity', 'Simplicity', 'Client Satisfaction'].map((value, index) => (
+            {['Quality Assurance','Reliable Delivery', 'Authenticity', 'Scalibility'].map((value, index) => (
               <Card key={index} className="glass-effect">
                 <CardContent className="p-6 text-center">
                   <h3 className="text-xl font-bold text-white">{value}</h3>
