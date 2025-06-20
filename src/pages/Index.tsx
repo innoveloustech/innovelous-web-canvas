@@ -153,7 +153,7 @@ const Index = () => {
       <section className="py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-4xl md:text-5xl font-bold mb-8">
-            Get A<span className="gradient-text">Free Consultation</span>
+            Get A {' '}<span className="gradient-text">Free Consultation</span>
           </h2>
           <p className="text-xl text-gray-400 mb-12">
             Ready to bring your ideas to life? Contact us today and let's build something amazing together.
