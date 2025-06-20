@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Brain, Cpu, Wifi, Mail, Phone, Instagram, Linkedin, ExternalLink } from 'lucide-react';
+import { ArrowRight, Brain, Cpu, Wifi, Mail, Phone, Instagram, Linkedin, ExternalLink, Code, Smartphone, Settings, Palette } from 'lucide-react';
 
 const Index = () => {
   const services = [
@@ -23,6 +23,31 @@ const Index = () => {
       title: "AI Integration",
       description: "Seamless artificial intelligence integration for enhanced productivity",
     },
+    {
+    icon: <Code className="h-12 w-12" />,
+    title: "Web Dev & Designing",
+    description: "Responsive websites with modern designs and optimized performance",
+  },
+  {
+    icon: <Smartphone className="h-12 w-12" />,
+    title: "App Development",
+    description: "High-quality mobile applications tailored for iOS and Android platforms",
+  },
+  {
+    icon: <Settings className="h-12 w-12" />,
+    title: "Custom Software Development",
+    description: "Tailor-made software solutions built to match your business goals",
+  },
+  {
+    icon: <Palette className="h-12 w-12" />,
+    title: "UI & UX Design",
+    description: "User-centered design for intuitive and engaging digital experiences",
+  },
+  {
+    icon: <Brain className="h-12 w-12" />,
+    title: "AI & Machine Learning",
+    description: "Smart systems that analyze, learn, and make intelligent decisions",
+  },
   ];
 
   return (
