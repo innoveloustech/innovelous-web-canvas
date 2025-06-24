@@ -24,11 +24,11 @@ const Navigation = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center space-x-2">
             <img 
-              src="/logo/innovelous-logo_1_2.jpg" 
+              src="/logo/logo.png" 
               alt="Innovelous Tech" 
-              className="h-10 w-10 rounded-lg"
+              className="h-8 w-8 rounded-lg mb-2"
             />
-            <span className="text-xl font-bold gradient-text">Innovelous Tech</span>
+            <span className="text-xl font-bold gradient-text ">Innovelous Tech</span>
           </Link>
 
           {/* Desktop Navigation */}

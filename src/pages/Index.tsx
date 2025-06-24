@@ -61,7 +61,7 @@ const Index = () => {
           <div className="text-center">
             <div className="mb-8 floating-animation">
               <img 
-                src="/logo/innovelous-logo_1_2.jpg" 
+                src="/logo/logo.png" 
                 alt="Innovelous Tech" 
                 className="h-24 w-24 mx-auto rounded-2xl shadow-2xl"
               />

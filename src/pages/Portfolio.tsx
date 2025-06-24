@@ -2,7 +2,7 @@ import Navigation from '@/components/Navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Eye, ExternalLink, ChevronLeft, ChevronRight, X } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supbaseClient';
 
 interface Project {
@@ -21,6 +21,22 @@ const Portfolio = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  const [isOverflowing, setIsOverflowing] = useState(false);  
+  const infoRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+  if (selectedProject) {
+    const timeout = setTimeout(() => {
+      const el = infoRef.current;
+      if (el) {
+        setIsOverflowing(el.scrollHeight > el.clientHeight);
+      }
+    }, 100); // delay to ensure DOM is ready
+
+    return () => clearTimeout(timeout);
+  }
+}, [selectedProject]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -216,8 +232,8 @@ const Portfolio = () => {
 
       {/* Image Modal */}
       {selectedProject && (
-        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-4xl max-h-[90vh] w-full">
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4 backdrop-blur">
+          <div className="relative max-w-4xl w-full h-full max-h-[90vh] flex flex-col">
             {/* Close button */}
             <button
               onClick={closeImageModal}
@@ -231,12 +247,12 @@ const Portfolio = () => {
               {currentImageIndex + 1} / {selectedProject.image_urls.length}
             </div>
 
-            {/* Main image */}
-            <div className="relative">
+            {/* Main image container - takes up most of the space */}
+            <div className="relative flex-1 min-h-0 mb-4">
               <img
                 src={selectedProject.image_urls[currentImageIndex]}
                 alt={`${selectedProject.name} - Image ${currentImageIndex + 1}`}
-                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+                className="w-full h-full object-contain rounded-lg"
               />
 
               {/* Navigation arrows */}
@@ -258,62 +274,69 @@ const Portfolio = () => {
               )}
             </div>
 
-            {/* Project info */}
-            <div className="mt-6 text-center">
-              <h3 className="text-2xl font-bold text-white mb-2">
-                {selectedProject.name}
-              </h3>
-              <p className="text-gray-300 mb-4 max-w-2xl mx-auto">
-                {selectedProject.description}
-              </p>
-              
-              <div className="flex flex-wrap gap-2 justify-center mb-4">
-                {selectedProject.technologies.map((tech, index) => (
-                  <Badge 
-                    key={index} 
-                    variant="secondary" 
-                    className="bg-blue-600/20 text-blue-300 border-blue-500/30"
+            {/* Project info and thumbnails - fixed at bottom */}
+            <div
+              ref={infoRef}
+              className="flex-shrink-0"
+            >
+              <div className="text-center mb-4">
+                <h3 className="text-xl font-bold text-white mb-2">
+                  {selectedProject.name}
+                </h3>
+                <p className="text-gray-300 mb-3 text-sm max-w-2xl mx-auto line-clamp-2">
+                  {selectedProject.description}
+                </p>
+                
+                <div className="flex flex-wrap gap-1 justify-center mb-3">
+                  {selectedProject.technologies.map((tech, index) => (
+                    <Badge 
+                      key={index} 
+                      variant="secondary" 
+                      className="bg-blue-600/20 text-blue-300 border-blue-500/30 text-xs px-2 py-1"
+                    >
+                      {tech}
+                    </Badge>
+                  ))}
+                </div>
+
+                {selectedProject.demo_url && (
+                  <a 
+                    href={selectedProject.demo_url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors duration-200 text-sm"
                   >
-                    {tech}
-                  </Badge>
-                ))}
+                    View Live Demo
+                    <ExternalLink className="ml-1 h-3 w-3" />
+                  </a>
+                )}
               </div>
 
-              {selectedProject.demo_url && (
-                <a 
-                  href={selectedProject.demo_url} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors duration-200"
-                >
-                  View Live Demo
-                  <ExternalLink className="ml-1 h-4 w-4" />
-                </a>
+              {/* Thumbnail strip for multiple images */}
+              {selectedProject.image_urls.length > 1 && (
+                <div className="flex justify-center space-x-2 overflow-x-auto pb-2 px-4">
+                  <div className="flex space-x-2 min-w-max">
+                    {selectedProject.image_urls.map((url, index) => (
+                      <button
+                        key={index}
+                        onClick={() => setCurrentImageIndex(index)}
+                        className={`flex-shrink-0 w-12 h-12 rounded-lg overflow-hidden border-2 transition-all ${
+                          index === currentImageIndex 
+                            ? 'border-blue-400 opacity-100' 
+                            : 'border-gray-600 opacity-60 hover:opacity-80'
+                        }`}
+                      >
+                        <img
+                          src={url}
+                          alt={`Thumbnail ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
             </div>
-
-            {/* Thumbnail strip for multiple images */}
-            {selectedProject.image_urls.length > 1 && (
-              <div className="flex justify-center mt-4 space-x-2 overflow-x-auto pb-2">
-                {selectedProject.image_urls.map((url, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentImageIndex(index)}
-                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
-                      index === currentImageIndex 
-                        ? 'border-blue-400 opacity-100' 
-                        : 'border-gray-600 opacity-60 hover:opacity-80'
-                    }`}
-                  >
-                    <img
-                      src={url}
-                      alt={`Thumbnail ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
         </div>
       )}
