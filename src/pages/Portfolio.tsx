@@ -1,7 +1,7 @@
 import Navigation from '@/components/Navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Eye, ExternalLink } from 'lucide-react';
+import { Eye, ExternalLink, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supbaseClient';
 
@@ -10,37 +10,40 @@ interface Project {
   name: string;
   description: string;
   technologies: string[];
-  image?: string;
-  demoUrl?: string;
+  image_urls: string[];
+  demo_url?: string;
+  created_at: string;
 }
 
 const Portfolio = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-
-        // Fetch projects from Supabase
+        // Fetch projects from Supabase with updated schema
         const { data, error: supabaseError } = await supabase
           .from('projects')
-          .select('id, name, description, technologies, image_url, demo_url')
+          .select('id, name, description, technologies, image_urls, demo_url, created_at')
           .order('created_at', { ascending: false });
 
         if (supabaseError) {
           throw supabaseError;
         }
 
-        // Map Supabase data to Project interface
+        // Map and validate Supabase data
         const mappedProjects = data.map(project => ({
           id: project.id,
           name: project.name,
           description: project.description,
           technologies: project.technologies || [],
-          image: project.image_url || undefined,
-          demoUrl: project.demo_url || undefined
+          image_urls: project.image_urls || [],
+          demo_url: project.demo_url || undefined,
+          created_at: project.created_at
         }));
 
         setProjects(mappedProjects);
@@ -54,6 +57,32 @@ const Portfolio = () => {
 
     fetchProjects();
   }, []);
+
+  const openImageModal = (project: Project, imageIndex: number = 0) => {
+    setSelectedProject(project);
+    setCurrentImageIndex(imageIndex);
+  };
+
+  const closeImageModal = () => {
+    setSelectedProject(null);
+    setCurrentImageIndex(0);
+  };
+
+  const nextImage = () => {
+    if (selectedProject && selectedProject.image_urls.length > 1) {
+      setCurrentImageIndex((prev) => 
+        prev === selectedProject.image_urls.length - 1 ? 0 : prev + 1
+      );
+    }
+  };
+
+  const prevImage = () => {
+    if (selectedProject && selectedProject.image_urls.length > 1) {
+      setCurrentImageIndex((prev) => 
+        prev === 0 ? selectedProject.image_urls.length - 1 : prev - 1
+      );
+    }
+  };
 
   return (
     <div className="min-h-screen">
@@ -78,6 +107,7 @@ const Portfolio = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             {loading ? (
               <div className="text-center py-20">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-400 mx-auto mb-4"></div>
                 <p className="text-2xl text-gray-400 mb-4">Loading projects...</p>
               </div>
             ) : error ? (
@@ -95,22 +125,39 @@ const Portfolio = () => {
                 {projects.map((project) => (
                   <Card key={project.id} className="glass-effect group hover:bg-white/10 transition-all duration-300 transform hover:scale-105">
                     <CardContent className="p-0">
-                      {project.image ? (
+                      {project.image_urls && project.image_urls.length > 0 ? (
                         <div className="aspect-video bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-t-lg relative overflow-hidden">
                           <img 
-                            src={project.image} 
+                            src={project.image_urls[0]} 
                             alt={project.name}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover cursor-pointer"
+                            onClick={() => openImageModal(project, 0)}
                           />
+                          
+                          {/* Image counter badge */}
+                          {project.image_urls.length > 1 && (
+                            <div className="absolute top-2 right-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full">
+                              1/{project.image_urls.length}
+                            </div>
+                          )}
+                          
+                          {/* Hover overlay */}
                           <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                            <Eye className="h-8 w-8 text-white" />
+                            <div className="text-center">
+                              <Eye className="h-8 w-8 text-white mx-auto mb-2" />
+                              {project.image_urls.length > 1 && (
+                                <p className="text-white text-sm">
+                                  View all {project.image_urls.length} images
+                                </p>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ) : (
                         <div className="aspect-video bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-t-lg flex items-center justify-center">
                           <div className="text-center">
                             <Eye className="h-12 w-12 text-blue-400 mx-auto mb-2 opacity-50" />
-                            <p className="text-gray-400 text-sm">Project Preview</p>
+                            <p className="text-gray-400 text-sm">No Preview Available</p>
                           </div>
                         </div>
                       )}
@@ -119,7 +166,7 @@ const Portfolio = () => {
                         <h3 className="text-xl font-bold text-white mb-3 group-hover:text-blue-400 transition-colors duration-200">
                           {project.name}
                         </h3>
-                        <p className="text-gray-400 mb-4 leading-relaxed">
+                        <p className="text-gray-400 mb-4 leading-relaxed line-clamp-3">
                           {project.description}
                         </p>
                         
@@ -128,24 +175,35 @@ const Portfolio = () => {
                             <Badge 
                               key={index} 
                               variant="secondary" 
-                              className="bg-blue-600/20 text-blue-300 border-blue-500/30"
+                              className="bg-blue-600/20 text-blue-300 border-blue-500/30 text-xs"
                             >
                               {tech}
                             </Badge>
                           ))}
                         </div>
                         
-                        {project.demoUrl && (
-                          <a 
-                            href={project.demoUrl} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors duration-200"
-                          >
-                            View Demo
-                            <ExternalLink className="ml-1 h-4 w-4" />
-                          </a>
-                        )}
+                        <div className="flex items-center justify-between">
+                          {project.demo_url && (
+                            <a 
+                              href={project.demo_url} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                            >
+                              View Demo
+                              <ExternalLink className="ml-1 h-4 w-4" />
+                            </a>
+                          )}
+                          
+                          {project.image_urls && project.image_urls.length > 1 && (
+                            <button
+                              onClick={() => openImageModal(project, 0)}
+                              className="text-gray-400 hover:text-white text-sm transition-colors duration-200"
+                            >
+                              View Gallery
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
@@ -155,6 +213,110 @@ const Portfolio = () => {
           </div>
         </section>
       </div>
+
+      {/* Image Modal */}
+      {selectedProject && (
+        <div className="fixed inset-0 bg-black/90 flex items-center justify-center z-50 p-4">
+          <div className="relative max-w-4xl max-h-[90vh] w-full">
+            {/* Close button */}
+            <button
+              onClick={closeImageModal}
+              className="absolute top-4 right-4 z-10 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+            >
+              <X className="h-6 w-6" />
+            </button>
+
+            {/* Image counter */}
+            <div className="absolute top-4 left-4 z-10 bg-black/50 text-white px-3 py-1 rounded-full text-sm">
+              {currentImageIndex + 1} / {selectedProject.image_urls.length}
+            </div>
+
+            {/* Main image */}
+            <div className="relative">
+              <img
+                src={selectedProject.image_urls[currentImageIndex]}
+                alt={`${selectedProject.name} - Image ${currentImageIndex + 1}`}
+                className="w-full h-auto max-h-[70vh] object-contain rounded-lg"
+              />
+
+              {/* Navigation arrows */}
+              {selectedProject.image_urls.length > 1 && (
+                <>
+                  <button
+                    onClick={prevImage}
+                    className="absolute left-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                  >
+                    <ChevronLeft className="h-6 w-6" />
+                  </button>
+                  <button
+                    onClick={nextImage}
+                    className="absolute right-4 top-1/2 transform -translate-y-1/2 bg-black/50 text-white p-2 rounded-full hover:bg-black/70 transition-colors"
+                  >
+                    <ChevronRight className="h-6 w-6" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Project info */}
+            <div className="mt-6 text-center">
+              <h3 className="text-2xl font-bold text-white mb-2">
+                {selectedProject.name}
+              </h3>
+              <p className="text-gray-300 mb-4 max-w-2xl mx-auto">
+                {selectedProject.description}
+              </p>
+              
+              <div className="flex flex-wrap gap-2 justify-center mb-4">
+                {selectedProject.technologies.map((tech, index) => (
+                  <Badge 
+                    key={index} 
+                    variant="secondary" 
+                    className="bg-blue-600/20 text-blue-300 border-blue-500/30"
+                  >
+                    {tech}
+                  </Badge>
+                ))}
+              </div>
+
+              {selectedProject.demo_url && (
+                <a 
+                  href={selectedProject.demo_url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center text-blue-400 hover:text-blue-300 transition-colors duration-200"
+                >
+                  View Live Demo
+                  <ExternalLink className="ml-1 h-4 w-4" />
+                </a>
+              )}
+            </div>
+
+            {/* Thumbnail strip for multiple images */}
+            {selectedProject.image_urls.length > 1 && (
+              <div className="flex justify-center mt-4 space-x-2 overflow-x-auto pb-2">
+                {selectedProject.image_urls.map((url, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${
+                      index === currentImageIndex 
+                        ? 'border-blue-400 opacity-100' 
+                        : 'border-gray-600 opacity-60 hover:opacity-80'
+                    }`}
+                  >
+                    <img
+                      src={url}
+                      alt={`Thumbnail ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };

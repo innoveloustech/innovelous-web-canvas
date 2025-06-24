@@ -35,7 +35,7 @@ interface Project {
   name: string;
   description: string;
   technologies: string[];
-  image_url?: string; // Changed from 'image' to match Supabase column
+  image_url?: string[]; // Changed from 'image' to match Supabase column
   demo_url?: string;
 }
 
@@ -65,12 +65,16 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [showAddProject, setShowAddProject] = useState(false);
+  const [projectImageFiles, setProjectImageFiles] = useState([]);
+  const [editingImages, setEditingImages] = useState(false);
+  const [newImageFiles, setNewImageFiles] = useState([]);
+  const [viewingImages, setViewingImages] = useState(null);
   
   const [newProject, setNewProject] = useState<Omit<Project, 'id'>>({
     name: '',
     description: '',
     technologies: [],
-    image_url: '',
+    image_url: [],
     demo_url: '',
   });
   // START: New state for handling the image file
@@ -129,89 +133,88 @@ const AdminDashboard = () => {
 
   // START: Modified handleAddProject function
   const handleAddProject = async () => {
-  if (!newProject.name || !newProject.description || !projectImageFile) {
-    toast({
-      title: "Error",
-      description: "Please fill in all required fields and select an image.",
-      variant: "destructive",
-    });
-    return;
-  }
-
-  setIsUploading(true);
-  let imageUrl = '';
-
-  try {
-    // 1. Upload image to Supabase Storage
-    const fileExt = projectImageFile.name.split('.').pop();
-    const fileName = `${Date.now()}.${fileExt}`;
-    const filePath = fileName; // Store directly at root of the bucket
-
-    const { error: uploadError } = await supabase.storage
-      .from('project-images')
-      .upload(filePath, projectImageFile);
-
-    if (uploadError) throw uploadError;
-
-    // 2. Get public URL
-    const { data: urlData } = supabase.storage
-      .from('project-images')
-      .getPublicUrl(filePath);
-
-    if (!urlData?.publicUrl) {
-      throw new Error("Could not get public URL for the image.");
+    if (!newProject.name || !newProject.description || projectImageFiles.length === 0) {
+      toast({
+        title: "Error",
+        description: "Please fill in all required fields and select at least one image.",
+        variant: "destructive",
+      });
+      return;
     }
 
-    imageUrl = urlData.publicUrl;
+    setIsUploading(true);
+    const imageUrls = [];
 
-    // 3. Insert project into database
-    const { data: insertedProject, error: insertError } = await supabase
-      .from('projects')
-      .insert([
-        {
-          name: newProject.name,
-          description: newProject.description,
-          image_url: imageUrl,
-          demo_url: newProject.demo_url
+    try {
+      // 1. Upload all images to Supabase Storage
+      for (let i = 0; i < projectImageFiles.length; i++) {
+        const file = projectImageFiles[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${i}.${fileExt}`;
+        const filePath = fileName;
+
+        const { error: uploadError } = await supabase.storage
+          .from('project-images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        // Get public URL
+        const { data: urlData } = supabase.storage
+          .from('project-images')  
+          .getPublicUrl(filePath);
+
+        if (!urlData?.publicUrl) {
+          throw new Error(`Could not get public URL for image ${i + 1}.`);
         }
-      ])
-      .select()
-      .single();
 
-    if (insertError) throw insertError;
+        imageUrls.push(urlData.publicUrl);
+      }
 
-    // 4. Update UI state
-    setProjects(prev => [...prev, insertedProject]);
+      // 2. Insert project into database with image URLs array
+      const { data: insertedProject, error: insertError } = await supabase
+        .from('projects')
+        .insert([
+          {
+            name: newProject.name,
+            description: newProject.description,
+            image_urls: imageUrls, // Store as array
+            demo_url: newProject.demo_url,
+            technologies: newProject.technologies
+          }
+        ])
+        .select()
+        .single();
 
-    
+      if (insertError) throw insertError;
 
-    toast({
-      title: "Success",
-      description: "Project added successfully!",
-    });
+      // 3. Update UI state
+      setProjects(prev => [...prev, insertedProject]);
 
-    setShowAddProject(false);
-    setNewProject({ name: '', description: '', demo_url: '', technologies: [] });
-    setProjectImageFile(null);
+      toast({
+        title: "Success",
+        description: `Project added successfully with ${imageUrls.length} image(s)!`,
+      });
 
-    // 5. Reset form
-    setNewProject({ name: '', description: '', demo_url: '', technologies: [] });
-    setProjectImageFile(null);
-  } catch (error) {
-    console.error('Error adding project:', error);
-    toast({
-      title: "Upload Failed",
-      description: error.message || "An error occurred while uploading the project.",
-      variant: "destructive",
-    });
-  } finally {
-    setIsUploading(false);
-  }
-};
-  // END: Modified handleAddProject function
+      // 4. Reset form
+      setShowAddProject(false);
+      setNewProject({ name: '', description: '', demo_url: '', technologies: [] });
+      setProjectImageFiles([]);
 
-  // START: Modified handleDeleteProject function
-  const handleDeleteProject = async (project: Project) => {
+    } catch (error) {
+      console.error('Error adding project:', error);
+      toast({
+        title: "Upload Failed",
+        description: error.message || "An error occurred while uploading the project.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Modified handleDeleteProject function for multiple images
+  const handleDeleteProject = async (project) => {
     if (!window.confirm(`Are you sure you want to delete "${project.name}"?`)) {
       return;
     }
@@ -225,18 +228,19 @@ const AdminDashboard = () => {
 
       if (dbError) throw dbError;
 
-      // 2. Delete the associated image from storage
-      if (project.image_url) {
-        const urlParts = project.image_url.split('/');
-        const filePath = urlParts.slice(urlParts.indexOf('public')).join('/');
+      // 2. Delete all associated images from storage
+      if (project.image_urls && project.image_urls.length > 0) {
+        const filePaths = project.image_urls.map(url => {
+          const urlParts = url.split('/');
+          return urlParts[urlParts.length - 1]; // Get filename from URL
+        });
         
         const { error: storageError } = await supabase.storage
           .from('project-images')
-          .remove([filePath]);
+          .remove(filePaths);
 
         if (storageError) {
-          // Log the error but don't block the user; the main record is deleted.
-          console.warn("Could not delete project image from storage:", storageError.message);
+          console.warn("Could not delete some project images from storage:", storageError.message);
         }
       }
 
@@ -245,7 +249,7 @@ const AdminDashboard = () => {
       
       toast({
         title: "Success",
-        description: "Project deleted successfully!",
+        description: "Project and all associated images deleted successfully!",
       });
     } catch (error) {
       toast({
@@ -255,6 +259,128 @@ const AdminDashboard = () => {
       });
     }
   };
+
+  // New function to add images to existing project
+  const handleAddProjectImages = async (projectId) => {
+    if (newImageFiles.length === 0) return;
+
+    setIsUploading(true);
+    const newImageUrls = [];
+
+    try {
+      // Upload new images
+      for (let i = 0; i < newImageFiles.length; i++) {
+        const file = newImageFiles[i];
+        const fileExt = file.name.split('.').pop();
+        const fileName = `${Date.now()}_${i}_${projectId}.${fileExt}`;
+        const filePath = fileName;
+
+        const { error: uploadError } = await supabase.storage
+          .from('project-images')
+          .upload(filePath, file);
+
+        if (uploadError) throw uploadError;
+
+        const { data: urlData } = supabase.storage
+          .from('project-images')
+          .getPublicUrl(filePath);
+
+        if (!urlData?.publicUrl) {
+          throw new Error(`Could not get public URL for new image ${i + 1}.`);
+        }
+
+        newImageUrls.push(urlData.publicUrl);
+      }
+
+      // Get current project data
+      const currentProject = projects.find(p => p.id === projectId);
+      const updatedImageUrls = [...(currentProject.image_url || []), ...newImageUrls];
+
+      // Update project in database
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({ image_urls: updatedImageUrls })
+        .eq('id', projectId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setProjects(prev => prev.map(p => 
+        p.id === projectId 
+          ? { ...p, image_urls: updatedImageUrls }
+          : p
+      ));
+
+      setNewImageFiles([]);
+      
+      toast({
+        title: "Success",
+        description: `Added ${newImageUrls.length} new image(s) to project!`,
+      });
+
+    } catch (error) {
+      console.error('Error adding images:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add new images.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // New function to remove individual images
+  const handleRemoveProjectImage = async (projectId, imageIndex) => {
+    if (!window.confirm('Are you sure you want to remove this image?')) {
+      return;
+    }
+
+    try {
+      const currentProject = projects.find(p => p.id === projectId);
+      const imageToRemove = currentProject.image_url[imageIndex];
+      const updatedImageUrls = currentProject.image_url.filter((_, index) => index !== imageIndex);
+
+      // Update database
+      const { error: updateError } = await supabase
+        .from('projects')
+        .update({ image_urls: updatedImageUrls })
+        .eq('id', projectId);
+
+      if (updateError) throw updateError;
+
+      // Remove from storage
+      const fileName = imageToRemove.split('/').pop();
+      const { error: storageError } = await supabase.storage
+        .from('project-images')
+        .remove([fileName]);
+
+      if (storageError) {
+        console.warn("Could not delete image from storage:", storageError.message);
+      }
+
+      // Update local state
+      setProjects(prev => prev.map(p => 
+        p.id === projectId 
+          ? { ...p, image_urls: updatedImageUrls }
+          : p
+      ));
+
+      toast({
+        title: "Success",
+        description: "Image removed successfully!",
+      });
+
+    } catch (error) {
+      console.error('Error removing image:', error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to remove image.",
+        variant: "destructive",
+      });
+    }
+  };
+
 
   const fetchOrders = async () => {
     try {
@@ -577,20 +703,43 @@ const AdminDashboard = () => {
                       />
                     </div>
 
-                    {/* START: New File Input for Project Image */}
+                    {/* Modified: Multiple Image Input */}
                     <div>
-                      <Label className="text-white">Project Image *</Label>
-                       <Input
-                          type="file"
-                          accept="image/png, image/jpeg, image/webp"
-                          onChange={(e) => {
-                            if (e.target.files) {
-                              setProjectImageFile(e.target.files[0]);
-                            }
-                          }}
-                          className="bg-white/5 border-white/20 text-white file:text-white file:bg-transparent file:border-0"
-                        />
-                        {projectImageFile && <p className="text-sm text-gray-400 mt-2">Selected: {projectImageFile.name}</p>}
+                      <Label className="text-white">Project Images * (Select multiple)</Label>
+                      <Input
+                        type="file"
+                        accept="image/png, image/jpeg, image/webp"
+                        multiple
+                        onChange={(e) => {
+                          if (e.target.files) {
+                            setProjectImageFiles(Array.from(e.target.files));
+                          }
+                        }}
+                        className="bg-white/5 border-white/20 text-white file:text-white file:bg-transparent file:border-0"
+                      />
+                      {projectImageFiles.length > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm text-gray-400 mb-2">Selected images:</p>
+                          <div className="grid grid-cols-3 gap-2">
+                            {projectImageFiles.map((file, index) => (
+                              <div key={index} className="relative">
+                                <img 
+                                  src={URL.createObjectURL(file)} 
+                                  alt={`Preview ${index + 1}`}
+                                  className="h-20 w-20 rounded-md object-cover border border-white/20"
+                                />
+                                <button
+                                  onClick={() => setProjectImageFiles(files => files.filter((_, i) => i !== index))}
+                                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center hover:bg-red-600"
+                                >
+                                  ×
+                                </button>
+                                <p className="text-xs text-gray-400 mt-1 truncate">{file.name}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     
                     <div>
@@ -632,8 +781,8 @@ const AdminDashboard = () => {
                       <Button onClick={handleAddProject} disabled={isUploading}>
                         {isUploading ? (
                           <>
-                           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                           Saving...
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Saving...
                           </>
                         ) : (
                           <>
@@ -651,16 +800,24 @@ const AdminDashboard = () => {
               )}
 
               <div className="space-y-4">
-                {/* START: Modified Project List Rendering */}
+                {/* Modified: Project List with Multiple Images Support */}
                 {projects.map((project) => (
                   <div key={project.id} className="flex items-start justify-between p-4 bg-white/5 rounded-lg border border-white/10 gap-4">
                     <div className="flex items-start gap-4 w-full">
-                      {project.image_url ? (
-                        <img 
-                          src={project.image_url} 
-                          alt={project.name}
-                          className="h-20 w-20 rounded-md object-cover border border-white/20"
-                        />
+                      {/* Display first image or placeholder */}
+                      {project.image_url && project.image_url.length > 0 ? (
+                        <div className="relative">
+                          <img 
+                            src={project.image_url[0]} 
+                            alt={project.name}
+                            className="h-20 w-20 rounded-md object-cover border border-white/20"
+                          />
+                          {project.image_url.length > 1 && (
+                            <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                              +{project.image_url.length - 1}
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <div className="h-20 w-20 rounded-md bg-white/10 flex items-center justify-center">
                             <ImageIcon className="h-8 w-8 text-gray-400" />
@@ -674,11 +831,13 @@ const AdminDashboard = () => {
                               value={editFields.name}
                               onChange={(e) => setEditFields({ ...editFields, name: e.target.value })}
                               placeholder="Project Name"
+                              className="bg-white/5 border-white/20 text-white"
                             />
                             <Textarea
                               value={editFields.description}
                               onChange={(e) => setEditFields({ ...editFields, description: e.target.value })}
                               placeholder="Description"
+                              className="bg-white/5 border-white/20 text-white"
                             />
                             <Input
                               value={editFields.technologies.join(', ')}
@@ -686,7 +845,58 @@ const AdminDashboard = () => {
                                 setEditFields({ ...editFields, technologies: e.target.value.split(',').map(t => t.trim()) })
                               }
                               placeholder="Technologies (comma-separated)"
+                              className="bg-white/5 border-white/20 text-white"
                             />
+                            
+                            {/* Image Management in Edit Mode */}
+                            <div className="space-y-2">
+                              <Label className="text-white text-sm">Current Images</Label>
+                              {project.image_url && project.image_url.length > 0 ? (
+                                <div className="grid grid-cols-4 gap-2">
+                                  {project.image_url.map((url, index) => (
+                                    <div key={index} className="relative">
+                                      <img 
+                                        src={url} 
+                                        alt={`${project.name} ${index + 1}`}
+                                        className="h-16 w-16 rounded-md object-cover border border-white/20"
+                                      />
+                                      <button
+                                        onClick={() => handleRemoveProjectImage(project.id, index)}
+                                        className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full w-4 h-4 text-xs flex items-center justify-center hover:bg-red-600"
+                                      >
+                                        ×
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              ) : (
+                                <p className="text-gray-400 text-sm">No images</p>
+                              )}
+                              
+                              <div className="flex gap-2">
+                                <Input
+                                  type="file"
+                                  accept="image/png, image/jpeg, image/webp"
+                                  multiple
+                                  onChange={(e) => {
+                                    if (e.target.files) {
+                                      setNewImageFiles(Array.from(e.target.files));
+                                    }
+                                  }}
+                                  className="bg-white/5 border-white/20 text-white file:text-white file:bg-transparent file:border-0"
+                                />
+                                {newImageFiles.length > 0 && (
+                                  <Button 
+                                    size="sm" 
+                                    onClick={() => handleAddProjectImages(project.id)}
+                                    disabled={isUploading}
+                                  >
+                                    {isUploading ? 'Adding...' : `Add ${newImageFiles.length} Image(s)`}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                            
                             <div className="flex gap-2 mt-2">
                               <Button size="sm" onClick={() => handleEditSave(project.id)}>Save</Button>
                               <Button size="sm" variant="outline" onClick={() => setEditProjectId(null)}>Cancel</Button>
@@ -703,6 +913,14 @@ const AdminDashboard = () => {
                                 </Badge>
                               ))}
                             </div>
+                            {project.image_url && project.image_url.length > 1 && (
+                              <button 
+                                onClick={() => setViewingImages(project.id === viewingImages ? null : project.id)}
+                                className="text-blue-400 hover:text-blue-300 text-sm underline"
+                              >
+                                View all {project.image_url.length} images
+                              </button>
+                            )}
                           </>
                         )}
                       </div>
@@ -731,7 +949,6 @@ const AdminDashboard = () => {
                     </div>
                   </div>
                 ))}
-                {/* END: Modified Project List Rendering */}
               </div>
             </CardContent>
           </Card>
