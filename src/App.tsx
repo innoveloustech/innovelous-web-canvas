@@ -12,6 +12,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminLogin from "./pages/AdminLogin";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoutes"; // Import your ProtectedRoute
+import Footer from "./components/Footer";
 
 const queryClient = new QueryClient();
 
@@ -44,6 +45,7 @@ const App = () => (
             {/* Catch-all for 404 */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          <Footer/>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

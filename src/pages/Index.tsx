@@ -3,52 +3,55 @@ import Navigation from '@/components/Navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {motion} from 'framer-motion'
 import { Link } from 'react-router-dom';
-import { ArrowRight, Brain, Cpu, Wifi, Mail, Phone, Instagram, Linkedin, ExternalLink, Code, Smartphone, Settings, Palette } from 'lucide-react';
+import { ArrowRight, Brain, Cpu, Wifi, Mail, Phone, Instagram, Linkedin, ExternalLink, Code, Smartphone, Settings, Palette, LucideMail } from 'lucide-react';
+import ServicesDisplay from '@/components/UserExpertise';
+
 
 const Index = () => {
-  const services = [
-    {
-      icon: <Cpu className="h-12 w-12" />,
-      title: "IoT Solutions",
-      description: "Smart connected devices and systems for modern automation",
-    },
-    {
-      icon: <Brain className="h-12 w-12" />,
-      title: "Machine Learning",
-      description: "Intelligent algorithms that learn and adapt to your business needs",
-    },
-    {
-      icon: <Wifi className="h-12 w-12" />,
-      title: "AI Integration",
-      description: "Seamless artificial intelligence integration for enhanced productivity",
-    },
-    {
-    icon: <Code className="h-12 w-12" />,
-    title: "Web Dev & Designing",
-    description: "Responsive websites with modern designs and optimized performance",
-  },
-  {
-    icon: <Smartphone className="h-12 w-12" />,
-    title: "App Development",
-    description: "High-quality mobile applications tailored for iOS and Android platforms",
-  },
-  {
-    icon: <Settings className="h-12 w-12" />,
-    title: "Custom Software Development",
-    description: "Tailor-made software solutions built to match your business goals",
-  },
-  {
-    icon: <Palette className="h-12 w-12" />,
-    title: "UI & UX Design",
-    description: "User-centered design for intuitive and engaging digital experiences",
-  },
-  {
-    icon: <Brain className="h-12 w-12" />,
-    title: "AI & Machine Learning",
-    description: "Smart systems that analyze, learn, and make intelligent decisions",
-  },
-  ];
+  // const services = [
+  //   {
+  //     icon: <Cpu className="h-12 w-12" />,
+  //     title: "IoT Solutions",
+  //     description: "Smart connected devices and systems for modern automation",
+  //   },
+  //   {
+  //     icon: <Brain className="h-12 w-12" />,
+  //     title: "Machine Learning",
+  //     description: "Intelligent algorithms that learn and adapt to your business needs",
+  //   },
+  //   {
+  //     icon: <Wifi className="h-12 w-12" />,
+  //     title: "AI Integration",
+  //     description: "Seamless artificial intelligence integration for enhanced productivity",
+  //   },
+  //   {
+  //   icon: <Code className="h-12 w-12" />,
+  //   title: "Web Dev & Designing",
+  //   description: "Responsive websites with modern designs and optimized performance",
+  // },
+  // {
+  //   icon: <Smartphone className="h-12 w-12" />,
+  //   title: "App Development",
+  //   description: "High-quality mobile applications tailored for iOS and Android platforms",
+  // },
+  // {
+  //   icon: <Settings className="h-12 w-12" />,
+  //   title: "Custom Software Development",
+  //   description: "Tailor-made software solutions built to match your business goals",
+  // },
+  // {
+  //   icon: <Palette className="h-12 w-12" />,
+  //   title: "UI & UX Design",
+  //   description: "User-centered design for intuitive and engaging digital experiences",
+  // },
+  // {
+  //   icon: <Brain className="h-12 w-12" />,
+  //   title: "AI & Machine Learning",
+  //   description: "Smart systems that analyze, learn, and make intelligent decisions",
+  // },
+  // ];
 
   return (
     <div className="min-h-screen">
@@ -91,20 +94,52 @@ const Index = () => {
             </div>
             
             {/* Services offered */}
-            <div className="text-center mb-8">
-              <p className="text-lg text-gray-300 mb-4">Our Services:</p>
-              <div className="flex flex-wrap justify-center gap-4">
-                <Badge className="bg-purple-600/30 text-purple-300 border-purple-500/50 px-4 py-2">Custom Project Development</Badge>
-                <Badge className="bg-purple-700/30 text-purple-300 border-purple-500/50 px-4 py-2">Ready-made Solutions</Badge>
-                <Badge className="bg-purple-800/30 text-purple-300 border-purple-500/50 px-4 py-2">Project Consultancy</Badge>
+            <motion.div 
+              className="text-center mb-12"
+              initial={{ opacity: 0, y: 20 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              transition={{ duration: 0.6 }}
+            >
+              <p className="text-xl font-semibold text-gray-300 mb-4">Our Services</p>
+              <div className="flex flex-wrap justify-center gap-3 text-sm">
+                {/* Development */}
+                <Badge className="bg-purple-600/30 text-purple-300 border-purple-500/50 px-4 py-2">
+                  Custom Project Development
+                </Badge>
+                <Badge className="bg-purple-700/30 text-purple-300 border-purple-500/50 px-4 py-2">
+                  Ready-made Solutions
+                </Badge>
+                <Badge className="bg-purple-800/30 text-purple-300 border-purple-500/50 px-4 py-2">
+                  Web App Engineering
+                </Badge>
+
+                {/* Consulting */}
+                <Badge className="bg-purple-700/30 text-purple-300 border-purple-500/50 px-4 py-2">
+                  Project Consultancy
+                </Badge>
+
+                {/* UI/UX */}
+                <Badge className="bg-purple-800/30 text-purple-300 border-purple-500/50 px-4 py-2">
+                  UI/UX Design
+                </Badge>
+                <Badge className="bg-purple-600/30 text-purple-300 border-purple-500/50 px-4 py-2">
+                  Design Systems & Prototyping
+                </Badge>
+
+                {/* Business */}
+                <Badge className="bg-purple-700/30 text-purple-300 border-purple-500/50 px-4 py-2">
+                  MVP Launch Services
+                </Badge>
               </div>
-            </div>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section className="py-20">
+        <ServicesDisplay/>
+
+
+      {/* <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-bold mb-4">
@@ -129,7 +164,7 @@ const Index = () => {
             ))}
           </div>
         </div>
-      </section>
+      </section> */}
 
       {/* Values Section */}
       <section className="py-20">
@@ -203,33 +238,8 @@ const Index = () => {
               <Linkedin className="h-8 w-8" />
             </a>
           </div>
-          
-          <a 
-            href="https://fiverr.com/innoveloustech" 
-            target="_blank" 
-            rel="noopener noreferrer"
-            className="inline-block"
-          >
-            <Button className="bg-green-600 hover:bg-green-700 text-white px-8 py-3 rounded-full text-lg font-semibold">
-              <ExternalLink className="mr-2 h-5 w-5" />
-              Hire us on Fiverr
-            </Button>
-          </a>
         </div>
       </section>
-
-      {/* Footer */}
-      <footer className="py-8 border-t border-purple-500/20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-gray-400">
-            © 2024 {' '}
-            <Link to="/admin/dashboard" className="text-gray-400">
-              Innovelous Tech.
-            </Link>
-            {' '}All rights reserved. Building the future, one innovation at a time.
-          </p>
-        </div>
-      </footer>
     </div>
   );
 };

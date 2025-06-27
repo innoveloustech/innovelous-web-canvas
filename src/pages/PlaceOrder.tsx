@@ -309,46 +309,6 @@ const PlaceOrder = () => {
                   />
                 </div>
 
-                <div className="grid md:grid-cols-2 gap-6">
-                  <div>
-                    <Label htmlFor="budget" className="text-white">Budget Range</Label>
-                    <select
-                      id="budget"
-                      name="budget"
-                      value={formData.budget}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-gray-400"
-                      disabled={isSubmitting}
-                    >
-                      <option value="">Select budget range</option>
-                      <option value="under-5k">Under $5,000</option>
-                      <option value="5k-10k">$5,000 - $10,000</option>
-                      <option value="10k-25k">$10,000 - $25,000</option>
-                      <option value="25k-50k">$25,000 - $50,000</option>
-                      <option value="over-50k">Over $50,000</option>
-                      <option value="discuss">Let's discuss</option>
-                    </select>
-                  </div>
-                  <div>
-                    <Label htmlFor="timeline" className="text-white">Timeline</Label>
-                    <select
-                      id="timeline"
-                      name="timeline"
-                      value={formData.timeline}
-                      onChange={handleInputChange}
-                      className="w-full px-3 py-2 bg-white/5 border border-white/20 rounded-md text-gray-400"
-                      disabled={isSubmitting}
-                    >
-                      <option value="">Select timeline</option>
-                      <option value="asap">ASAP</option>
-                      <option value="1-month">Within 1 month</option>
-                      <option value="2-3-months">2-3 months</option>
-                      <option value="3-6-months">3-6 months</option>
-                      <option value="flexible">I'm flexible</option>
-                    </select>
-                  </div>
-                </div>
-
                 {/* File Upload */}
                 <div>
                   <Label htmlFor="files" className="text-white">Attach Files (Optional)</Label>
