@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/lib/supbaseClient';
+import RichTextEditor from './RichTextEditor'
 
 import { 
   Cpu, Brain, Wifi, Code, Smartphone, Settings, Palette, 
@@ -43,6 +44,7 @@ const Expertise = () => {
     icon: '',
     title: '',
     description: '',
+    long_description: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -94,7 +96,7 @@ const Expertise = () => {
         setIsAdding(false);
       }
 
-      setFormData({ icon: '', title: '', description: '' });
+      setFormData({ icon: '', title: '', description: '', long_description: '' });
       fetchServices();
     } catch (err) {
       setError('Failed to save service');
@@ -107,7 +109,8 @@ const Expertise = () => {
     setFormData({
       icon: service.icon,
       title: service.title,
-      description: service.description
+      description: service.description,
+      long_description: service.long_description
     });
     setEditingId(service.id);
     setIsAdding(true);
@@ -135,7 +138,7 @@ const Expertise = () => {
   const handleCancel = () => {
     setIsAdding(false);
     setEditingId(null);
-    setFormData({ icon: '', title: '', description: '' });
+    setFormData({ icon: '', title: '', description: '' , long_description: ''});
     setError('');
   };
 
@@ -220,13 +223,21 @@ const Expertise = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium">Description</label>
+                <label className="text-sm font-medium">Short Description</label>
                 <Textarea
                   value={formData.description}
                   onChange={(e) => setFormData({...formData, description: e.target.value})}
-                  placeholder="Service description"
+                  placeholder="Brief description for card"
                   rows={3}
                   required
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Detailed Description</label>
+                <RichTextEditor
+                  value={formData.long_description}
+                  onChange={(value) => setFormData({...formData, long_description: value})}
                 />
               </div>
 
@@ -275,7 +286,12 @@ const Expertise = () => {
                     <IconComponent className="h-12 w-12" />
                   </div>
                   <h3 className="text-xl font-bold mb-2">{service.title}</h3>
-                  <p className="text-gray-600 text-sm">{service.description}</p>
+                  <p className="text-gray-600 text-sm mb-4">{service.description}</p>
+                  <div className="text-xs text-gray-500">
+                    {service.long_description ? 
+                      "Click to view detailed description" : 
+                      "No detailed description available"}
+                  </div>
                 </div>
               </CardContent>
             </Card>

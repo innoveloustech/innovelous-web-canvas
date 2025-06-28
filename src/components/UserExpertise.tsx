@@ -5,8 +5,10 @@ import { supabase } from '@/lib/supbaseClient';
 import { 
   Cpu, Brain, Wifi, Code, Smartphone, Settings, Palette, 
   Monitor, Database, Cloud, Shield, Zap, Globe, 
-  Laptop, Tablet, Watch, Headphones, Camera 
+  Laptop, Tablet, Watch, Headphones, Camera, X
 } from 'lucide-react';
+
+import RichTextEditor from './RichTextEditor';
 
 const iconMap = {
   'Cpu': Cpu,
@@ -33,6 +35,7 @@ const ServicesDisplay = () => {
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [selectedService, setSelectedService] = useState(null);
 
   useEffect(() => {
     fetchServices();
@@ -59,6 +62,14 @@ const ServicesDisplay = () => {
 
   const getIconComponent = (iconName) => {
     return iconMap[iconName] || Cpu;
+  };
+
+  const handleCardClick = (service) => {
+    setSelectedService(service);
+  };
+
+  const closePopup = () => {
+    setSelectedService(null);
   };
 
   if (loading) {
@@ -120,12 +131,13 @@ const ServicesDisplay = () => {
         </div>
         
         <div className="grid md:grid-cols-3 gap-8">
-          {services.map((service, index) => {
+          {services.map((service) => {
             const IconComponent = getIconComponent(service.icon);
             return (
               <Card 
                 key={service.id} 
-                className="glass-effect group hover:bg-black/60 transition-all duration-300 transform hover:scale-105"
+                className="glass-effect group hover:bg-black/60 transition-all duration-300 transform hover:scale-105 cursor-pointer"
+                onClick={() => handleCardClick(service)}
               >
                 <CardContent className="p-8 text-center">
                   <div className="text-purple-400 mb-6 group-hover:text-purple-300 transition-colors duration-300 flex justify-center">
@@ -138,6 +150,39 @@ const ServicesDisplay = () => {
             );
           })}
         </div>
+
+        {selectedService && (
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+            <div className="bg-gradient-to-br from-gray-900 to-purple-900/20 border border-white/20 rounded-xl max-w-3xl w-full max-h-[90vh] overflow-y-auto">
+              <div className="p-6">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex items-center gap-4">
+                     <div className="text-purple-400">
+                    {(() => {
+                      const IconComponent = getIconComponent(selectedService.icon);
+                      return <IconComponent className="h-10 w-10" />;
+                    })()}
+                  </div>
+                    <h3 className="text-2xl font-bold text-white">{selectedService.title}</h3>
+                  </div>
+                  <button 
+                    onClick={closePopup}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <X className="h-6 w-6" />
+                  </button>
+                </div>
+                
+                <div className="prose prose-invert max-w-none">
+                  <RichTextEditor 
+                    value={selectedService.long_description} 
+                    editable={false} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {services.length === 0 && (
           <div className="text-center text-gray-400">

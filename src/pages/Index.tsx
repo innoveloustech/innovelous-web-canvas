@@ -10,49 +10,6 @@ import ServicesDisplay from '@/components/UserExpertise';
 
 
 const Index = () => {
-  // const services = [
-  //   {
-  //     icon: <Cpu className="h-12 w-12" />,
-  //     title: "IoT Solutions",
-  //     description: "Smart connected devices and systems for modern automation",
-  //   },
-  //   {
-  //     icon: <Brain className="h-12 w-12" />,
-  //     title: "Machine Learning",
-  //     description: "Intelligent algorithms that learn and adapt to your business needs",
-  //   },
-  //   {
-  //     icon: <Wifi className="h-12 w-12" />,
-  //     title: "AI Integration",
-  //     description: "Seamless artificial intelligence integration for enhanced productivity",
-  //   },
-  //   {
-  //   icon: <Code className="h-12 w-12" />,
-  //   title: "Web Dev & Designing",
-  //   description: "Responsive websites with modern designs and optimized performance",
-  // },
-  // {
-  //   icon: <Smartphone className="h-12 w-12" />,
-  //   title: "App Development",
-  //   description: "High-quality mobile applications tailored for iOS and Android platforms",
-  // },
-  // {
-  //   icon: <Settings className="h-12 w-12" />,
-  //   title: "Custom Software Development",
-  //   description: "Tailor-made software solutions built to match your business goals",
-  // },
-  // {
-  //   icon: <Palette className="h-12 w-12" />,
-  //   title: "UI & UX Design",
-  //   description: "User-centered design for intuitive and engaging digital experiences",
-  // },
-  // {
-  //   icon: <Brain className="h-12 w-12" />,
-  //   title: "AI & Machine Learning",
-  //   description: "Smart systems that analyze, learn, and make intelligent decisions",
-  // },
-  // ];
-
   return (
     <div className="min-h-screen">
       <Navigation />
@@ -137,34 +94,6 @@ const Index = () => {
       </section>
 
         <ServicesDisplay/>
-
-
-      {/* <section className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4">
-              Our <span className="gradient-text">Expertise</span>
-            </h2>
-            <p className="text-xl text-gray-400 max-w-2xl mx-auto">
-              We specialize in creating innovative solutions that bridge the gap between technology and real-world applications
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <Card key={index} className="glass-effect group hover:bg-black/60 transition-all duration-300 transform hover:scale-105">
-                <CardContent className="p-8 text-center">
-                  <div className="text-purple-400 mb-6 group-hover:text-purple-300 transition-colors duration-300">
-                    {service.icon}
-                  </div>
-                  <h3 className="text-2xl font-bold mb-4 text-white">{service.title}</h3>
-                  <p className="text-gray-400 leading-relaxed">{service.description}</p>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section> */}
 
       {/* Values Section */}
       <section className="py-20">
