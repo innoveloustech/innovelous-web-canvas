@@ -2,14 +2,12 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supbaseClient';
 import { useToast } from '@/hooks/use-toast';
-import { 
-  Monitor, Smartphone, Laptop, Server, Grid3X3, 
-  Plus, Trash2, X, Loader2 
-} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Server } from 'http';
+import { Cpu, Brain, Wifi, Code, Smartphone, Settings, Palette, Monitor, Database, Cloud, Shield, Zap, Globe, Laptop, Tablet, Watch, Headphones, Camera, Grid3X3, Tv, Phone, MapPin, Calendar, Search, User, Heart, Loader, Bell, Folder, FileText, Trash2, Unlock, Eye, EyeOff, Loader2, Plus } from 'lucide-react';
 
 export interface Category {
   id: string;
@@ -19,11 +17,40 @@ export interface Category {
 }
 
 const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-  Monitor,
+  Cpu,
+  Brain,
+  Wifi,
+  Code,
   Smartphone,
+  Settings,
+  Palette,
+  Monitor,
+  Database,
+  Cloud,
+  Shield,
+  Zap,
+  Globe,
   Laptop,
-  Server,
-  Grid3X3
+  Tablet,
+  Watch,
+  Headphones,
+  Camera,
+  Grid3X3,
+  Tv,
+  Phone,
+  MapPin,
+  Calendar,
+  Search,
+  User,
+  Heart,
+  Loader,
+  Bell,
+  Folder,
+  FileText,
+  Trash2,
+  Unlock,
+  Eye,
+  EyeOff
 };
 
 const CategoryManager = () => {

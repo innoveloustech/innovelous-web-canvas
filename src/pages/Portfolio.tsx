@@ -5,6 +5,11 @@ import { Button } from '@/components/ui/button';
 import { Eye, ExternalLink, ChevronLeft, ChevronRight, X, Monitor, Smartphone, Laptop, Server, Grid3X3 } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { supabase } from '@/lib/supbaseClient';
+import { 
+  Cpu, Brain, Wifi, Code, Settings, Palette, Database, Cloud, Shield, Zap, Globe, Tablet, Watch,
+  Headphones, Camera, Tv, Phone, MapPin, Calendar, Search, User, Heart, Loader, Bell, Folder,
+  FileText, Trash2, Unlock, EyeOff
+} from 'lucide-react';
 
 interface Project {
   id: string;
@@ -60,12 +65,43 @@ const Portfolio = () => {
   const [categories, setCategories] = useState<Category[]>([]);
 
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    Monitor,
-    Smartphone,
-    Laptop,
-    Server,
-    Grid3X3
+    Cpu: Cpu,
+    Brain: Brain,
+    Wifi: Wifi,
+    Code: Code,
+    Smartphone: Smartphone,
+    Settings: Settings,
+    Palette: Palette,
+    Monitor: Monitor,
+    Database: Database,
+    Cloud: Cloud,
+    Shield: Shield,
+    Zap: Zap,
+    Globe: Globe,
+    Laptop: Laptop,
+    Tablet: Tablet,
+    Watch: Watch,
+    Headphones: Headphones,
+    Camera: Camera,
+    Grid3X3: Grid3X3,
+    Tv: Tv,
+    Phone: Phone,
+    MapPin: MapPin,
+    Calendar: Calendar,
+    Search: Search,
+    User: User,
+    Heart: Heart,
+    Loader: Loader,
+    Bell: Bell,
+    Folder: Folder,
+    FileText: FileText,
+    Trash2: Trash2,
+    Unlock: Unlock,
+    Eye: Eye,
+    EyeOff: EyeOff,
+    Server: Server
   };
+
 
 
   useEffect(() => {
@@ -158,9 +194,11 @@ const Portfolio = () => {
   ];
 
   const getCategoryIcon = (categoryKey: string) => {
-    const iconName = categories.find(c => c.key === categoryKey)?.icon || 'Grid3X3';
+    const category = categories.find(cat => cat.key === categoryKey);
+    const iconName = category?.icon || 'Grid3X3';
     return iconMap[iconName] || Grid3X3;
   };
+
 
   // Get category name
   const getCategoryName = (key: string) => {

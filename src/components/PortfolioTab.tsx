@@ -13,7 +13,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Image as ImageIcon, Loader2, Plus, Trash2, Edit, Save, X, 
-  Monitor, Smartphone, Laptop, Server, Grid3X3 } from 'lucide-react';
+  Monitor, Smartphone, Laptop, Server, Grid3X3,
+  Cpu, Brain, Wifi, Code, Settings, Palette, Database, Cloud, Shield, Zap, Globe, Tablet, Watch,
+  Headphones, Camera, Tv, Phone, MapPin, Calendar, Search, User, Heart, Loader, Bell, Folder,
+  FileText, Unlock, EyeOff } from 'lucide-react';
 
 import RichTextEditor from '@/components/RichTextEditor';
 
@@ -64,13 +67,6 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
   const [editProjectId, setEditProjectId] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   
-  // const categories = [
-  //   { value: 'website', label: 'Website', icon: Monitor },
-  //   { value: 'mobile', label: 'Mobile App', icon: Smartphone },
-  //   { value: 'desktop', label: 'Desktop App', icon: Laptop },
-  //   { value: 'api', label: 'API', icon: Server },
-  //   { value: 'other', label: 'Other', icon: Grid3X3 }
-  // ];
 
 
 
@@ -117,6 +113,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     const iconName = category?.icon || 'Grid3X3';
     return iconMap[iconName] || Grid3X3;
   };
+
 
   const handleAddProject = async () => {
     if (!newProject.name || !newProject.description || projectImageFiles.length === 0) {
@@ -300,11 +297,40 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
 
   // Create icon map
   const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
-    Monitor: Monitor,
+    Cpu: Cpu,
+    Brain: Brain,
+    Wifi: Wifi,
+    Code: Code,
     Smartphone: Smartphone,
+    Settings: Settings,
+    Palette: Palette,
+    Monitor: Monitor,
+    Database: Database,
+    Cloud: Cloud,
+    Shield: Shield,
+    Zap: Zap,
+    Globe: Globe,
     Laptop: Laptop,
-    Server: Server,
-    Grid3X3: Grid3X3
+    Tablet: Tablet,
+    Watch: Watch,
+    Headphones: Headphones,
+    Camera: Camera,
+    Grid3X3: Grid3X3,
+    Tv: Tv,
+    Phone: Phone,
+    MapPin: MapPin,
+    Calendar: Calendar,
+    Search: Search,
+    User: User,
+    Heart: Heart,
+    Loader: Loader,
+    Bell: Bell,
+    Folder: Folder,
+    FileText: FileText,
+    Trash2: Trash2,
+    Unlock: Unlock,
+    EyeOff: EyeOff,
+    Server: Server
   };
 
   return (
@@ -349,7 +375,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                 <Label className="text-white">Category</Label>
                 <Select 
                   value={newProject.category} 
-                  onValueChange={(value: 'website' | 'mobile' | 'desktop' | 'api' | 'other') => 
+                  onValueChange={(value) =>  // Remove hardcoded type annotation
                     setNewProject(prev => ({ ...prev, category: value }))
                   }
                 >
@@ -358,16 +384,16 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => {
-                    const IconComponent = iconMap[category.icon];
-                    return (
-                      <SelectItem key={category.key} value={category.key}>
-                        <div className="flex items-center gap-2">
-                          <IconComponent className="h-4 w-4" />
-                          {category.name}
-                        </div>
-                      </SelectItem>
-                    );
-                  })}
+                      const IconComponent = iconMap[category.icon];
+                      return (
+                        <SelectItem key={category.key} value={category.key}>
+                          <div className="flex items-center gap-2">
+                            <IconComponent className="h-4 w-4" />
+                            {category.name}
+                          </div>
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
@@ -511,7 +537,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                       />
                       <Select 
                         value={editFields.category} 
-                        onValueChange={(value: 'website' | 'mobile' | 'desktop' | 'api' | 'other') => 
+                        onValueChange={(value) =>  // Remove type annotation here too
                           setEditFields({ ...editFields, category: value })
                         }
                       >
