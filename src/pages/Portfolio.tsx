@@ -13,10 +13,17 @@ interface Project {
   technologies: string[];
   image_urls: string[];
   demo_url?: string;
-  category: 'website' | 'mobile' | 'desktop' | 'api' | 'other';
+  category: string;
   created_at: string;
 }
 
+
+interface Category {
+  id: string;
+  name: string;
+  key: string;
+  icon: string;
+}
 
 
 // Add this helper function at the top of your Portfolio component
@@ -50,16 +57,15 @@ const Portfolio = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [categories, setCategories] = useState<Category[]>([]);
 
-
-  const categories = [
-    { key: 'all', label: 'All Projects', icon: Grid3X3 },
-    { key: 'website', label: 'Websites', icon: Monitor },
-    { key: 'mobile', label: 'Mobile Apps', icon: Smartphone },
-    { key: 'desktop', label: 'Desktop Apps', icon: Laptop },
-    { key: 'api', label: 'APIs', icon: Server },
-    { key: 'other', label: 'Other', icon: Grid3X3 }
-  ];
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    Monitor,
+    Smartphone,
+    Laptop,
+    Server,
+    Grid3X3
+  };
 
 
   useEffect(() => {
@@ -106,6 +112,20 @@ const Portfolio = () => {
     }
   }, [activeFilter, projects]);
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const { data, error } = await supabase.from('categories').select('*');
+        if (error) throw error;
+        setCategories(data || []);
+      } catch (err) {
+        console.error('Error fetching categories:', err);
+      }
+    };
+    
+    fetchCategories();
+  }, []);
+
   const openImageModal = (project: Project, imageIndex: number = 0) => {
     setSelectedProject(project);
     setCurrentImageIndex(imageIndex);
@@ -132,10 +152,21 @@ const Portfolio = () => {
     }
   };
 
-  const getCategoryIcon = (category: string) => {
-    const categoryData = categories.find(cat => cat.key === category);
-    return categoryData ? categoryData.icon : Grid3X3;
+  const filterCategories = [
+    { key: 'all', name: 'All Projects', icon: 'Grid3X3' },
+    ...categories
+  ];
+
+  const getCategoryIcon = (categoryKey: string) => {
+    const iconName = categories.find(c => c.key === categoryKey)?.icon || 'Grid3X3';
+    return iconMap[iconName] || Grid3X3;
   };
+
+  // Get category name
+  const getCategoryName = (key: string) => {
+    return categories.find(c => c.key === key)?.name || key;
+  };
+
 
   return (
     <div className="min-h-screen">
@@ -157,42 +188,40 @@ const Portfolio = () => {
 
         {/* Filter Buttons */}
         <section className="py-8">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-wrap gap-3 justify-center mb-8">
-              {categories.map((category) => {
-                const Icon = category.icon;
-                const isActive = activeFilter === category.key;
-                const count = category.key === 'all' 
-                  ? projects.length 
-                  : projects.filter(p => p.category === category.key).length;
-                
-                return (
-                  <Button
-                    key={category.key}
-                    onClick={() => setActiveFilter(category.key)}
-                    variant={isActive ? "default" : "outline"}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+          <div className="flex flex-wrap gap-3 justify-center mb-8">
+            {filterCategories.map((category) => {
+              const Icon = iconMap[category.icon] || Grid3X3;
+              const isActive = activeFilter === category.key;
+              const count = category.key === 'all' 
+                ? projects.length 
+                : projects.filter(p => p.category === category.key).length;
+              
+              return (
+                <Button
+                  key={category.key}
+                  onClick={() => setActiveFilter(category.key)}
+                  variant={isActive ? "default" : "outline"}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-300 ${
+                    isActive 
+                      ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform scale-105' 
+                      : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:text-white hover:border-white/40'
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  {category.name}
+                  <Badge 
+                    variant="secondary" 
+                    className={`ml-1 ${
                       isActive 
-                        ? 'bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg transform scale-105' 
-                        : 'bg-white/5 border-white/20 text-gray-300 hover:bg-white/10 hover:text-white hover:border-white/40'
+                        ? 'bg-white/20 text-white' 
+                        : 'bg-blue-600/20 text-blue-300'
                     }`}
                   >
-                    <Icon className="h-4 w-4" />
-                    {category.label}
-                    <Badge 
-                      variant="secondary" 
-                      className={`ml-1 ${
-                        isActive 
-                          ? 'bg-white/20 text-white' 
-                          : 'bg-blue-600/20 text-blue-300'
-                      }`}
-                    >
-                      {count}
-                    </Badge>
-                  </Button>
-                );
-              })}
-            </div>
+                    {count}
+                  </Badge>
+                </Button>
+              );
+            })}
           </div>
         </section>
 
@@ -212,7 +241,7 @@ const Portfolio = () => {
             ) : filteredProjects.length === 0 ? (
               <div className="text-center py-20">
                 <p className="text-2xl text-gray-400 mb-4">
-                  {activeFilter === 'all' ? 'No projects found' : `No ${categories.find(c => c.key === activeFilter)?.label.toLowerCase()} found`}
+                  {activeFilter === 'all' ? 'No projects found' : `No ${categories.find(c => c.key === activeFilter)?.name.toLowerCase()} found`}
                 </p>
                 <p className="text-gray-500">
                   {activeFilter === 'all' ? 'Check back soon for our latest work!' : 'Try selecting a different category.'}
@@ -384,7 +413,9 @@ const Portfolio = () => {
                     const CategoryIcon = getCategoryIcon(selectedProject.category);
                     return <CategoryIcon className="h-5 w-5 text-blue-400" />;
                   })()}
-                  <span className="text-blue-400 text-sm capitalize">{selectedProject.category}</span>
+                  <span className="text-blue-400 text-sm capitalize">
+                    {getCategoryName(selectedProject.category)}
+                  </span>
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">
                   {selectedProject.name}

@@ -1,6 +1,6 @@
 // src/components/PortfolioTab.tsx
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supbaseClient';
 import { useToast } from '@/hooks/use-toast';
 import { v4 as uuidv4 } from 'uuid';
@@ -24,13 +24,20 @@ interface Project {
   technologies: string[];
   image_urls?: string[];
   demo_url?: string;
-  category: 'website' | 'mobile' | 'desktop' | 'api' | 'other';
+  category: string;
 }
 
 interface PortfolioTabProps {
   projects: Project[];
   fetchProjects: () => void;
   setProjects: React.Dispatch<React.SetStateAction<Project[]>>;
+}
+
+interface Category {
+  id: string;
+  name: string;
+  icon: string;
+  key: string;
 }
 
 const truncateDescription = (html: string) => {
@@ -55,14 +62,17 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
   const [newImageFiles, setNewImageFiles] = useState<File[]>([]);
   const [projectImageFiles, setProjectImageFiles] = useState<File[]>([]);
   const [editProjectId, setEditProjectId] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
   
-  const categories = [
-    { value: 'website', label: 'Website', icon: Monitor },
-    { value: 'mobile', label: 'Mobile App', icon: Smartphone },
-    { value: 'desktop', label: 'Desktop App', icon: Laptop },
-    { value: 'api', label: 'API', icon: Server },
-    { value: 'other', label: 'Other', icon: Grid3X3 }
-  ];
+  // const categories = [
+  //   { value: 'website', label: 'Website', icon: Monitor },
+  //   { value: 'mobile', label: 'Mobile App', icon: Smartphone },
+  //   { value: 'desktop', label: 'Desktop App', icon: Laptop },
+  //   { value: 'api', label: 'API', icon: Server },
+  //   { value: 'other', label: 'Other', icon: Grid3X3 }
+  // ];
+
+
 
   const [newProject, setNewProject] = useState<Omit<Project, 'id'>>({ 
     name: '', 
@@ -79,7 +89,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     technologies: [] as string[], 
     image_urls: [] as string[], 
     demo_url: '',
-    category: 'website' as 'website' | 'mobile' | 'desktop' | 'api' | 'other'
+    category: ''
   });
 
   const addTechnology = (tech: string) => {
@@ -102,9 +112,10 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     setEditFields(prev => ({ ...prev, technologies: prev.technologies.filter(t => t !== tech) }));
   };
 
-  const getCategoryIcon = (categoryValue: string) => {
-    const category = categories.find(cat => cat.value === categoryValue);
-    return category ? category.icon : Grid3X3;
+  const getCategoryIcon = (categoryKey: string) => {
+    const category = categories.find(cat => cat.key === categoryKey);
+    const iconName = category?.icon || 'Grid3X3';
+    return iconMap[iconName] || Grid3X3;
   };
 
   const handleAddProject = async () => {
@@ -275,6 +286,27 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     }
   };
 
+  useEffect(() => {
+    const fetchCategories = async () => {
+      const { data, error } = await supabase.from('categories').select('*');
+      if (error) {
+        console.error('Error fetching categories:', error);
+      } else {
+        setCategories(data || []);
+      }
+    };
+    fetchCategories();
+  }, []);
+
+  // Create icon map
+  const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
+    Monitor: Monitor,
+    Smartphone: Smartphone,
+    Laptop: Laptop,
+    Server: Server,
+    Grid3X3: Grid3X3
+  };
+
   return (
     <Card className="glass-effect">
       <CardHeader className="flex flex-row items-center justify-between">
@@ -326,16 +358,16 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => {
-                      const IconComponent = category.icon;
-                      return (
-                        <SelectItem key={category.value} value={category.value}>
-                          <div className="flex items-center gap-2">
-                            <IconComponent className="h-4 w-4" />
-                            {category.label}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
+                    const IconComponent = iconMap[category.icon];
+                    return (
+                      <SelectItem key={category.key} value={category.key}>
+                        <div className="flex items-center gap-2">
+                          <IconComponent className="h-4 w-4" />
+                          {category.name}
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                   </SelectContent>
                 </Select>
               </div>
@@ -488,12 +520,12 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                         </SelectTrigger>
                         <SelectContent>
                           {categories.map((category) => {
-                            const IconComponent = category.icon;
+                            const IconComponent = iconMap[category.icon];
                             return (
-                              <SelectItem key={category.value} value={category.value}>
+                              <SelectItem key={category.key} value={category.key}>
                                 <div className="flex items-center gap-2">
                                   <IconComponent className="h-4 w-4" />
-                                  {category.label}
+                                  {category.name}
                                 </div>
                               </SelectItem>
                             );
@@ -614,7 +646,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                           variant="outline" 
                           className="text-xs bg-transparent border-gray-500 text-gray-400"
                         >
-                          {categories.find(cat => cat.value === project.category)?.label || 'Other'}
+                          {categories.find(cat => cat.key === project.category)?.name || 'Other'}
                         </Badge>
                       </div>
                       <p className="text-gray-400 text-sm">{truncateDescription(project.description)}</p>
