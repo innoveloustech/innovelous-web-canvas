@@ -16,9 +16,10 @@ import { Image as ImageIcon, Loader2, Plus, Trash2, Edit, Save, X,
   Monitor, Smartphone, Laptop, Server, Grid3X3,
   Cpu, Brain, Wifi, Code, Settings, Palette, Database, Cloud, Shield, Zap, Globe, Tablet, Watch,
   Headphones, Camera, Tv, Phone, MapPin, Calendar, Search, User, Heart, Loader, Bell, Folder,
-  FileText, Unlock, EyeOff } from 'lucide-react';
+  FileText, Unlock, EyeOff, Pin } from 'lucide-react';
 
 import RichTextEditor from '@/components/RichTextEditor';
+import { Checkbox } from './ui/checkbox';
 
 interface Project {
   id: string;
@@ -28,6 +29,7 @@ interface Project {
   image_urls?: string[];
   demo_url?: string;
   category: string;
+  pinned: boolean;
 }
 
 interface PortfolioTabProps {
@@ -76,7 +78,8 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     technologies: [], 
     image_urls: [], 
     demo_url: '',
-    category: 'website'
+    category: 'website',
+    pinned: false,
   });
   
   const [editFields, setEditFields] = useState({ 
@@ -85,7 +88,8 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     technologies: [] as string[], 
     image_urls: [] as string[], 
     demo_url: '',
-    category: ''
+    category: '',
+    pinned: false,
   });
 
   const addTechnology = (tech: string) => {
@@ -136,7 +140,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
       toast({ title: "Success", description: "Project added successfully!" });
       fetchProjects();
       setShowAddProject(false);
-      setNewProject({ name: '', description: '', demo_url: '', technologies: [], image_urls: [], category: 'website' });
+      setNewProject({ name: '', description: '', demo_url: '', technologies: [], image_urls: [], category: 'website', pinned: false });
       setProjectImageFiles([]);
     } catch (error: any) {
       toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
@@ -153,7 +157,8 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
       technologies: project.technologies || [],
       image_urls: project.image_urls || [],
       demo_url: project.demo_url || '',
-      category: project.category || 'website'
+      category: project.category || 'website',
+      pinned: project.pinned || false
     });
   };
 
@@ -330,7 +335,8 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     Trash2: Trash2,
     Unlock: Unlock,
     EyeOff: EyeOff,
-    Server: Server
+    Server: Server,
+    Pin: Pin,
   };
 
   return (
@@ -368,6 +374,21 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                     className="bg-white/5 border-white/20 text-white"
                     placeholder="https://..."
                   />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="pin-project"
+                    checked={newProject.pinned}
+                    onCheckedChange={(checked: boolean) => 
+                      setNewProject(prev => ({ ...prev, pinned: checked }))
+                    }
+                  />
+                  <Label htmlFor="pin-project" className="text-white">
+                    Pin this project (appears first on portfolio)
+                  </Label>
                 </div>
               </div>
 
@@ -568,6 +589,18 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                         placeholder="Demo URL"
                         className="bg-white/5 border-white/20 text-white mt-2"
                       />
+                      <div className="flex items-center space-x-2 mt-2">
+                        <Checkbox
+                          id={`pin-edit-${project.id}`}
+                          checked={editFields.pinned}
+                          onCheckedChange={(checked: boolean) => 
+                            setEditFields(prev => ({ ...prev, pinned: checked }))
+                          }
+                        />
+                        <Label htmlFor={`pin-edit-${project.id}`} className="text-white">
+                          Pin this project
+                        </Label>
+                      </div>
                       <div>
                         <Label className="text-white text-sm">Technologies</Label>
                         <div className="flex gap-2 mb-2">
@@ -674,6 +707,9 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                         >
                           {categories.find(cat => cat.key === project.category)?.name || 'Other'}
                         </Badge>
+                        {project.pinned && (
+                          <Pin className="h-4 w-4 text-yellow-400"/>
+                        )}
                       </div>
                       <p className="text-gray-400 text-sm">{truncateDescription(project.description)}</p>
                       {project.demo_url && (

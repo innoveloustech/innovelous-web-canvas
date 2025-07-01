@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supbaseClient';
 import { 
   Cpu, Brain, Wifi, Code, Settings, Palette, Database, Cloud, Shield, Zap, Globe, Tablet, Watch,
   Headphones, Camera, Tv, Phone, MapPin, Calendar, Search, User, Heart, Loader, Bell, Folder,
-  FileText, Trash2, Unlock, EyeOff
+  FileText, Trash2, Unlock, EyeOff, Pin
 } from 'lucide-react';
 
 interface Project {
@@ -20,6 +20,7 @@ interface Project {
   demo_url?: string;
   category: string;
   created_at: string;
+  pinned: boolean;
 }
 
 
@@ -99,7 +100,8 @@ const Portfolio = () => {
     Unlock: Unlock,
     Eye: Eye,
     EyeOff: EyeOff,
-    Server: Server
+    Server: Server,
+    Pin: Pin,
   };
 
 
@@ -109,7 +111,7 @@ const Portfolio = () => {
       try {
         const { data, error: supabaseError } = await supabase
           .from('projects')
-          .select('id, name, description, technologies, image_urls, demo_url, category, created_at')
+          .select('id, name, description, technologies, image_urls, demo_url, category, created_at, pinned') // Add pin to select
           .order('created_at', { ascending: true });
 
         if (supabaseError) {
@@ -124,11 +126,22 @@ const Portfolio = () => {
           image_urls: project.image_urls || [],
           demo_url: project.demo_url || undefined,
           category: project.category || 'website',
-          created_at: project.created_at
+          created_at: project.created_at,
+          pinned: project.pinned || false // Add this line
         }));
 
-        setProjects(mappedProjects);
-        setFilteredProjects(mappedProjects);
+        // Sort projects: pinned first, then by creation date
+        const sortedProjects = mappedProjects.sort((a, b) => {
+          // First sort by pin status (pinned projects first)
+          if (a.pinned && !b.pinned) return -1;
+          if (!a.pinned && b.pinned) return 1;
+          
+          // If both have same pin status, sort by created_at
+          return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        });
+
+        setProjects(sortedProjects);
+        setFilteredProjects(sortedProjects);
       } catch (err) {
         console.error('Error fetching projects:', err);
         setError('Failed to load projects. Please try again later.');
@@ -144,7 +157,17 @@ const Portfolio = () => {
     if (activeFilter === 'all') {
       setFilteredProjects(projects);
     } else {
-      setFilteredProjects(projects.filter(project => project.category === activeFilter));
+      const filtered = projects.filter(project => project.category === activeFilter);
+      // Apply the same sorting to filtered results
+      const sortedFiltered = filtered.sort((a, b) => {
+        // First sort by pin status (pinned projects first)
+        if (a.pinned && !b.pinned) return -1;
+        if (!a.pinned && b.pinned) return 1;
+        
+        // If both have same pin status, sort by created_at
+        return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+      });
+      setFilteredProjects(sortedFiltered);
     }
   }, [activeFilter, projects]);
 
@@ -303,9 +326,17 @@ const Portfolio = () => {
                             />
                             
                             {/* Category badge */}
-                            <div className="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                              <CategoryIcon className="h-3 w-3" />
-                              {project.category}
+                            <div className="absolute top-2 left-2 flex items-center gap-1">
+                              <div className="bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                                <CategoryIcon className="h-3 w-3" />
+                                {project.category}
+                              </div>
+                              {project.pinned && (
+                                <div className="bg-yellow-600/80 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                                  <Pin className="h-3 w-3" />
+                                  Pinned
+                                </div>
+                              )}
                             </div>
                             
                             {/* Image counter badge */}
