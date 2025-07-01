@@ -110,7 +110,7 @@ const Portfolio = () => {
         const { data, error: supabaseError } = await supabase
           .from('projects')
           .select('id, name, description, technologies, image_urls, demo_url, category, created_at')
-          .order('created_at', { ascending: false });
+          .order('created_at', { ascending: true });
 
         if (supabaseError) {
           throw supabaseError;
