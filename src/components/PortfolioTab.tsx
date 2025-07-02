@@ -28,7 +28,7 @@ interface Project {
   technologies: string[];
   image_urls?: string[];
   demo_url?: string;
-  category: string;
+  categories: string[];
   pinned: boolean;
 }
 
@@ -78,7 +78,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     technologies: [], 
     image_urls: [], 
     demo_url: '',
-    category: 'website',
+    categories: [],
     pinned: false,
   });
   
@@ -88,7 +88,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     technologies: [] as string[], 
     image_urls: [] as string[], 
     demo_url: '',
-    category: '',
+    categories: [] as string[],
     pinned: false,
   });
 
@@ -118,6 +118,32 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
     return iconMap[iconName] || Grid3X3;
   };
 
+  const addCategory = (categoryKey: string) => {
+  if (!newProject.categories.includes(categoryKey)) {
+    setNewProject(prev => ({ ...prev, categories: [...prev.categories, categoryKey] }));
+  }
+};
+
+  const removeCategory = (categoryKey: string) => {
+    setNewProject(prev => ({ 
+      ...prev, 
+      categories: prev.categories.filter(cat => cat !== categoryKey) 
+    }));
+  };
+
+  const addEditCategory = (categoryKey: string) => {
+    if (!editFields.categories.includes(categoryKey)) {
+      setEditFields(prev => ({ ...prev, categories: [...prev.categories, categoryKey] }));
+    }
+  };
+
+  const removeEditCategory = (categoryKey: string) => {
+    setEditFields(prev => ({ 
+      ...prev, 
+      categories: prev.categories.filter(cat => cat !== categoryKey) 
+    }));
+  };
+
 
   const handleAddProject = async () => {
     if (!newProject.name || !newProject.description || projectImageFiles.length === 0) {
@@ -140,7 +166,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
       toast({ title: "Success", description: "Project added successfully!" });
       fetchProjects();
       setShowAddProject(false);
-      setNewProject({ name: '', description: '', demo_url: '', technologies: [], image_urls: [], category: 'website', pinned: false });
+      setNewProject({ name: '', description: '', demo_url: '', technologies: [], image_urls: [], categories: [], pinned: false });
       setProjectImageFiles([]);
     } catch (error: any) {
       toast({ title: "Upload Failed", description: error.message, variant: "destructive" });
@@ -157,7 +183,7 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
       technologies: project.technologies || [],
       image_urls: project.image_urls || [],
       demo_url: project.demo_url || '',
-      category: project.category || 'website',
+      categories: project.categories || [],
       pinned: project.pinned || false
     });
   };
@@ -393,30 +419,54 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
               </div>
 
               <div>
-                <Label className="text-white">Category</Label>
+                <Label className="text-white">Categories</Label>
                 <Select 
-                  value={newProject.category} 
-                  onValueChange={(value) =>  // Remove hardcoded type annotation
-                    setNewProject(prev => ({ ...prev, category: value }))
-                  }
-                >
+                  value="" 
+                  onValueChange={addCategory}
+              >
                   <SelectTrigger className="bg-white/5 border-white/20 text-white">
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder="Select categories" />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((category) => {
-                      const IconComponent = iconMap[category.icon];
-                      return (
-                        <SelectItem key={category.key} value={category.key}>
-                          <div className="flex items-center gap-2">
-                            <IconComponent className="h-4 w-4" />
-                            {category.name}
-                          </div>
-                        </SelectItem>
-                      );
-                    })}
+                    {categories
+                      .filter(category => !newProject.categories.includes(category.key))
+                      .map((category) => {
+                        const IconComponent = iconMap[category.icon];
+                        return (
+                          <SelectItem key={category.key} value={category.key}>
+                            <div className="flex items-center gap-2">
+                              <IconComponent className="h-4 w-4" />
+                              {category.name}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                   </SelectContent>
                 </Select>
+                {newProject.categories.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2">
+                    {newProject.categories.map((categoryKey) => {
+                      const category = categories.find(cat => cat.key === categoryKey);
+                      const IconComponent = iconMap[category?.icon || 'Grid3X3'];
+                      return (
+                        <Badge 
+                          key={categoryKey}
+                          variant="secondary" 
+                          className="bg-purple-600/20 text-purple-300 border-purple-500/30"
+                        >
+                          <IconComponent className="h-3 w-3 mr-1" />
+                          {category?.name || categoryKey}
+                          <button
+                            onClick={() => removeCategory(categoryKey)}
+                            className="ml-1 text-purple-300 hover:text-white"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
               
               <div>
@@ -556,29 +606,59 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                         placeholder="Project Name"
                         className="bg-white/5 border-white/20 text-white"
                       />
-                      <Select 
-                        value={editFields.category} 
-                        onValueChange={(value) =>  // Remove type annotation here too
-                          setEditFields({ ...editFields, category: value })
-                        }
-                      >
-                        <SelectTrigger className="bg-white/5 border-white/20 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {categories.map((category) => {
-                            const IconComponent = iconMap[category.icon];
-                            return (
-                              <SelectItem key={category.key} value={category.key}>
-                                <div className="flex items-center gap-2">
-                                  <IconComponent className="h-4 w-4" />
-                                  {category.name}
-                                </div>
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
+                      
+                      <div>
+                        <Label className="text-white text-sm">Categories</Label>
+                        <Select 
+                          value="" 
+                          onValueChange={addEditCategory}
+                        >
+                          <SelectTrigger className="bg-white/5 border-white/20 text-white">
+                            <SelectValue placeholder="Add category" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {categories
+                              .filter(category => !editFields.categories.includes(category.key))
+                              .map((category) => {
+                                const IconComponent = iconMap[category.icon];
+                                return (
+                                  <SelectItem key={category.key} value={category.key}>
+                                    <div className="flex items-center gap-2">
+                                      <IconComponent className="h-4 w-4" />
+                                      {category.name}
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })}
+                          </SelectContent>
+                        </Select>
+                        {editFields.categories.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mt-2">
+                            {editFields.categories.map((categoryKey) => {
+                              const category = categories.find(cat => cat.key === categoryKey);
+                              const IconComponent = iconMap[category?.icon || 'Grid3X3'];
+                              return (
+                                <Badge 
+                                  key={categoryKey}
+                                  variant="secondary" 
+                                  className="bg-purple-600/20 text-purple-300 border-purple-500/30"
+                                >
+                                  <IconComponent className="h-3 w-3 mr-1" />
+                                  {category?.name || categoryKey}
+                                  <button
+                                    onClick={() => removeEditCategory(categoryKey)}
+                                    className="ml-1 text-purple-300 hover:text-white"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </Badge>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+
+
                       <RichTextEditor
                         value={editFields.description}
                         onChange={(value) => setEditFields(prev => ({ ...prev, description: value }))}
@@ -697,20 +777,35 @@ const PortfolioTab = ({ projects, setProjects, fetchProjects }: PortfolioTabProp
                     <>
                       <div className="flex items-center gap-2">
                         <h4 className="font-semibold text-white">{project.name}</h4>
-                        {(() => {
-                          const IconComponent = getCategoryIcon(project.category);
-                          return <IconComponent className="h-4 w-4 text-gray-400" />;
-                        })()}
-                        <Badge 
-                          variant="outline" 
-                          className="text-xs bg-transparent border-gray-500 text-gray-400"
-                        >
-                          {categories.find(cat => cat.key === project.category)?.name || 'Other'}
-                        </Badge>
+                        {project.categories && project.categories.length > 0 && (
+                          <div className="flex items-center gap-1">
+                            {project.categories.slice(0, 2).map((categoryKey) => {
+                              const IconComponent = getCategoryIcon(categoryKey);
+                              return <IconComponent key={categoryKey} className="h-4 w-4 text-gray-400" />;
+                            })}
+                            {project.categories.length > 2 && (
+                              <span className="text-xs text-gray-400">+{project.categories.length - 2}</span>
+                            )}
+                          </div>
+                        )}
+                        {project.categories && project.categories.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {project.categories.map((categoryKey) => (
+                              <Badge 
+                                key={categoryKey}
+                                variant="outline" 
+                                className="text-xs bg-transparent border-gray-500 text-gray-400"
+                              >
+                                {categories.find(cat => cat.key === categoryKey)?.name || categoryKey}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                         {project.pinned && (
                           <Pin className="h-4 w-4 text-yellow-400"/>
                         )}
                       </div>
+
                       <p className="text-gray-400 text-sm">{truncateDescription(project.description)}</p>
                       {project.demo_url && (
                         <a 

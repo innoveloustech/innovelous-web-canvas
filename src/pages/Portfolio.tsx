@@ -18,7 +18,7 @@ interface Project {
   technologies: string[];
   image_urls: string[];
   demo_url?: string;
-  category: string;
+  categories: string[];
   created_at: string;
   pinned: boolean;
 }
@@ -111,8 +111,8 @@ const Portfolio = () => {
       try {
         const { data, error: supabaseError } = await supabase
           .from('projects')
-          .select('id, name, description, technologies, image_urls, demo_url, category, created_at, pinned') // Add pin to select
-          .order('created_at', { ascending: true });
+          .select('id, name, description, technologies, image_urls, demo_url, categories, created_at, pinned') // Add pin to select
+          .order('created_at', { ascending: false });
 
         if (supabaseError) {
           throw supabaseError;
@@ -125,7 +125,7 @@ const Portfolio = () => {
           technologies: project.technologies || [],
           image_urls: project.image_urls || [],
           demo_url: project.demo_url || undefined,
-          category: project.category || 'website',
+          categories: project.categories || [],
           created_at: project.created_at,
           pinned: project.pinned || false // Add this line
         }));
@@ -157,14 +157,13 @@ const Portfolio = () => {
     if (activeFilter === 'all') {
       setFilteredProjects(projects);
     } else {
-      const filtered = projects.filter(project => project.category === activeFilter);
-      // Apply the same sorting to filtered results
+      const filtered = projects.filter(project => 
+        project.categories.includes(activeFilter)
+      );
+      
       const sortedFiltered = filtered.sort((a, b) => {
-        // First sort by pin status (pinned projects first)
         if (a.pinned && !b.pinned) return -1;
         if (!a.pinned && b.pinned) return 1;
-        
-        // If both have same pin status, sort by created_at
         return new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       });
       setFilteredProjects(sortedFiltered);
@@ -255,7 +254,7 @@ const Portfolio = () => {
               const isActive = activeFilter === category.key;
               const count = category.key === 'all' 
                 ? projects.length 
-                : projects.filter(p => p.category === category.key).length;
+                : projects.filter(p => p.categories.includes(category.key)).length;
               
               return (
                 <Button
@@ -311,7 +310,9 @@ const Portfolio = () => {
             ) : (
               <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
                 {filteredProjects.map((project) => {
-                  const CategoryIcon = getCategoryIcon(project.category);
+                  // const CategoryIcon = getCategoryIcon(project.category);
+                  
+                  
                   
                   return (
                     <Card key={project.id} className="glass-effect group hover:bg-white/10 transition-all duration-300 transform hover:scale-105">
@@ -326,11 +327,16 @@ const Portfolio = () => {
                             />
                             
                             {/* Category badge */}
-                            <div className="absolute top-2 left-2 flex items-center gap-1">
-                              <div className="bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
-                                <CategoryIcon className="h-3 w-3" />
-                                {project.category}
-                              </div>
+                            <div className="absolute top-2 left-2 flex flex-wrap items-center gap-1">
+                              {project.categories.map((cat, index) => {
+                                const CategoryIcon = getCategoryIcon(cat);
+                                return (
+                                  <div key={index} className="bg-black/70 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
+                                    <CategoryIcon className="h-3 w-3" />
+                                    {getCategoryName(cat)}
+                                  </div>
+                                );
+                              })}
                               {project.pinned && (
                                 <div className="bg-yellow-600/80 text-white text-xs px-2 py-1 rounded-full flex items-center gap-1">
                                   <Pin className="h-3 w-3" />
@@ -338,6 +344,7 @@ const Portfolio = () => {
                                 </div>
                               )}
                             </div>
+
                             
                             {/* Image counter badge */}
                             {project.image_urls.length > 1 && (
@@ -361,7 +368,13 @@ const Portfolio = () => {
                         ) : (
                           <div className="aspect-video bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-t-lg flex items-center justify-center">
                             <div className="text-center">
-                              <CategoryIcon className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                              {/* <CategoryIcon className="h-8 w-8 text-blue-400 mx-auto mb-2" /> */}
+                              {project.categories.map((cat, index) => {
+                                const CategoryIcon = getCategoryIcon(cat);
+                                return(
+                                  <CategoryIcon className="h-8 w-8 text-blue-400 mx-auto mb-2"/>
+                                );
+                              })}
                               <Eye className="h-12 w-12 text-blue-400 mx-auto mb-2 opacity-50" />
                               <p className="text-gray-400 text-sm">No Preview Available</p>
                             </div>
@@ -478,14 +491,21 @@ const Portfolio = () => {
             <div className="flex-shrink-0">
               <div className="text-center mb-4">
                 <div className="flex items-center justify-center gap-2 mb-2">
-                  {(() => {
-                    const CategoryIcon = getCategoryIcon(selectedProject.category);
-                    return <CategoryIcon className="h-5 w-5 text-blue-400" />;
-                  })()}
-                  <span className="text-blue-400 text-sm capitalize">
-                    {getCategoryName(selectedProject.category)}
-                  </span>
-                </div>
+                {selectedProject.categories.map((cat, index) => {
+                  const CategoryIcon = getCategoryIcon(cat);
+                  return (
+                    <div key={index} className="flex items-center gap-1">
+                      <CategoryIcon className="h-5 w-5 text-blue-400" />
+                      <span className="text-blue-400 text-sm capitalize">
+                        {getCategoryName(cat)}
+                      </span>
+                      {index < selectedProject.categories.length - 1 && (
+                        <span className="text-gray-500 mx-1">•</span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
                 <h3 className="text-xl font-bold text-white mb-2">
                   {selectedProject.name}
                 </h3>
