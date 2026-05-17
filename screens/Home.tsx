@@ -1,10 +1,12 @@
 "use client";
-
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navbar from "@/components/navbar";
+import Cursor from "@/components/MouseFollower";
+const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -14,311 +16,257 @@ const stats = [
   { value: "2000+", label: "Successful Projects" },
 ];
 
-const marqueeWords = [
-  "Communication",
-  "·",
-  "Technology",
-  "·",
-  "Innovation",
-  "·",
-  "Excellence",
-  "·",
-  "Solutions",
-  "·",
-];
+const marqueeWords = ["Communication", "·", "Technology", "·", "Innovation", "·", "Excellence", "·", "Solutions", "·"];
+const HERO_WORD = "innovelous".split("");
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const skewContentRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
+  const serviceRef = useRef<HTMLDivElement>(null);
+  
+  const [animationsReady, setAnimationsReady] = useState(false);
+  const hasAnimatedRef = useRef(false);
+
+  useEffect(() => {
+    const handleLoaderDone = () => setAnimationsReady(true);
+    window.addEventListener("loader-done", handleLoaderDone);
+    return () => window.removeEventListener("loader-done", handleLoaderDone);
+  }, []);
 
   useGSAP(
     () => {
-      // 1. Text Reveal Animation for the Hero Title
-      // Wraps characters or words to animate cleanly from clipping masks
-      gsap.from(".hero-word-inner", {
-        y: "110%",
-        duration: 1.4,
-        ease: "power4.out",
-        delay: 0.2,
+      if (!animationsReady || hasAnimatedRef.current) return;
+      hasAnimatedRef.current = true;
+
+      // 1. Premium Awwwards Character Reveal
+      gsap.from(".hero-char", {
+        y: "115%", opacity: 0, rotateX: -90, duration: 1.5,
+        stagger: { amount: 1.1, ease: "power3.inOut", from: "start" },
+        ease: "back.out(1.6)"
       });
 
-      // 2. Subtle Opacity Reveals for Contextual Typography
+      // 2. Contextual Typography Reveals
       gsap.from(".hero-tag, .hero-sub, .stat-item", {
-        opacity: 0,
-        y: 20,
-        duration: 1,
-        stagger: 0.05,
-        ease: "power3.out",
+        opacity: 0, y: 30, duration: 1, stagger: 0.12, ease: "power3.out", delay: 0.35
       });
 
-      // 3. Smooth Page Skew on Fast Scroll Velocity
-      let proxy = { skew: 0 },
-        skewSetter = gsap.quickSetter(containerRef.current, "skewY", "deg"),
-        clamp = gsap.utils.clamp(-4, 4); // Don't distort too violently
-
+      // 3. Page Skew on Scroll
+      const proxy = { skew: 0 },
+        skewSetter = gsap.quickSetter(skewContentRef.current, "skewY", "deg"),
+        clamp = gsap.utils.clamp(-4, 4);
       ScrollTrigger.create({
         onUpdate: (self) => {
-          let skew = clamp(self.getVelocity() / -300);
+          const skew = clamp(self.getVelocity() / -300);
           if (Math.abs(skew) > Math.abs(proxy.skew)) {
             proxy.skew = skew;
-            gsap.to(proxy, {
-              skew: 0,
-              duration: 0.8,
-              ease: "power3.out",
-              overwrite: "auto",
-              onUpdate: () => skewSetter(proxy.skew),
-            });
+            gsap.to(proxy, { skew: 0, duration: 0.8, ease: "power3.out", overwrite: "auto", onUpdate: () => skewSetter(proxy.skew) });
           }
-        },
+        }
       });
 
-      // 4. Elegant Interactive Reveal for Services Row Items
-      const rows = gsap.utils.toArray<HTMLElement>(".service-row");
-      rows.forEach((row) => {
+      // 4. Services Hover Interactions
+      gsap.utils.toArray<HTMLElement>(".service-row").forEach((row) => {
         const revealTarget = row.querySelector(".service-reveal");
         const internalText = row.querySelector(".service-title-text");
-
         row.addEventListener("mouseenter", () => {
-          gsap.to(revealTarget, {
-            width: "auto",
-            opacity: 1,
-            x: 10,
-            duration: 0.4,
-            ease: "power2.out",
-          });
+          gsap.to(revealTarget, { width: "auto", opacity: 1, x: 10, duration: 0.4, ease: "power2.out" });
           gsap.to(internalText, { x: 15, color: "#a855f7", duration: 0.3 });
         });
-
         row.addEventListener("mouseleave", () => {
-          gsap.to(revealTarget, {
-            width: 0,
-            opacity: 0,
-            x: 0,
-            duration: 0.3,
-            ease: "power2.in",
-          });
+          gsap.to(revealTarget, { width: 0, opacity: 0, x: 0, duration: 0.3, ease: "power2.in" });
           gsap.to(internalText, { x: 0, color: "#ffffff", duration: 0.3 });
         });
       });
 
-      // 5. Magnetic CTA Button Logic
+      // 5. Magnetic CTA
       const cta = ctaRef.current;
       if (cta) {
-        const handleMouseMove = (e: MouseEvent) => {
+        const move = (e: MouseEvent) => {
           const rect = cta.getBoundingClientRect();
-          const x = e.clientX - rect.left - rect.width / 2;
-          const y = e.clientY - rect.top - rect.height / 2;
-
-          gsap.to(cta, {
-            x: x * 0.4, // Pull structural intensity factor
-            y: y * 0.4,
-            duration: 0.3,
-            ease: "power2.out",
-          });
+          gsap.to(cta, { x: (e.clientX - rect.left - rect.width / 2) * 0.4, y: (e.clientY - rect.top - rect.height / 2) * 0.4, duration: 0.3, ease: "power2.out" });
         };
-
-        const handleMouseLeave = () => {
-          gsap.to(cta, {
-            x: 0,
-            y: 0,
-            duration: 0.5,
-            ease: "elastic.out(1, 0.3)",
-          });
-        };
-
-        cta.addEventListener("mousemove", handleMouseMove);
-        cta.addEventListener("mouseleave", handleMouseLeave);
+        const leave = () => gsap.to(cta, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
+        cta.addEventListener("mousemove", move);
+        cta.addEventListener("mouseleave", leave);
       }
+
+      // 6. Hero Title Parallax
+      const heroWrapper = containerRef.current?.querySelector(".hero-title-wrapper");
+      if (heroWrapper) {
+        const move = (e: MouseEvent) => {
+          const x = e.clientX / window.innerWidth - 0.5;
+          const y = e.clientY / window.innerHeight - 0.5;
+          gsap.to(heroWrapper, { x: x * 25, y: y * 12, rotateX: -y * 8, rotateY: x * 12, duration: 0.8, ease: "power2.out" });
+        };
+        const leave = () => gsap.to(heroWrapper, { x: 0, y: 0, rotateX: 0, rotateY: 0, duration: 1, ease: "power3.out" });
+        window.addEventListener("mousemove", move);
+        containerRef.current?.addEventListener("mouseleave", leave);
+      }
+
+      // 7. Services Pinning
+      ScrollTrigger.create({ trigger: serviceRef.current, start: "top top", end: "+=100%", pin: true, pinSpacing: false, pinType: "transform" });
+
+      // 8. About Us Section Scroll Animations
+      gsap.from(".about-label", { scrollTrigger: { trigger: "#about", start: "top 75%" }, y: 20, opacity: 0, duration: 0.8, ease: "power3.out" });
+      gsap.from(".about-title", { scrollTrigger: { trigger: "#about", start: "top 72%" }, y: 40, opacity: 0, duration: 1, ease: "power3.out", delay: 0.1 });
+      gsap.from(".about-desc", { scrollTrigger: { trigger: "#about", start: "top 68%" }, y: 30, opacity: 0, stagger: 0.15, duration: 0.9, ease: "power3.out", delay: 0.2 });
+      gsap.from(".about-stat", { scrollTrigger: { trigger: "#about", start: "top 65%" }, y: 25, opacity: 0, stagger: 0.12, duration: 0.8, ease: "power3.out", delay: 0.3 });
+      gsap.from(".about-divider", { scrollTrigger: { trigger: "#about", start: "top 70%" }, scaleX: 0, duration: 1.2, ease: "power3.inOut", delay: 0.15 });
+
     },
-    { scope: containerRef },
+    { scope: containerRef, dependencies: [animationsReady] }
   );
 
   return (
-    <div
-      ref={containerRef}
-      className="bg-black text-white min-h-screen overflow-x-hidden origin-right"
-    >
-      <Navbar />
-
-      {/* HERO SECTION */}
-      <section className="relative min-h-screen flex flex-col justify-between px-6 md:px-16 pt-32 pb-16">
-        <div className="hero-tag flex items-start justify-between w-full">
-          <div className="flex items-center gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 structural-pulse" />
-            <span className="text-xs uppercase tracking-[0.2em] text-neutral-400 font-mono">
-              Available Worldwide
-            </span>
-          </div>
-          <div className="text-right text-xs uppercase tracking-[0.15em] text-neutral-400 font-mono">
-            [ Next-Gen Architecture ]
-          </div>
-        </div>
-
-        {/* Masked Over-sized Typography Block */}
-        <div className="w-full my-auto py-12">
-          <div className="overflow-hidden py-2">
-            <h1
-              className="hero-word block font-black leading-[0.85] tracking-tighter text-left select-none uppercase text-white"
-              style={{ fontSize: "clamp(3.5rem, 15vw, 14rem)" }}
-            >
-              <span className="hero-word-inner block">innovelous</span>
-            </h1>
-          </div>
-        </div>
-
-        <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-12 w-full">
-          <div className="flex flex-col gap-8 max-w-sm">
-            <p className="hero-sub text-neutral-400 text-sm md:text-base leading-relaxed tracking-wide">
-              We engineer high-throughput digital communication ecosystems and
-              custom interactive interfaces for modern platforms.
-            </p>
-
-            {/* Magnetic Interaction Button */}
-            <button
-              ref={ctaRef}
-              className="hero-cta group flex items-center gap-4 bg-neutral-900 border border-neutral-800 px-6 py-4 rounded-full w-fit hover:bg-white transition-colors duration-500"
-            >
-              <span className="text-white group-hover:text-black text-xs uppercase tracking-widest font-mono font-bold transition-colors duration-500">
-                Explore Index
-              </span>
-              <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:bg-black transition-colors duration-500" />
-            </button>
-          </div>
-
-          {/* Clean Numerical Metric Grid */}
-          <div className="flex gap-12 border-t border-neutral-900 pt-6 w-full md:w-auto justify-between md:justify-end">
-            {stats.map((s, i) => (
-              <div key={i} className="stat-item flex flex-col gap-1">
-                <span className="text-2xl md:text-4xl font-light tracking-tight text-white">
-                  {s.value}
-                </span>
-                <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono">
-                  {s.label}
-                </span>
+    <>
+      <Cursor />
+      <div ref={containerRef} className="text-white min-h-screen overflow-x-hidden relative bg-transparent">
+        <CanvasBackground />
+        <Navbar />
+        <div ref={skewContentRef} className="origin-right w-full home-skew-wrapper">
+          {/* HERO SECTION */}
+          <section className="relative min-h-screen flex flex-col justify-between px-6 md:px-16 pt-32 pb-16 bg-transparent">
+            <div className="hero-tag flex items-start justify-between w-full">
+              <div className="flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500 structural-pulse" />
+                <span className="text-xs uppercase tracking-[0.2em] text-neutral-400 font-mono">Available Worldwide</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* MARQUEE RUNWAY */}
-      <div className="relative overflow-hidden py-6 border-y border-neutral-900 bg-neutral-950/20">
-        <div className="flex whitespace-nowrap animate-[marquee_25s_linear_infinite]">
-          {[...marqueeWords, ...marqueeWords, ...marqueeWords].map(
-            (word, i) => (
-              <span
-                key={i}
-                className={`inline-block px-6 text-xs font-mono tracking-[0.25em] uppercase ${
-                  word === "·"
-                    ? "text-purple-500 font-bold"
-                    : "text-neutral-600"
-                }`}
-              >
-                {word}
-              </span>
-            ),
-          )}
-        </div>
-      </div>
-
-      {/* HIGH END INTERACTIVE SERVICES SECTION */}
-      <section className="px-6 md:px-16 py-32 max-w-7xl mx-auto">
-        <div className="mb-20">
-          <span className="text-purple-500 text-xs font-mono tracking-[0.3em] uppercase block mb-3">
-            01 // CAPABILITIES
-          </span>
-          <h2 className="text-3xl md:text-5xl font-light tracking-tight text-white">
-            Selected Digital Disciplines
-          </h2>
-        </div>
-
-        {/* Structural Rows replacing the card grid */}
-        <div className="flex flex-col border-t border-neutral-800">
-          {services.map((s, i) => (
-            <div
-              key={i}
-              className="service-row group flex flex-col md:flex-row md:items-center justify-between py-8 border-b border-neutral-800 cursor-pointer transition-all duration-300 unique-row-layout"
-            >
-              <div className="flex items-center gap-6 mb-4 md:mb-0">
-                <span className="text-xs font-mono text-neutral-600">
-                  0{i + 1}
-                </span>
-                <h3 className="service-title-text text-xl md:text-2xl font-normal text-white transition-transform duration-300 ease-out">
-                  {s.title}
-                </h3>
+              <div className="text-right text-xs uppercase tracking-[0.15em] text-neutral-400 font-mono">[ Next-Gen Architecture ]</div>
+            </div>
+            
+            <div className="hero-title-wrapper w-full my-auto py-16 select-none overflow-hidden" style={{ perspective: 1200 }}>
+              <div className="w-full max-w-full overflow-hidden py-4 flex items-center justify-center">
+                <h1 className="hero-word block font-black leading-[0.85] tracking-[-0.03em] text-center uppercase text-white break-none" style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)" }} data-cursor="-text">
+                  <div className="flex items-center justify-center overflow-hidden">
+                    {HERO_WORD.map((char, i) => (
+                      <span key={i} className="hero-char-wrapper inline-block overflow-hidden">
+                        <span className="hero-char inline-block" style={{ transformOrigin: "bottom center", willChange: "transform, opacity" }}>{char}</span>
+                      </span>
+                    ))}
+                  </div>
+                </h1>
               </div>
-
-              <div className="flex items-center gap-8 justify-between md:justify-end md:w-1/2">
-                <p className="text-sm text-neutral-500 max-w-xs md:text-right font-light">
-                  {s.desc}
+            </div>
+            
+            <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-12 w-full">
+              <div className="flex flex-col gap-8 max-w-sm">
+                <p className="hero-sub text-neutral-400 text-sm md:text-base leading-relaxed tracking-wide">
+                  We engineer high-throughput digital communication ecosystems and custom interactive interfaces for modern platforms.
                 </p>
-                {/* Dynamic animated arrow element */}
-                <div className="service-reveal opacity-0 w-0 overflow-hidden flex items-center text-purple-500 hidden md:flex">
-                  <svg
-                    className="w-5 h-5 transform -rotate-45"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M14 5l7 7m0 0l-7 7m7-7H3"
-                    />
-                  </svg>
+                <button ref={ctaRef} data-cursor-pointer className="hero-cta group flex items-center gap-4 bg-neutral-900 border border-neutral-800 px-6 py-4 rounded-full w-fit hover:bg-white transition-colors duration-500">
+                  <span className="text-white group-hover:text-black text-xs uppercase tracking-widest font-mono font-bold transition-colors duration-500">Explore Index</span>
+                  <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:bg-black transition-colors duration-500" />
+                </button>
+              </div>
+              <div className="flex gap-12 border-t border-neutral-900 pt-6 w-full md:w-auto justify-between md:justify-end">
+                {stats.map((s, i) => (
+                  <div key={i} className="stat-item flex flex-col gap-1">
+                    <span className="text-2xl md:text-4xl font-light tracking-tight text-white">{s.value}</span>
+                    <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono">{s.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* MARQUEE RUNWAY */}
+          <div className="relative overflow-hidden py-6 border-y border-neutral-900 bg-neutral-950/20">
+            <div className="flex whitespace-nowrap animate-[marquee_25s_linear_infinite]">
+              {[...marqueeWords, ...marqueeWords, ...marqueeWords].map((word, i) => (
+                <span key={i} className={`inline-block px-6 text-xs font-mono tracking-[0.25em] uppercase ${word === "·" ? "text-purple-500 font-bold" : "text-neutral-600"}`}>{word}</span>
+              ))}
+            </div>
+          </div>
+
+          {/* SERVICES SECTION */}
+          <section ref={serviceRef} id="service" className="h-screen flex flex-col justify-center px-6 md:px-16 relative z-10">
+            <div className="max-w-7xl mx-auto w-full">
+              <div className="mb-12">
+                <span className="text-purple-500 text-xs font-mono tracking-[0.3em] uppercase block mb-3">01 // CAPABILITIES</span>
+                <h2 className="text-3xl md:text-5xl font-light tracking-tight text-white">Selected Digital Disciplines</h2>
+              </div>
+              <div className="flex flex-col border-t border-neutral-800">
+                {services.map((s, i) => (
+                  <div key={i} data-cursor-pointer className="service-row group flex flex-col md:flex-row md:items-center justify-between py-6 border-b border-neutral-800 cursor-pointer transition-all duration-300 unique-row-layout">
+                    <div className="flex items-center gap-6 mb-2 md:mb-0">
+                      <span className="text-xs font-mono text-neutral-600">0{i + 1}</span>
+                      <h3 className="service-title-text text-xl md:text-2xl font-normal text-white transition-transform duration-300 ease-out">{s.title}</h3>
+                    </div>
+                    <div className="flex items-center gap-8 justify-between md:justify-end md:w-1/2">
+                      <p className="text-sm text-neutral-500 max-w-xs md:text-right font-light">{s.desc}</p>
+                      <div className="service-reveal opacity-0 w-0 overflow-hidden flex items-center text-purple-500 hidden md:flex">
+                        <svg className="w-5 h-5 transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+
+          {/* ABOUT US SECTION */}
+          <section id="about" className="min-h-screen bg-zinc-950 relative z-20 px-6 md:px-16 flex items-center">
+            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 py-24">
+              <div className="about-text-col flex flex-col justify-center">
+                <span className="about-label text-purple-500 text-xs font-mono tracking-[0.3em] uppercase block mb-6">02 // ABOUT US</span>
+                <h2 className="about-title text-3xl md:text-5xl lg:text-6xl font-light tracking-tight text-white mb-8 leading-[1.1]">
+                  Bridging Technology <br /> & Human Experience
+                </h2>
+                <div className="space-y-6 text-neutral-400 text-base md:text-lg leading-relaxed font-light">
+                  <p className="about-desc">
+                    At Innovelous, we don't just build software—we architect communication ecosystems. Our foundation is rooted in precision engineering, real-time telemetry, and adaptive interface design.
+                  </p>
+                  <p className="about-desc">
+                    From enterprise-grade messaging infrastructure to next-generation web platforms, we translate complex technical requirements into seamless, human-centric digital experiences.
+                  </p>
+                </div>
+                <div className="mt-10 flex items-center gap-6">
+                  <div className="w-12 h-[1px] bg-purple-500/50"></div>
+                  <span className="text-xs uppercase tracking-[0.2em] text-purple-400 font-mono">Est. 2012</span>
+                </div>
+              </div>
+              
+              <div className="about-stats-col flex flex-col justify-center gap-10 border-t border-neutral-800 pt-12 lg:pt-0 lg:border-t-0 lg:border-l lg:pl-16">
+                <div className="flex items-center justify-between border-b border-neutral-800 pb-6 about-divider" style={{ transformOrigin: "left center" }}>
+                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">Core Philosophy</span>
+                  <span className="text-xl text-white font-light">Precision First</span>
+                </div>
+                <div className="flex items-center justify-between border-b border-neutral-800 pb-6 about-divider" style={{ transformOrigin: "left center" }}>
+                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">Global Reach</span>
+                  <span className="text-xl text-white font-light">42+ Countries</span>
+                </div>
+                <div className="flex items-center justify-between about-divider" style={{ transformOrigin: "left center" }}>
+                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">Uptime SLA</span>
+                  <span className="text-xl text-white font-light">99.99%</span>
+                </div>
+                <div className="mt-8 about-stat p-6 bg-neutral-900/30 border border-neutral-800 rounded-2xl">
+                  <p className="text-neutral-300 text-sm leading-relaxed italic">
+                    "We measure success not by lines of code, but by the seamless interactions we enable across millions of devices daily."
+                  </p>
+                  <div className="mt-4 flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-purple-600/20 flex items-center justify-center">
+                      <div className="w-2 h-2 rounded-full bg-purple-500"></div>
+                    </div>
+                    <span className="text-xs uppercase tracking-wider text-neutral-400 font-mono">Engineering Lead</span>
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-      </section>
+          </section>
 
-      <style jsx global>{`
-        @keyframes marquee {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-33.333%);
-          }
-        }
-        .structural-pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.4;
-          }
-        }
-      `}</style>
-    </div>
+          {/* BUFFER BOX */}
+          <div className="h-screen"></div>
+        </div>
+      </div>
+    </>
   );
 }
 
 const services = [
-  {
-    title: "Corporate SMS Messaging",
-    desc: "High-throughput bulk infrastructure tailored for explicit transactional utility.",
-  },
-  {
-    title: "Location-Based Telemetry",
-    desc: "Precision geo-targeted dispatch mechanics routing spatial-dependent actions.",
-  },
-  {
-    title: "Short-Code Operations",
-    desc: "Dedicated programmatic system anchors managing two-way customer communication loopbacks.",
-  },
-  {
-    title: "Automated Voice Architecture",
-    desc: "IVR matrix configurations and automated micro-broadcast instances deployed at scale.",
-  },
-  {
-    title: "Next-Gen Web Platforms",
-    desc: "High-performance full-stack interfaces designed to eliminate interaction friction.",
-  },
+  { title: "Corporate SMS Messaging", desc: "High-throughput bulk infrastructure tailored for explicit transactional utility." },
+  { title: "Location-Based Telemetry", desc: "Precision geo-targeted dispatch mechanics routing spatial-dependent actions." },
+  { title: "Embedded Systems Engineering", desc: "Architecting custom firmware and low-level software integrations tailored for proprietary hardware microcontrollers." },
+  { title: "Automated Voice Architecture", desc: "IVR matrix configurations and automated micro-broadcast instances deployed at scale." },
+  { title: "Next-Gen Web Platforms", desc: "High-performance full-stack interfaces designed to eliminate interaction friction." },
 ];

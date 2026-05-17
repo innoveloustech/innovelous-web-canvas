@@ -6,7 +6,6 @@ export default function Loader() {
   const scope = useRef<HTMLDivElement | null>(null);
   const textRef = useRef<HTMLHeadingElement | null>(null);
   const panelsRef = useRef<(HTMLDivElement | null)[]>([]);
-
   const [shouldRender, setShouldRender] = useState(true);
   const [progress, setProgress] = useState(0);
   const hasMountedRef = useRef(false);
@@ -16,14 +15,12 @@ export default function Loader() {
 
   useLayoutEffect(() => {
     let animationFrame: number;
-
     const interpolateParallax = () => {
       // Smooth interpolation for fluid cursor weight
       parallaxRef.current.x +=
         (parallaxRef.current.targetX - parallaxRef.current.x) * 0.08;
       parallaxRef.current.y +=
         (parallaxRef.current.targetY - parallaxRef.current.y) * 0.08;
-
       // Sub-pixel parallax on the main text heading
       if (textRef.current) {
         gsap.set(textRef.current, {
@@ -32,7 +29,6 @@ export default function Loader() {
           force3D: true,
         });
       }
-
       // Subtle dynamic depth for split column panels
       panelsRef.current.forEach((panel, index) => {
         if (panel) {
@@ -44,12 +40,9 @@ export default function Loader() {
           });
         }
       });
-
       animationFrame = requestAnimationFrame(interpolateParallax);
     };
-
     interpolateParallax();
-
     return () => {
       if (animationFrame) cancelAnimationFrame(animationFrame);
     };
@@ -63,15 +56,12 @@ export default function Loader() {
       parallaxRef.current.targetX = (x - centerX) / centerX;
       parallaxRef.current.targetY = (y - centerY) / centerY;
     };
-
     const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
     const onTouchMove = (e: TouchEvent) => {
       if (e.touches[0]) handleMove(e.touches[0].clientX, e.touches[0].clientY);
     };
-
     window.addEventListener("mousemove", onMouseMove, { passive: true });
     window.addEventListener("touchmove", onTouchMove, { passive: true });
-
     return () => {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("touchmove", onTouchMove);
@@ -81,7 +71,6 @@ export default function Loader() {
   // Drive progressive percentage state smoothly via GSAP
   useLayoutEffect(() => {
     if (!shouldRender) return;
-
     const counterCtx = gsap.context(() => {
       gsap.to(
         { val: 0 },
@@ -95,7 +84,6 @@ export default function Loader() {
         },
       );
     }, scope);
-
     return () => counterCtx.revert();
   }, [shouldRender]);
 
@@ -106,15 +94,13 @@ export default function Loader() {
       return;
     }
     hasMountedRef.current = true;
-
     const body = document.body;
     body.classList.add("no-scroll");
-
     const ctx = gsap.context(() => {
-      gsap.set("#page-content", { opacity: 0 });
-
       const tl = gsap.timeline({
         onComplete: () => {
+          // Signal to Home page that loading is complete
+          window.dispatchEvent(new Event("loader-done"));
           gsap.to(scope.current, {
             opacity: 0,
             duration: 0.5,
@@ -122,7 +108,6 @@ export default function Loader() {
             onComplete: () => {
               body.classList.remove("no-scroll");
               setShouldRender(false);
-              gsap.to("#page-content", { opacity: 1, duration: 0.8 });
               import("gsap/ScrollTrigger").then(({ ScrollTrigger }) => {
                 ScrollTrigger.refresh();
               });
@@ -130,7 +115,6 @@ export default function Loader() {
           });
         },
       });
-
       tl.fromTo(
         textRef.current,
         { y: 60, opacity: 0 },
@@ -155,7 +139,6 @@ export default function Loader() {
           "-=0.2",
         );
     }, scope);
-
     return () => {
       ctx.revert();
       body.classList.remove("no-scroll");
@@ -163,7 +146,6 @@ export default function Loader() {
   }, []);
 
   if (!shouldRender) return null;
-
   return (
     <div
       ref={scope}
@@ -186,12 +168,10 @@ export default function Loader() {
           />
         ))}
       </div>
-
       {/* Structured Minimal Layout */}
       <div className="relative z-10 flex flex-col h-full w-full justify-between p-6 md:p-10">
         {/* Top spacing element to balance center alignment */}
         <div className="w-full h-4" />
-
         {/* Central Bold Brand Typography */}
         <div className="flex h-auto w-full items-center justify-center overflow-hidden">
           <div className="overflow-hidden text-center px-4">
@@ -208,7 +188,6 @@ export default function Loader() {
             </h1>
           </div>
         </div>
-
         {/* Bottom Minimal Progress Track */}
         <div className="loader-footer flex flex-col items-center gap-2 w-full max-w-xs mx-auto mb-4">
           <div className="w-full h-[1px] bg-zinc-900 relative overflow-hidden">
