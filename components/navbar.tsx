@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import Link from "next/link";
+import Image from "next/image";
 
 interface DropdownItem {
   label: string;
@@ -211,14 +212,12 @@ export default function Navbar() {
     const iconBg = btn.querySelector(".cta-icon-bg") as HTMLElement;
     const iconSvg = btn.querySelector(".cta-icon-svg") as HTMLElement;
 
-    // Slide purple background from left with smooth easing
     gsap.to(bg, {
       width: "100%",
       duration: 0.45,
       ease: "power3.out",
     });
 
-    // Smooth text color transition: black -> white
     gsap.to(text, {
       color: "#ffffff",
       duration: 0.35,
@@ -226,7 +225,6 @@ export default function Navbar() {
       delay: 0.08,
     });
 
-    // Icon background: black -> white
     gsap.to(iconBg, {
       backgroundColor: "#ffffff",
       duration: 0.35,
@@ -234,7 +232,6 @@ export default function Navbar() {
       delay: 0.08,
     });
 
-    // Icon SVG: white -> purple + subtle arrow slide
     gsap.to(iconSvg, {
       color: "#9333ea",
       x: 2,
@@ -251,28 +248,24 @@ export default function Navbar() {
     const iconBg = btn.querySelector(".cta-icon-bg") as HTMLElement;
     const iconSvg = btn.querySelector(".cta-icon-svg") as HTMLElement;
 
-    // Slide background back to left with easing
     gsap.to(bg, {
       width: "0%",
       duration: 0.3,
       ease: "power3.in",
     });
 
-    // Revert text color: white -> black
     gsap.to(text, {
       color: "#000000",
       duration: 0.25,
       ease: "power3.in",
     });
 
-    // Revert icon background: white -> black
     gsap.to(iconBg, {
       backgroundColor: "#000000",
       duration: 0.25,
       ease: "power3.in",
     });
 
-    // Revert icon SVG + arrow position: purple -> white
     gsap.to(iconSvg, {
       color: "#ffffff",
       x: 0,
@@ -297,8 +290,14 @@ export default function Navbar() {
             href="/"
             className="logo flex items-center gap-3 group relative z-55"
           >
-            <div className="w-11 h-11 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-[0_0_15px_rgba(147,51,234,0.3)]">
-              <span className="text-xl font-bold text-white">L</span>
+            {/* Added custom logo.png rendering using Next.js Image */}
+            <div className="relative w-11 h-11">
+              <Image
+                src="/logo.png"
+                alt="Innovelous Logo"
+                fill
+                className="object-contain"
+              />
             </div>
             <div className="flex flex-col">
               <span className="text-lg font-bold text-white leading-tight tracking-wide">
@@ -369,16 +368,14 @@ export default function Navbar() {
             ))}
           </div>
 
-          {/* ✅ FIXED: Desktop CTA Button - White by default (visible on black bg), purple slide-in on hover */}
+          {/* Desktop CTA Button */}
           <button
             className="desktop-cta hidden md:flex items-center gap-2.5 relative rounded-full px-5 py-2.5 font-medium text-sm overflow-hidden cursor-pointer bg-white"
             onMouseEnter={handleCtaMouseEnter}
             onMouseLeave={handleCtaMouseLeave}
           >
-            {/* 🔮 Sliding purple background fill - expands from left edge on hover */}
             <span className="cta-bg-fill absolute inset-y-0 left-0 w-0 bg-purple-600 rounded-full pointer-events-none z-0" />
 
-            {/* 📝 Button content - positioned above background, black text by default */}
             <span className="cta-text relative z-10 text-black transition-none">
               Get in Touch
             </span>

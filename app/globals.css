@@ -23,3 +23,39 @@ body {
     will-change: transform;
     transform-origin: bottom center;
 }
+
+/* On touch/mobile, hide the custom follower entirely */
+@media (hover: none), (pointer: coarse) {
+  .mf-cursor {
+    display: none !important;
+  }
+}
+
+.mf-cursor.-text::before {
+  /* Looks for --cursor-color; if not found, defaults to purple */
+  background: var(--cursor-color, rgba(168, 85, 247, 0.75)) !important; 
+  opacity: 1 !important;
+}
+
+.mf-cursor.-text {
+  mix-blend-mode: normal !important;
+}
+
+.mf-cursor-text {
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  opacity: 1 !important;
+}
+
+/* When hovering over social links */
+.mf-cursor.-exclusion::before {
+  transform: scale(0.5) !important; /* Shrink to a sharp micro dot */
+  background: #fff !important;   /* solid white */
+  opacity: 1 !important;
+}
+
+.mf-cursor.-exclusion {
+  mix-blend-mode: difference !important; /* Inverts text colors underneath */
+}

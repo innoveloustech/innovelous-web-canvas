@@ -6,6 +6,9 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navbar from "@/components/navbar";
 import Cursor from "@/components/MouseFollower";
+import ContactSection from "@/components/ContactSection";
+import Footer from "@/components/footer";
+import FAQ from "@/components/FAQ";
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
 gsap.registerPlugin(ScrollTrigger);
@@ -137,7 +140,7 @@ export default function Home() {
             
             <div className="hero-title-wrapper w-full my-auto py-16 select-none overflow-hidden" style={{ perspective: 1200 }}>
               <div className="w-full max-w-full overflow-hidden py-4 flex items-center justify-center">
-                <h1 className="hero-word block font-black leading-[0.85] tracking-[-0.03em] text-center uppercase text-white break-none" style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)" }} data-cursor="-text">
+                <h1 className="hero-word block font-black leading-[0.85] tracking-[-0.03em] text-center uppercase text-white break-none" style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)" }} data-cursor-text=" ">
                   <div className="flex items-center justify-center overflow-hidden">
                     {HERO_WORD.map((char, i) => (
                       <span key={i} className="hero-char-wrapper inline-block overflow-hidden">
@@ -188,7 +191,7 @@ export default function Home() {
               </div>
               <div className="flex flex-col border-t border-neutral-800">
                 {services.map((s, i) => (
-                  <div key={i} data-cursor-pointer className="service-row group flex flex-col md:flex-row md:items-center justify-between py-6 border-b border-neutral-800 cursor-pointer transition-all duration-300 unique-row-layout">
+                  <div data-cursor-text="Click" key={i} data-cursor-pointer className="service-row group flex flex-col md:flex-row md:items-center justify-between py-6 border-b border-neutral-800 cursor-pointer transition-all duration-300 unique-row-layout">
                     <div className="flex items-center gap-6 mb-2 md:mb-0">
                       <span className="text-xs font-mono text-neutral-600">0{i + 1}</span>
                       <h3 className="service-title-text text-xl md:text-2xl font-normal text-white transition-transform duration-300 ease-out">{s.title}</h3>
@@ -255,8 +258,13 @@ export default function Home() {
             </div>
           </section>
 
-          {/* BUFFER BOX */}
-          <div className="h-screen"></div>
+          {/* FAQ */}
+          <FAQ />
+          {/* Contact Us */}
+          <ContactSection />
+          {/* The New Executive */}
+          {/* <Footer /> */}
+
         </div>
       </div>
     </>
@@ -270,3 +278,4 @@ const services = [
   { title: "Automated Voice Architecture", desc: "IVR matrix configurations and automated micro-broadcast instances deployed at scale." },
   { title: "Next-Gen Web Platforms", desc: "High-performance full-stack interfaces designed to eliminate interaction friction." },
 ];
+
