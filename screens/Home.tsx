@@ -185,7 +185,7 @@ export default function Home() {
                   data-cursor-pointer
                   className="hero-cta group flex items-center gap-4 bg-neutral-900 border border-neutral-800 px-6 py-4 rounded-full w-fit hover:bg-white transition-colors duration-500"
                 >
-                  <span className="text-white group-hover:text-black text-xs uppercase tracking-widest font-mono font-bold transition-colors duration-500">Explore Index</span>
+                  <span className="text-white group-hover:text-black text-xs uppercase tracking-widest font-mono font-bold transition-colors duration-500">Explore Our Projects</span>
                   <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:bg-black transition-colors duration-500" />
                 </button>
               </div>
@@ -280,7 +280,7 @@ export default function Home() {
           </section>
 
           <FAQ />
-          <ContactSection />
+          <ContactSection showCapabilities />
         </div>
       </div>
     </>

@@ -52,15 +52,15 @@ const contactInfo = [
 ];
 
 const socialLinks = [
-  { label: "LinkedIn",    href: "#" },
+  { label: "LinkedIn", href: "#" },
   { label: "Twitter / X", href: "#" },
-  { label: "GitHub",      href: "#" },
-  { label: "Dribbble",    href: "#" },
+  { label: "GitHub", href: "#" },
+  { label: "Instagram", href: "#" },
 ];
 
 const LINES = [
-  { text: "Let's Build",     ghost: false },
-  { text: "Something Real.", ghost: true  },   
+  { text: "Let's Build", ghost: false },
+  { text: "Something Real.", ghost: true },
 ];
 
 // ─── Declarative R3F Hover Interactive Particles ──────────────────────────────
@@ -151,11 +151,11 @@ function CardParticles({ isHovered, mousePos }: { isHovered: boolean; mousePos: 
     const time = state.clock.getElapsedTime();
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value = time;
-      
+
       // Interpolate hover state for smooth inertial entry and exit transitions
       const targetHover = isHovered ? 1.0 : 0.0;
       materialRef.current.uniforms.uHover.value += (targetHover - materialRef.current.uniforms.uHover.value) * 0.1;
-      
+
       // Interpolate tracking mouse space updates
       materialRef.current.uniforms.uMouse.value.lerp(mousePos, 0.1);
     }
@@ -335,11 +335,14 @@ function ScrubHeading() {
     </div>
   );
 }
+interface Props {
+  showCapabilities: boolean;   // required
+  // or optional: showCapabilities?: boolean;
+}
 
 // ─── Main Section Viewport Export ──────────────────────────────────────────────
-export default function ContactSection() {
+export default function ContactSection({ showCapabilities }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
-
   useGSAP(
     () => {
       const s = sectionRef.current;
@@ -412,13 +415,15 @@ export default function ContactSection() {
       }} />
 
       <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col gap-16">
-        
+
         {/* Top heading stack */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
-            <span className="contact-label text-purple-500 text-xs font-mono tracking-[0.3em] uppercase">
-              03 // CONTACT
-            </span>
+            {showCapabilities && (
+              <span className="contact-label text-purple-500 text-xs font-mono tracking-[0.3em] uppercase">
+                03 // CONTACT
+              </span>
+            )}
             <span className="contact-label text-neutral-600 text-xs font-mono tracking-[0.2em] uppercase hidden md:block">
               Always On — 24 / 7 / 365
             </span>
@@ -461,7 +466,7 @@ export default function ContactSection() {
 
           <div className="contact-tagline flex flex-col items-start md:items-end gap-2 max-w-sm">
             <p className="text-neutral-500 text-sm font-light leading-relaxed md:text-right">
-              Headquartered in San Francisco.
+              Headquartered in Karachi.
               <br />Operating everywhere that matters.
             </p>
             <div className="flex items-center gap-2 mt-1">

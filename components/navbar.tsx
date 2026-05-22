@@ -2,7 +2,6 @@
 import { useState, useRef, useEffect } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
-import Link from "next/link";
 import Image from "next/image";
 
 interface DropdownItem {
@@ -150,7 +149,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <Link href="/" className="logo flex items-center gap-3 group relative z-55">
+          <a href="/" className="logo flex items-center gap-3 group relative z-55">
             <div className="relative w-11 h-11">
               <Image src="/logo.png" alt="Innovelous Logo" fill className="object-contain" />
             </div>
@@ -158,7 +157,7 @@ export default function Navbar() {
               <span className="text-lg font-bold text-white leading-tight tracking-wide">Innovelous</span>
               <span className="text-xs text-purple-400 tracking-wider">Tech</span>
             </div>
-          </Link>
+          </a>
 
           {/* Navigation Bar - Desktop Middle Bar */}
           <div ref={menuContainerRef} onMouseLeave={handleMenuMouseLeave} className="hidden md:flex items-center relative bg-neutral-900/60 border border-neutral-800 backdrop-blur-md rounded-full p-1.5">
@@ -167,7 +166,7 @@ export default function Navbar() {
             {navItems.map((item) => (
               <div key={item.label} className="nav-item-wrapper relative z-10" onMouseEnter={(e) => handleMouseEnter(e, item.label)} onMouseLeave={() => handleMouseLeave(item.label)}>
                 {item.href ? (
-                  <Link href={item.href} className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</Link>
+                  <a href={item.href} className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</a>
                 ) : (
                   <div className="nav-item px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white cursor-pointer transition-colors duration-200">{item.label}</div>
                 )}
@@ -177,7 +176,7 @@ export default function Navbar() {
                     <div className="absolute top-0 left-0 right-0 h-2 -mt-2 bg-transparent pointer-events-auto" />
                     <div className="py-2 px-1.5">
                       {item.dropdown.map((dropdownItem) => (
-                        <Link key={dropdownItem.label} href={dropdownItem.href} className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</Link>
+                        <a key={dropdownItem.label} href={dropdownItem.href} className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</a>
                       ))}
                     </div>
                   </div>
@@ -212,13 +211,13 @@ export default function Navbar() {
           {navItems.map((item) => (
             <div key={item.label} className="mobile-nav-link flex flex-col items-center w-full">
               {item.href ? (
-                <Link href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold text-neutral-200 hover:text-purple-400 transition-colors">{item.label}</Link>
+                <a href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold text-neutral-200 hover:text-purple-400 transition-colors">{item.label}</a>
               ) : (
                 <div className="flex flex-col items-center w-full max-w-xs">
                   <span className="text-2xl font-semibold text-neutral-400 mb-2">{item.label}</span>
                   <div className="flex flex-col gap-2 mt-1 bg-white/5 p-3 rounded-2xl border border-white/10 w-full">
                     {item.dropdown?.map((sub) => (
-                      <Link key={sub.label} href={sub.href} onClick={() => setIsMobileMenuOpen(false)} className="text-base text-purple-300 hover:text-white block py-1">{sub.label}</Link>
+                      <a key={sub.label} href={sub.href} onClick={() => setIsMobileMenuOpen(false)} className="text-base text-purple-300 hover:text-white block py-1">{sub.label}</a>
                     ))}
                   </div>
                 </div>

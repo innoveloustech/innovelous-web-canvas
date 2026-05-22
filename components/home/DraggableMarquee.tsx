@@ -13,7 +13,7 @@ export default function DraggableMarquee() {
   const lastTimeRef = useRef(0);
   const BASE_SPEED = 0.6; // px per frame auto-scroll
 
-  // We'll render 3 copies so we always have content to snap against
+  // Render 3 copies so we always have content to snap against
   const words = [...marqueeWords, ...marqueeWords, ...marqueeWords];
 
   const getTrackWidth = useCallback(() => {
@@ -27,7 +27,6 @@ export default function DraggableMarquee() {
     const track = trackRef.current;
     if (!track) return;
 
-    // Kick off the RAF loop
     const tick = () => {
       const unit = getTrackWidth();
       if (unit === 0) {
@@ -53,7 +52,7 @@ export default function DraggableMarquee() {
     return () => cancelAnimationFrame(rafRef.current);
   }, [getTrackWidth]);
 
-  // Pointer events for drag
+  // Pointer events for drag (Handles both mouse clicks and touch indicators natively)
   const onPointerDown = (e: React.PointerEvent) => {
     isDraggingRef.current = true;
     lastXRef.current = e.clientX;
@@ -67,30 +66,46 @@ export default function DraggableMarquee() {
     const now = performance.now();
     const dt = Math.max(now - lastTimeRef.current, 1);
     const dx = e.clientX - lastXRef.current;
-    velRef.current = (dx / dt) * 16; // convert to per-frame at 60fps
+    
+    // Prevent sudden excessive velocity jumps on small mobile drag ticks
+    const targetVel = (dx / dt) * 16;
+    velRef.current = Math.min(Math.max(targetVel, -30), 30); 
+
     xRef.current += dx;
     lastXRef.current = e.clientX;
     lastTimeRef.current = now;
   };
 
-  const onPointerUp = () => {
-    isDraggingRef.current = false;
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (isDraggingRef.current) {
+      isDraggingRef.current = false;
+      try {
+        (e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId);
+      } catch (err) {
+        // Avoid crash blocks if DOM pointer states unmounted early during quick touch interactions
+      }
+    }
   };
 
   return (
     <div
-      className="relative overflow-hidden py-5 border-y border-neutral-900 bg-neutral-950/20 select-none"
-      style={{ cursor: "grab" }}
+      className="relative overflow-hidden py-4 md:py-5 border-y border-neutral-900 bg-neutral-950/20 select-none"
+      style={{ 
+        cursor: "grab",
+        // CRITICAL MOBILE FIX: Tells the browser to handle vertical scrolling (pan-y) 
+        // natively over this area, but hands horizontal dragging directly to our JS pointer code.
+        touchAction: "pan-y" 
+      }}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerLeave={onPointerUp}
       data-cursor-text="Drag"
     >
-      {/* Edge fade masks */}
-      <div className="pointer-events-none absolute inset-y-0 left-0 w-24 z-10"
+      {/* Edge fade masks - Shrunk on mobile viewports for compact screen visibility */}
+      <div className="pointer-events-none absolute inset-y-0 left-0 w-12 md:w-24 z-10"
         style={{ background: "linear-gradient(to right, rgb(10,10,10), transparent)" }} />
-      <div className="pointer-events-none absolute inset-y-0 right-0 w-24 z-10"
+      <div className="pointer-events-none absolute inset-y-0 right-0 w-12 md:w-24 z-10"
         style={{ background: "linear-gradient(to left, rgb(10,10,10), transparent)" }} />
 
       <div
@@ -101,7 +116,7 @@ export default function DraggableMarquee() {
         {words.map((word, i) => (
           <span
             key={i}
-            className={`inline-block px-6 text-xs font-mono tracking-[0.25em] uppercase ${
+            className={`inline-block px-3 md:px-6 text-[10px] md:text-xs font-mono tracking-[0.2em] md:tracking-[0.25em] uppercase ${
               word === "·" ? "text-purple-500 font-bold" : "text-neutral-600"
             }`}
           >

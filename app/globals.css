@@ -12,6 +12,14 @@
     --font-mono: var(--font-geist-mono);
 }
 
+/* Disable Text Selection XD */
+* {
+  user-select: none;           /* Standard */
+  -webkit-user-select: none;   /* Safari */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+}
+
 body {
     background: var(--background);
     color: var(--foreground);
