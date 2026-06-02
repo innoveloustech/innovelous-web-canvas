@@ -3,6 +3,7 @@ import { useState, useRef, useEffect } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import Image from "next/image";
+import Link from "next/link";
 
 interface DropdownItem {
   label: string;
@@ -166,7 +167,7 @@ export default function Navbar() {
             {navItems.map((item) => (
               <div key={item.label} className="nav-item-wrapper relative z-10" onMouseEnter={(e) => handleMouseEnter(e, item.label)} onMouseLeave={() => handleMouseLeave(item.label)}>
                 {item.href ? (
-                  <a href={item.href} className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</a>
+                  <Link href={item.href as any} className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</Link>
                 ) : (
                   <div className="nav-item px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white cursor-pointer transition-colors duration-200">{item.label}</div>
                 )}
@@ -176,7 +177,7 @@ export default function Navbar() {
                     <div className="absolute top-0 left-0 right-0 h-2 -mt-2 bg-transparent pointer-events-auto" />
                     <div className="py-2 px-1.5">
                       {item.dropdown.map((dropdownItem) => (
-                        <a key={dropdownItem.label} href={dropdownItem.href} className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</a>
+                        <Link key={dropdownItem.label} href={dropdownItem.href as any} className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</Link>
                       ))}
                     </div>
                   </div>
@@ -211,13 +212,13 @@ export default function Navbar() {
           {navItems.map((item) => (
             <div key={item.label} className="mobile-nav-link flex flex-col items-center w-full">
               {item.href ? (
-                <a href={item.href} onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold text-neutral-200 hover:text-purple-400 transition-colors">{item.label}</a>
+                <Link href={item.href as any} onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold text-neutral-200 hover:text-purple-400 transition-colors">{item.label}</Link>
               ) : (
                 <div className="flex flex-col items-center w-full max-w-xs">
                   <span className="text-2xl font-semibold text-neutral-400 mb-2">{item.label}</span>
                   <div className="flex flex-col gap-2 mt-1 bg-white/5 p-3 rounded-2xl border border-white/10 w-full">
                     {item.dropdown?.map((sub) => (
-                      <a key={sub.label} href={sub.href} onClick={() => setIsMobileMenuOpen(false)} className="text-base text-purple-300 hover:text-white block py-1">{sub.label}</a>
+                      <Link key={sub.label} href={sub.href as any} onClick={() => setIsMobileMenuOpen(false)} className="text-base text-purple-300 hover:text-white block py-1">{sub.label}</Link>
                     ))}
                   </div>
                 </div>

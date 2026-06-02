@@ -6,6 +6,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import * as THREE from "three";
+import Link from "next/link";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -489,6 +490,15 @@ export default function ContactSection({ showCapabilities }: Props) {
           <span className="text-[10px] font-mono text-neutral-700 tracking-widest uppercase">
             © 2026 Innovelous Tech
           </span>
+
+          <Link
+            href="/privacy"
+            data-cursor="-exclusion"
+            className="text-[10px] font-mono text-neutral-500 hover:text-purple-400 tracking-widest uppercase transition-colors duration-200"
+          >
+            Privacy Policy
+          </Link>
+
           <span className="text-[10px] font-mono text-neutral-700 tracking-widest uppercase hidden md:block">
             All Rights Reserved
           </span>
