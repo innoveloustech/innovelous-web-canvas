@@ -1,6 +1,5 @@
 "use client";
-
-import React, { useState, useMemo, useRef } from "react";
+import React, { useState, useMemo, useRef, useEffect } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Float } from "@react-three/drei";
 import * as THREE from "three";
@@ -50,18 +49,18 @@ const vertexShader = `
   uniform float uActiveIndex;
   varying vec3 vViewPosition;
   varying vec3 vModelPosition;
-
+  
   void main() {
     vModelPosition = position;
     
     // Minimal organic surface wave inside the letter meshes
     float speed = uTime * 1.2;
     float wave = sin(position.x * 0.8 + speed) * cos(position.y * 0.8 + speed) * 0.05;
-    
     vec3 newPosition = position + normal * wave;
-    vec4 mvPosition = modelViewMatrix * vec4(newPosition, 1.0);
     
+    vec4 mvPosition = modelViewMatrix * vec4(newPosition, 1.0);
     vViewPosition = -mvPosition.xyz;
+    
     gl_Position = projectionMatrix * mvPosition;
   }
 `;
@@ -71,7 +70,7 @@ const fragmentShader = `
   uniform float uActiveIndex;
   varying vec3 vViewPosition;
   varying vec3 vModelPosition;
-
+  
   void main() {
     // Recompute surface normals for crisp specular reflections
     vec3 X = dFdx(vViewPosition);
@@ -103,17 +102,29 @@ const fragmentShader = `
   }
 `;
 
-// ─── 3D LOWERCASE "i" MESHES ─────────────────────────────────────────────────
+// ─── 3D LOWERCASE "i" MESHES ────────────────────────────────────────────────
 interface LogoMeshProps {
   activeIndex: number;
 }
 
 function LowercaseILogo({ activeIndex }: LogoMeshProps) {
   const groupRef = useRef<THREE.Group>(null);
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
+  
+  // FIX: Create the material inside useMemo so it exists synchronously on first render
+  const shaderMaterial = useMemo(() => {
+    return new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms: {
+        uTime: { value: 0 },
+        uActiveIndex: { value: 0 },
+      },
+      transparent: true,
+    });
+  }, []);
 
-  // Build the vertical line geometry natively
-  const stemGeometry = useMemo(() => {
+  // FIX: Create geometries inside useMemo so they exist synchronously
+  const geometries = useMemo(() => {
     const shape = new THREE.Shape();
     shape.moveTo(-0.25, 0.7);
     shape.lineTo(0.25, 0.7);
@@ -129,58 +140,41 @@ function LowercaseILogo({ activeIndex }: LogoMeshProps) {
       bevelSegments: 4,
     };
 
-    const geo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
-    geo.center();
-    return geo;
+    const stemGeo = new THREE.ExtrudeGeometry(shape, extrudeSettings);
+    stemGeo.center();
+
+    const dotGeo = new THREE.SphereGeometry(0.3, 48, 48);
+
+    return {
+      stem: stemGeo,
+      dot: dotGeo,
+    };
   }, []);
-
-  const uniforms = useMemo(
-    () => ({
-      uTime: { value: 0 },
-      uActiveIndex: { value: 0 },
-    }),
-    [],
-  );
-
+  
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
-
-    if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = time;
-      // Lerp active index color coordinates flawlessly
-      materialRef.current.uniforms.uActiveIndex.value += 
-        (activeIndex - materialRef.current.uniforms.uActiveIndex.value) * 0.08;
+    
+    // Update uniforms directly on the material instance
+    if (shaderMaterial) {
+      shaderMaterial.uniforms.uTime.value = time;
+      shaderMaterial.uniforms.uActiveIndex.value += 
+        (activeIndex - shaderMaterial.uniforms.uActiveIndex.value) * 0.08;
     }
-
+    
     if (groupRef.current) {
       // Clean corporate rotation matrices
       groupRef.current.rotation.y = Math.sin(time * 0.4) * 0.25;
       groupRef.current.rotation.x = Math.cos(time * 0.25) * 0.08;
     }
   });
-
+  
   return (
     <Float speed={1.5} rotationIntensity={0.15} floatIntensity={0.2}>
       <group ref={groupRef} scale={1.4}>
-        <shaderMaterial
-          ref={materialRef}
-          vertexShader={vertexShader}
-          fragmentShader={fragmentShader}
-          uniforms={uniforms}
-          transparent={true}
-        />
-        
-        {materialRef.current && (
-          <>
-            {/* The vertical body/line of the 'i' */}
-            <mesh geometry={stemGeometry} material={materialRef.current} position={[0, -0.2, 0]} />
-            
-            {/* The separated dot ball on top of the 'i' */}
-            <mesh material={materialRef.current} position={[0, 1.0, 0.15]}>
-              <sphereGeometry args={[0.3, 48, 48]} />
-            </mesh>
-          </>
-        )}
+        {/* The vertical body/line of the 'i' */}
+        <mesh geometry={geometries.stem} material={shaderMaterial} position={[0, -0.2, 0]} />
+        {/* The separated dot ball on top of the 'i' */}
+        <mesh geometry={geometries.dot} material={shaderMaterial} position={[0, 1.0, 0.15]} />
       </group>
     </Float>
   );
@@ -190,7 +184,7 @@ function LowercaseILogo({ activeIndex }: LogoMeshProps) {
 export default function FAQ() {
   const [activeIndex, setActiveIndex] = useState<number>(0);
   const faqSectionRef = useRef<HTMLElement>(null);
-
+  
   useGSAP(
     () => {
       gsap.from(".faq-meta", {
@@ -200,7 +194,6 @@ export default function FAQ() {
         ease: "power3.out",
         scrollTrigger: { trigger: faqSectionRef.current, start: "top 80%" },
       });
-
       gsap.from(".faq-item-row", {
         opacity: 0,
         y: 30,
@@ -212,7 +205,7 @@ export default function FAQ() {
     },
     { scope: faqSectionRef },
   );
-
+  
   return (
     <section
       ref={faqSectionRef}
@@ -220,14 +213,13 @@ export default function FAQ() {
       className="relative min-h-screen bg-zinc-950 px-6 md:px-16 py-32 flex flex-col justify-center overflow-hidden border-t border-white/5"
     >
       <div className="faq-container-grid relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-20 items-center">
-        
         {/* Accordions */}
         <div className="lg:col-span-7 flex flex-col w-full">
           <div className="faq-meta flex flex-col gap-3 mb-16">
             <span className="text-[10px] font-mono text-purple-500 tracking-[0.25em] uppercase">
               // Core System Architectures
             </span>
-            <h2 
+            <h2
               className="text-white font-light tracking-tight leading-[1.1] select-none"
               style={{ fontSize: "clamp(2.5rem, 5vw, 4.2rem)" }}
             >
@@ -235,11 +227,10 @@ export default function FAQ() {
               <span className="text-neutral-500 italic font-serif">Inquiries.</span>
             </h2>
           </div>
-
+          
           <div className="flex flex-col border-t border-white/10 w-full">
             {faqData.map((item) => {
               const isOpen = activeIndex === item.id;
-              
               return (
                 <div
                   key={item.id}
@@ -255,17 +246,17 @@ export default function FAQ() {
                         {item.question}
                       </h3>
                     </div>
-                    
                     <div className="relative w-4 h-4 mt-1.5 flex items-center justify-center flex-shrink-0">
-                      <div className="absolute w-4 h-[1px] bg-neutral-500 transition-transform duration-500 ease-out" 
+                      <div 
+                        className="absolute w-4 h-[1px] bg-neutral-500 transition-transform duration-500 ease-out"
                         style={{ transform: isOpen ? "rotate(0deg)" : "rotate(90deg)" }}
                       />
-                      <div className="absolute h-4 w-[1px] bg-neutral-500 transition-transform duration-500 ease-out"
+                      <div 
+                        className="absolute h-4 w-[1px] bg-neutral-500 transition-transform duration-500 ease-out"
                         style={{ opacity: isOpen ? 0 : 1 }}
                       />
                     </div>
                   </div>
-
                   <div
                     className="grid transition-all duration-500 ease-in-out pl-[34px] md:pl-[52px]"
                     style={{
@@ -285,7 +276,7 @@ export default function FAQ() {
             })}
           </div>
         </div>
-
+        
         {/* 3D Viewport Layer */}
         <div className="lg:col-span-5 w-full aspect-square max-w-[480px] lg:max-w-none justify-self-center lg:h-[550px] sticky top-24 flex items-center justify-center pointer-events-none">
           <div className="absolute w-full h-full inset-0 rounded-2xl overflow-hidden bg-gradient-to-br from-white/[0.01] to-transparent border border-white/[0.03]">
@@ -297,11 +288,9 @@ export default function FAQ() {
               <LowercaseILogo activeIndex={activeIndex} />
             </Canvas>
           </div>
-          
           {/* Static subtle background ambient glow layer */}
           <div className="absolute -z-10 w-64 h-64 rounded-full opacity-[0.06] filter blur-[90px] bg-white pointer-events-none" />
         </div>
-
       </div>
     </section>
   );

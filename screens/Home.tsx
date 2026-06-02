@@ -1,5 +1,5 @@
 "use client";
-import { useRef, useState, useEffect } from "react";
+import { useRef } from "react";
 import dynamic from "next/dynamic";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -11,6 +11,7 @@ import FAQ from "@/components/FAQ";
 import DraggableMarquee from "@/components/home/DraggableMarquee";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
+
 gsap.registerPlugin(ScrollTrigger);
 
 const stats = [
@@ -35,18 +36,11 @@ export default function Home() {
   const skewContentRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
   const serviceRef = useRef<HTMLDivElement>(null);
-  const [animationsReady, setAnimationsReady] = useState(false);
   const hasAnimatedRef = useRef(false);
-
-  useEffect(() => {
-    const handleLoaderDone = () => setAnimationsReady(true);
-    window.addEventListener("loader-done", handleLoaderDone);
-    return () => window.removeEventListener("loader-done", handleLoaderDone);
-  }, []);
 
   useGSAP(
     () => {
-      if (!animationsReady || hasAnimatedRef.current) return;
+      if (hasAnimatedRef.current) return;
       hasAnimatedRef.current = true;
 
       gsap.from(".hero-char", {
@@ -62,6 +56,7 @@ export default function Home() {
       const proxy = { skew: 0 };
       const skewSetter = gsap.quickSetter(skewContentRef.current, "skewY", "deg");
       const clamp = gsap.utils.clamp(-4, 4);
+      
       ScrollTrigger.create({
         onUpdate: (self) => {
           const skew = clamp(self.getVelocity() / -300);
@@ -79,6 +74,7 @@ export default function Home() {
       gsap.utils.toArray<HTMLElement>(".service-row").forEach((row) => {
         const revealTarget = row.querySelector(".service-reveal");
         const internalText = row.querySelector(".service-title-text");
+        
         row.addEventListener("mouseenter", () => {
           gsap.to(revealTarget, { width: "auto", opacity: 1, x: 10, duration: 0.4, ease: "power2.out" });
           gsap.to(internalText, { x: 15, color: "#a855f7", duration: 0.3 });
@@ -133,7 +129,7 @@ export default function Home() {
       gsap.from(".about-stat", { scrollTrigger: { trigger: "#about", start: "top 65%" }, y: 25, opacity: 0, stagger: 0.12, duration: 0.8, ease: "power3.out", delay: 0.3 });
       gsap.from(".about-divider", { scrollTrigger: { trigger: "#about", start: "top 70%" }, scaleX: 0, duration: 1.2, ease: "power3.inOut", delay: 0.15 });
     },
-    { scope: containerRef, dependencies: [animationsReady] }
+    { scope: containerRef, dependencies: [] }
   );
 
   return (
@@ -143,7 +139,6 @@ export default function Home() {
         <CanvasBackground />
         <Navbar />
         <div ref={skewContentRef} className="origin-right w-full home-skew-wrapper">
-
           {/* HERO SECTION */}
           <section className="relative min-h-screen flex flex-col justify-between px-6 md:px-16 pt-32 pb-16 bg-transparent">
             <div className="hero-tag flex items-start justify-between w-full">
@@ -153,6 +148,7 @@ export default function Home() {
               </div>
               <div className="text-right text-xs uppercase tracking-[0.15em] text-neutral-400 font-mono">[ Next-Gen Architecture ]</div>
             </div>
+
             <div className="hero-title-wrapper w-full my-auto py-16 select-none overflow-hidden" style={{ perspective: 1200 }}>
               <div className="w-full max-w-full overflow-hidden py-4 flex items-center justify-center">
                 <h1
@@ -175,6 +171,7 @@ export default function Home() {
                 </h1>
               </div>
             </div>
+
             <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-12 w-full">
               <div className="flex flex-col gap-8 max-w-sm">
                 <p className="hero-sub text-neutral-400 text-sm md:text-base leading-relaxed tracking-wide">
@@ -189,6 +186,7 @@ export default function Home() {
                   <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:bg-black transition-colors duration-500" />
                 </button>
               </div>
+
               <div className="flex gap-12 border-t border-neutral-900 pt-6 w-full md:w-auto justify-between md:justify-end">
                 {stats.map((s, i) => (
                   <div key={i} className="stat-item flex flex-col gap-1">
