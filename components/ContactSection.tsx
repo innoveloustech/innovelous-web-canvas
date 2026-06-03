@@ -15,7 +15,7 @@ const contactInfo = [
   {
     index: "01",
     category: "Email",
-    primary: "innoveloustechno@gmail.com",
+    primary: "info@innovelous.com",
     secondary: "",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
@@ -28,7 +28,7 @@ const contactInfo = [
     index: "02",
     category: "Phone",
     primary: "+92 333 2186309",
-    secondary: "+92 333 2186309",
+    secondary: "",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -39,8 +39,8 @@ const contactInfo = [
   {
     index: "03",
     category: "Office",
-    primary: "123 Innovation Drive",
-    secondary: "San Francisco, CA 94107",
+    primary: "Pakistan",
+    secondary: "DHA Phase 2 (Extension), Karachi",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -53,10 +53,9 @@ const contactInfo = [
 ];
 
 const socialLinks = [
-  { label: "LinkedIn", href: "#" },
-  { label: "Twitter / X", href: "#" },
-  { label: "GitHub", href: "#" },
-  { label: "Instagram", href: "#" },
+  { label: "Facebook", href: "https://www.facebook.com/innoveloustech" },
+  { label: "GitHub", href: "https://github.com/innoveloustech" },
+  { label: "Instagram", href: "https://www.instagram.com/innoveloustech" },
 ];
 
 const LINES = [
@@ -420,11 +419,6 @@ export default function ContactSection({ showCapabilities }: Props) {
         {/* Top heading stack */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
-            {showCapabilities && (
-              <span className="contact-label text-purple-500 text-xs font-mono tracking-[0.3em] uppercase">
-                03 // CONTACT
-              </span>
-            )}
             <span className="contact-label text-neutral-600 text-xs font-mono tracking-[0.2em] uppercase hidden md:block">
               Always On — 24 / 7 / 365
             </span>

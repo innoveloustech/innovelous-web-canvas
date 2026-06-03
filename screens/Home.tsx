@@ -9,6 +9,7 @@ import Cursor from "@/components/MouseFollower";
 import ContactSection from "@/components/ContactSection";
 import FAQ from "@/components/FAQ";
 import DraggableMarquee from "@/components/home/DraggableMarquee";
+import CubeSection from "@/components/cubesection";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
@@ -238,7 +239,6 @@ export default function Home() {
           <section id="about" className="min-h-screen bg-zinc-950 relative z-20 px-6 md:px-16 flex items-center rounded-t-3xl">
             <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 py-24">
               <div className="about-text-col flex flex-col justify-center">
-                <span className="about-label text-purple-500 text-xs font-mono tracking-[0.3em] uppercase block mb-6">02 // ABOUT US</span>
                 <h2 className="about-title text-3xl md:text-5xl lg:text-6xl font-light tracking-tight text-white mb-8 leading-[1.1]">
                   Bridging Technology <br /> & Human Experience
                 </h2>
@@ -277,7 +277,7 @@ export default function Home() {
             </div>
           </section>
 
-          <FAQ />
+          <CubeSection />
           <ContactSection showCapabilities />
         </div>
       </div>
