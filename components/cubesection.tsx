@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useRef } from "react";
+import React, { useRef, useState } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { Text, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
@@ -21,26 +21,26 @@ function CubeFace({
   rotation: [number, number, number];
   data: (typeof testimonials)[0];
 }) {
-  // Swapped #000000 for zinc-950 hex (#09090b)
+  // #09090b is the hex code for Tailwind's zinc-950
   const bgColor = data.isDark ? "#09090b" : "#ffffff";
   const textColor = data.isDark ? "#ffffff" : "#000000";
-  const subTextColor = data.isDark ? "#a1a1aa" : "#52525b"; // zinc-400 / zinc-600
+  const subTextColor = data.isDark ? "#a1a1aa" : "#52525b";
 
   return (
     <group position={position} rotation={rotation}>
-      {/* 1. Outer Border (Acts as the frame) */}
+      {/* 1. Outer Border */}
       <mesh position={[0, 0, 0.01]}>
         <planeGeometry args={[4, 4]} />
         <meshBasicMaterial color={textColor} />
       </mesh>
       
-      {/* 2. Inner Background (Slightly smaller, pushed forward to prevent z-fighting) */}
+      {/* 2. Inner Background */}
       <mesh position={[0, 0, 0.02]}>
         <planeGeometry args={[3.7, 3.7]} />
         <meshBasicMaterial color={bgColor} />
       </mesh>
 
-      {/* 3. Elegant Quote Mark (Using proper typographic quote character) */}
+      {/* 3. Quote Mark */}
       <Text
         position={[-1.6, 1.5, 0.03]}
         fontSize={1.2}
@@ -52,7 +52,7 @@ function CubeFace({
         “
       </Text>
 
-      {/* 4. Main Testimonial Text */}
+      {/* 4. Testimonial Text */}
       <Text
         position={[-1.6, 0.8, 0.03]}
         fontSize={0.24}
@@ -68,13 +68,13 @@ function CubeFace({
         {data.text}
       </Text>
 
-      {/* 5. Divider Line */}
+      {/* 5. Divider */}
       <mesh position={[-0.1, -1.1, 0.03]}>
         <planeGeometry args={[3.0, 0.04]} />
         <meshBasicMaterial color={textColor} />
       </mesh>
 
-      {/* 6. Author Name */}
+      {/* 6. Author */}
       <Text
         position={[-1.6, -1.35, 0.03]}
         fontSize={0.18}
@@ -88,7 +88,7 @@ function CubeFace({
         {data.author}
       </Text>
 
-      {/* 7. Author Role */}
+      {/* 7. Role */}
       <Text
         position={[-1.6, -1.6, 0.03]}
         fontSize={0.12}
@@ -120,13 +120,12 @@ function TestimonialCube() {
 
   return (
     <group ref={groupRef} scale={[currentScale, currentScale, currentScale]}>
-      {/* SOLID CORE: Updated color to match zinc-950 hex (#09090b) */}
+      {/* SOLID CORE: Matches zinc-950 */}
       <mesh>
         <boxGeometry args={[4, 4, 4]} />
         <meshBasicMaterial color="#09090b" />
       </mesh>
 
-      {/* 4 FACES: Placed exactly on the surface of the core box */}
       <CubeFace position={[0, 0, 2]}   rotation={[0, 0, 0]}           data={testimonials[0]} />
       <CubeFace position={[2, 0, 0]}   rotation={[0, Math.PI / 2, 0]} data={testimonials[1]} />
       <CubeFace position={[0, 0, -2]}  rotation={[0, Math.PI, 0]}     data={testimonials[2]} />
@@ -136,11 +135,11 @@ function TestimonialCube() {
 }
 
 export default function CubeSection() {
+  const [domElement, setDomElement] = useState<HTMLDivElement | null>(null);
+
   return (
-    // Added bg-zinc-950 utility class here
-    <div className="h-screen w-full flex items-center justify-center overflow-hidden relative bg-zinc-950">
+    <div className="h-screen w-full bg-zinc-950 flex items-center justify-center overflow-hidden relative">
       
-      {/* Premium Top-Left Heading */}
       <div className="absolute top-10 left-10 z-10 pointer-events-none">
         <p className="text-zinc-500 text-xs font-bold tracking-[0.25em] uppercase mb-3">
           Client Feedback
@@ -150,23 +149,30 @@ export default function CubeSection() {
         </h2>
       </div>
 
+      <div 
+        ref={setDomElement} 
+        className="absolute w-[80vw] h-[80vw] max-w-[350px] max-h-[350px] md:max-w-[600px] md:max-h-[600px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 touch-none" 
+      />
+
       <Canvas
         camera={{ position: [0, 0, 9], fov: 45 }}
         gl={{ antialias: true, alpha: false }}
       >
-        {/* Forces Three.js scene background to render as zinc-950 */}
         <color attach="background" args={["#09090b"]} />
-        
         <ambientLight intensity={1.2} />
         <TestimonialCube />
-        <OrbitControls
-          enableZoom={false}
-          enablePan={false}
-          minPolarAngle={Math.PI / 2}
-          maxPolarAngle={Math.PI / 2}
-          enableDamping={true}
-          dampingFactor={0.05}
-        />
+        
+        {domElement && (
+          <OrbitControls
+            domElement={domElement}
+            enableZoom={false}
+            enablePan={false}
+            minPolarAngle={Math.PI / 2}
+            maxPolarAngle={Math.PI / 2}
+            enableDamping={true}
+            dampingFactor={0.05}
+          />
+        )}
       </Canvas>
     </div>
   );

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { LenisProvider } from "@/lib/lenid-provider";
+import ScrollTriggerManager from "@/components/ScrollTriggerManager";
 import "./globals.css";
 import "lenis/dist/lenis.css";
 
@@ -72,6 +73,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <LenisProvider>
+          <ScrollTriggerManager /> 
           {children}
         </LenisProvider>
       </body>

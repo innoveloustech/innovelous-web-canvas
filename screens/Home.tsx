@@ -1,5 +1,5 @@
 "use client";
-import { useRef } from "react";
+import { useRef, useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -10,15 +10,16 @@ import ContactSection from "@/components/ContactSection";
 import FAQ from "@/components/FAQ";
 import DraggableMarquee from "@/components/home/DraggableMarquee";
 import CubeSection from "@/components/cubesection";
+import WhatsAppButton from "@/components/whatsapp-button";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
 gsap.registerPlugin(ScrollTrigger);
 
 const stats = [
-  { value: "13+", label: "Years of Expertise" },
-  { value: "1000+", label: "Clients Worldwide" },
-  { value: "2000+", label: "Successful Projects" },
+  { value: "2+", label: "Years of Expertise" },
+  { value: "15+", label: "Technologies Covered" },
+  { value: "50+", label: "Projects Delivered" },
 ];
 
 const services = [
@@ -30,7 +31,8 @@ const services = [
   { title: "Design Systems & Prototyping", desc: "Unified component libraries and interactive blueprints to standardize and accelerate production." },
 ];
 
-const HERO_WORD = "innovelous".split("");
+// Array of words, starting with "INNOVELOUS AI"
+const HERO_WORDS = ["INNOVELOUS", "AI Products", "Web & Apps"];
 
 export default function Home() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -39,16 +41,32 @@ export default function Home() {
   const serviceRef = useRef<HTMLDivElement>(null);
   const hasAnimatedRef = useRef(false);
 
+  // State to track current word index
+  const [wordIndex, setWordIndex] = useState(0);
+
+  // Dynamic timing: 5 seconds for index 0, 2 seconds for the rest
+  useEffect(() => {
+    // If it's the first word (INNOVELOUS AI), wait 5000ms. Otherwise, wait 2000ms.
+    const delay = wordIndex === 0 ? 5000 : 2000;
+
+    const timeout = setTimeout(() => {
+      setWordIndex((prev) => {
+        const nextIndex = prev + 1;
+        // If you want it to skip "INNOVELOUS AI" on the next loop, change `0` to `1` below.
+        // Currently, it loops back to the start (0).
+        return nextIndex % HERO_WORDS.length; 
+      });
+    }, delay);
+
+    return () => clearTimeout(timeout);
+  }, [wordIndex]);
+
+  // 1. Static Animations (Scroll triggers, hover effects, etc. - Runs Once)
   useGSAP(
     () => {
       if (hasAnimatedRef.current) return;
       hasAnimatedRef.current = true;
 
-      gsap.from(".hero-char", {
-        y: "115%", opacity: 0, rotateX: -90, duration: 1.5,
-        stagger: { amount: 1.1, ease: "power3.inOut", from: "start" },
-        ease: "back.out(1.6)",
-      });
       gsap.from(".hero-tag, .hero-sub, .stat-item", {
         opacity: 0, y: 30, duration: 1, stagger: 0.12, ease: "power3.out", delay: 0.35,
       });
@@ -133,8 +151,28 @@ export default function Home() {
     { scope: containerRef, dependencies: [] }
   );
 
+  // 2. Dynamic Text Animation (Runs every time wordIndex changes)
+  useGSAP(
+    () => {
+      gsap.fromTo(
+        ".hero-char",
+        { y: "115%", opacity: 0, rotateX: -90 },
+        { 
+          y: "0%", 
+          opacity: 1, 
+          rotateX: 0, 
+          duration: 0.8, 
+          stagger: { amount: 0.4, ease: "power2.out", from: "start" }, 
+          ease: "back.out(1.4)" 
+        }
+      );
+    },
+    { scope: containerRef, dependencies: [wordIndex] }
+  );
+
   return (
     <>
+      <WhatsAppButton phoneNumber="+92 334 9251936" />
       <Cursor />
       <div ref={containerRef} className="text-white min-h-screen overflow-x-hidden relative bg-transparent">
         <CanvasBackground />
@@ -147,7 +185,6 @@ export default function Home() {
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 structural-pulse" />
                 <span className="text-xs uppercase tracking-[0.2em] text-neutral-400 font-mono">Available Worldwide</span>
               </div>
-              <div className="text-right text-xs uppercase tracking-[0.15em] text-neutral-400 font-mono">[ Next-Gen Architecture ]</div>
             </div>
 
             <div className="hero-title-wrapper w-full my-auto py-16 select-none overflow-hidden" style={{ perspective: 1200 }}>
@@ -157,14 +194,16 @@ export default function Home() {
                   style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)" }}
                   data-cursor-text=" "
                 >
-                  <div className="flex items-center justify-center overflow-hidden">
-                    {HERO_WORD.map((char, i) => (
+                  {/* Key forces React to re-render fresh spans for GSAP to animate from the bottom */}
+                  <div key={wordIndex} className="flex items-center justify-center overflow-hidden flex-wrap">
+                    {HERO_WORDS[wordIndex].split("").map((char, i) => (
                       <span key={i} className="hero-char-wrapper inline-block overflow-hidden">
                         <span
                           className="hero-char inline-block"
                           style={{ transformOrigin: "bottom center", willChange: "transform, opacity" }}
                         >
-                          {char}
+                          {/* Handling spaces so they don't collapse in HTML */}
+                          {char === " " ? "\u00A0" : char}
                         </span>
                       </span>
                     ))}
@@ -240,15 +279,14 @@ export default function Home() {
             <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 py-24">
               <div className="about-text-col flex flex-col justify-center">
                 <h2 className="about-title text-3xl md:text-5xl lg:text-6xl font-light tracking-tight text-white mb-8 leading-[1.1]">
-                  Bridging Technology <br /> & Human Experience
+                  Built for Growth
                 </h2>
                 <div className="space-y-6 text-neutral-400 text-base md:text-lg leading-relaxed font-light">
-                  <p className="about-desc">At Innovelous, we don't just build software—we architect communication ecosystems. Our foundation is rooted in precision engineering, real-time telemetry, and adaptive interface design.</p>
-                  <p className="about-desc">From enterprise-grade messaging infrastructure to next-generation web platforms, we translate complex technical requirements into seamless, human-centric digital experiences.</p>
+                  <p className="about-desc">At Innovelous Tech, we help businesses accelerate growth through AI-powered solutions, custom software development, automation systems, and digital transformation strategies. Our mission is to bridge innovation with real-world business challenges. </p>
                 </div>
                 <div className="mt-10 flex items-center gap-6">
                   <div className="w-12 h-[1px] bg-purple-500/50"></div>
-                  <span className="text-xs uppercase tracking-[0.2em] text-purple-400 font-mono">Est. 2012</span>
+                  <span className="text-xs uppercase tracking-[0.2em] text-purple-400 font-mono">innovelous</span>
                 </div>
               </div>
               <div className="about-stats-col flex flex-col justify-center gap-10 border-t border-neutral-800 pt-12 lg:pt-0 lg:border-t-0 lg:border-l lg:pl-16">

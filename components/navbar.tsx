@@ -31,8 +31,7 @@ const navItems: NavItem[] = [
       { label: "UI & UX Design", href: "/solutions/ui-ux" },
     ],
   },
-  { label: "Overview", href: "/overview" },
-  { label: "Clients", href: "/clients" },
+  { label: "Projects", href: "/projects" },
 ];
 
 export default function Navbar() {
