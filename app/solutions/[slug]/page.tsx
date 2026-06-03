@@ -10,6 +10,7 @@ import SolutionScene from "@/components/solutions/SolutionScenes";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import ContactSection from "@/components/ContactSection";
+import WhatsAppButton from "@/components/whatsapp-button";
 
 // Dynamically import Aceternity Globe client component wrapper to shield from SSR issues
 const DynamicGlobeViewport = dynamic(
@@ -38,7 +39,7 @@ const DynamicGlobeViewport = dynamic(
         autoRotate: true,
         autoRotateSpeed: 0.5,
       };
-      
+
       const sampleArcs = [
         { order: 1, startLat: 24.8607, startLng: 67.0011, endLat: 35.6762, endLng: 139.6503, arcAlt: 0.2, color: "#a855f7" },
         { order: 2, startLat: 24.8607, startLng: 67.0011, endLat: 37.7749, endLng: -122.4194, arcAlt: 0.5, color: "#c084fc" },
@@ -69,6 +70,7 @@ export default function SolutionPage() {
   const params = useParams();
   const slug = params.slug as string;
   const data = getSolutionData(slug);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const hasAnimatedRef = useRef(false);
 
@@ -84,8 +86,9 @@ export default function SolutionPage() {
     () => {
       if (hasAnimatedRef.current) return;
       hasAnimatedRef.current = true;
-      
+
       const tl = gsap.timeline();
+      
       tl.from(".solution-nav", { y: -50, opacity: 0, duration: 1, ease: "power3.out" })
         .from(".solution-hero-title .line", {
           y: 100,
@@ -130,13 +133,17 @@ export default function SolutionPage() {
 
   return (
     <div ref={containerRef} className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
+      <WhatsAppButton phoneNumber="+92 334 9251936" />
       <Cursor />
       <CanvasBackground />
       <SolutionScene config={data.threeDConfig} />
+      
       <div className="solution-nav sticky top-0 z-50">
         <Navbar />
       </div>
+
       <main className="relative z-10">
+        {/* HERO SECTION */}
         <section className="min-h-screen flex flex-col justify-end px-6 md:px-16 pb-20 md:pb-32 pt-32">
           <div className="max-w-7xl mx-auto w-full">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
@@ -152,6 +159,7 @@ export default function SolutionPage() {
                     {data.category}
                   </span>
                 </div>
+
                 <h1 className="solution-hero-title text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] mb-8">
                   {data.title.split('\n').map((line, i) => (
                     <span key={i} className="line block overflow-hidden">
@@ -159,9 +167,11 @@ export default function SolutionPage() {
                     </span>
                   ))}
                 </h1>
+
                 <p className="solution-desc text-neutral-400 text-lg md:text-xl max-w-xl font-light leading-relaxed mb-12">
                   {data.description}
                 </p>
+
                 <div className="flex gap-6 md:gap-10 border-t border-neutral-800 pt-8 w-full md:w-auto self-start">
                   {data.stats.map((stat, i) => (
                     <div key={i} className="stat-card flex flex-col gap-1">
@@ -171,7 +181,7 @@ export default function SolutionPage() {
                   ))}
                 </div>
               </div>
-              
+
               {/* Aceternity GitHub Globe Canvas Layout - Hidden on mobile */}
               <div className="solution-globe-wrapper hidden lg:block lg:col-span-5 h-[600px] w-full relative">
                 <DynamicGlobeViewport />
@@ -190,13 +200,16 @@ export default function SolutionPage() {
               >
                 Capabilities & Tech
               </span>
+              
               <div className="flex flex-col">
                 {data.features.map((feature, i) => (
                   <div data-cursor="-exclusion" key={i} className="feature-row group flex items-center justify-between py-5 border-b border-neutral-800 cursor-pointer">
                     <div className="flex items-center gap-4">
                       <span className="text-[10px] font-mono text-neutral-600">0{i + 1}</span>
-                      <h3 className="text-xl md:text-2xl font-normal text-white transition-colors duration-300 group-hover:text-[var(--hover-color)]"
-                        style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}>
+                      <h3 
+                        className="text-xl md:text-2xl font-normal text-white transition-colors duration-300 group-hover:text-[var(--hover-color)]"
+                        style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
+                      >
                         {feature}
                       </h3>
                     </div>
@@ -211,15 +224,17 @@ export default function SolutionPage() {
                 ))}
               </div>
             </div>
+
             <div className="relative flex flex-col justify-center">
               <div className="p-8 md:p-12 rounded-3xl border border-neutral-800 bg-[#0c0c0c] backdrop-blur-sm">
                 <h3 className="text-3xl md:text-4xl font-light mb-4 tracking-tight">
                   Ready to Scale?
                 </h3>
                 <p className="text-neutral-400 text-sm leading-relaxed mb-8">
-                  Our engineering team is ready to deploy this solution into your infrastructure.
+                  Our engineering team is ready to deploy this solution into your infrastructure. 
                   We handle everything from architecture design to production rollout.
                 </p>
+                
                 <div className="solution-cta-btn">
                   <button className="group relative flex items-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-sm overflow-hidden transition-transform hover:scale-105">
                     <span
@@ -233,6 +248,7 @@ export default function SolutionPage() {
                   </button>
                 </div>
               </div>
+
               <div className="mt-12 flex items-center justify-between border-t border-neutral-800 pt-8">
                 <a data-cursor="-exclusion" href="#contact" className="text-xs font-mono text-neutral-500 hover:text-white transition-colors flex items-center gap-2">
                   <span>↓</span> Contact Us
@@ -244,7 +260,7 @@ export default function SolutionPage() {
             </div>
           </div>
         </section>
-        
+
         <section id="contact">
           <ContactSection showCapabilities={false} />
         </section>

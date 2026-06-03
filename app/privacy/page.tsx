@@ -71,10 +71,13 @@ export default function PrivacyPolicy() {
 
           <section className="space-y-4">
             <h2 className="text-2xl font-semibold text-white tracking-tight">
-              4. Global Jurisdictions & Transparency
+              4. Jurisdiction & Legal Framework (Pakistan)
             </h2>
             <p>
-              We render our services to a worldwide audience. Though this presentation framework does not programmatically profile specific legal structures like the European Union’s General Data Protection Regulation (GDPR) or California’s Consumer Privacy Act (CCPA), we maintain a strict baseline of total architectural transparency regarding data handling for all international visitors.
+              Innovelous Tech is headquartered in Karachi, Pakistan. Our digital operations and data handling practices are subject to the laws of the Islamic Republic of Pakistan, including the <strong className="text-zinc-200">Prevention of Electronic Crimes Act (PECA) 2016</strong> and applicable telecommunications regulations.
+            </p>
+            <p>
+              While we render our services to a worldwide audience and respect the principles of international frameworks like the GDPR and CCPA, our primary legal jurisdiction rests within Pakistan. We maintain a strict baseline of total architectural transparency, security, and lawful processing for all domestic and international visitors.
             </p>
           </section>
 
@@ -93,7 +96,7 @@ export default function PrivacyPolicy() {
                 href="mailto:innoveloustechno@gmail.com" 
                 className="hover:text-white underline transition-colors duration-200"
               >
-                innoveloustechno@gmail.com
+                info@innovelous.com
               </a>
             </div>
           </section>

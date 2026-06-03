@@ -21,14 +21,8 @@ const navItems: NavItem[] = [
   {
     label: "Solutions",
     dropdown: [
-      { label: "Social Media Expert", href: "/solutions/social-media" },
-      { label: "IoT Solutions", href: "/solutions/iot" },
-      { label: "Machine Learning", href: "/solutions/machine-learning" },
-      { label: "AI Integration", href: "/solutions/ai-integration" },
-      { label: "Web Development", href: "/solutions/web-development" },
-      { label: "App Development", href: "/solutions/app-development" },
-      { label: "Custom Software Development", href: "/solutions/custom-software" },
-      { label: "UI & UX Design", href: "/solutions/ui-ux" },
+      { label: "Hardware & IoT", href: "/solutions/hardware" },
+      { label: "Software Engineering", href: "/solutions/software" },
     ],
   },
   { label: "Projects", href: "/projects" },
@@ -87,7 +81,7 @@ export default function Navbar() {
     const targetWrapper = e.currentTarget;
     const pill = hoverPillRef.current;
     const container = menuContainerRef.current;
-    
+
     if (pill && container) {
       const targetRect = targetWrapper.getBoundingClientRect();
       const containerRect = container.getBoundingClientRect();
