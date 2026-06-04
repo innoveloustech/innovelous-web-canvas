@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import Navbar from "@/components/navbar";
 import Cursor from "@/components/MouseFollower";
 import CanvasBackground from "@/components/canvas-background";
+import WhatsAppButton from "@/components/whatsapp-button";
 
 interface Project {
   id: number;
@@ -102,6 +103,7 @@ export default function ProjectsPage() {
 
   return (
     <>
+      <WhatsAppButton phoneNumber="+92 334 9251936" />
       <Cursor />
       <CanvasBackground />
       <Navbar />

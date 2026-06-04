@@ -4,6 +4,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import Image from "next/image";
 import Link from "next/link";
+import { useLenis } from "@/lib/lenid-provider";
 
 interface DropdownItem {
   label: string;
@@ -39,6 +40,8 @@ export default function Navbar() {
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const mobileMenuRef = useRef<HTMLDivElement>(null);
   const mobileSolutionsRef = useRef<HTMLDivElement>(null);
+  
+  const lenis = useLenis();
 
   // Handle scroll effect
   useEffect(() => {
@@ -46,6 +49,26 @@ export default function Navbar() {
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
+
+  // Lock body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = "hidden";
+      document.documentElement.style.overflow = "hidden";
+      lenis?.stop();
+    } else {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      lenis?.start();
+      setMobileSolutionsOpen(false);
+    }
+
+    return () => {
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+      lenis?.start();
+    };
+  }, [isMobileMenuOpen, lenis]);
 
   // Desktop Initial Load Entrance Animations
   useGSAP(
@@ -63,21 +86,38 @@ export default function Navbar() {
       if (!mobileMenuRef.current) return;
       
       if (isMobileMenuOpen) {
-        gsap.to(mobileMenuRef.current, { opacity: 1, pointerEvents: "auto", duration: 0.3, ease: "power2.out" });
+        gsap.set(mobileMenuRef.current, { display: "flex", opacity: 0 });
+        gsap.to(mobileMenuRef.current, { 
+          opacity: 1, 
+          duration: 0.3, 
+          ease: "power2.out",
+          onComplete: () => {
+            mobileMenuRef.current?.style.setProperty("pointer-events", "auto");
+          }
+        });
+        
         gsap.fromTo(".mobile-nav-item", 
           { y: 40, opacity: 0 }, 
           { y: 0, opacity: 1, stagger: 0.08, duration: 0.6, ease: "power3.out", delay: 0.1, overwrite: true }
         );
+        
         gsap.fromTo(".mobile-footer", 
           { y: 20, opacity: 0 }, 
           { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.4, overwrite: true }
         );
       } else {
-        gsap.to(mobileMenuRef.current, { opacity: 0, pointerEvents: "none", duration: 0.2, ease: "power2.in" });
+        mobileMenuRef.current?.style.setProperty("pointer-events", "none");
+        gsap.to(mobileMenuRef.current, { 
+          opacity: 0, 
+          duration: 0.2, 
+          ease: "power2.in",
+          onComplete: () => {
+            mobileMenuRef.current?.style.setProperty("display", "none");
+          }
+        });
         if (mobileSolutionsRef.current) {
           gsap.to(mobileSolutionsRef.current, { height: 0, opacity: 0, duration: 0.2 });
         }
-        setMobileSolutionsOpen(false);
       }
     },
     { scope: mobileMenuRef, dependencies: [isMobileMenuOpen] }
@@ -218,13 +258,14 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* PREMIUM MOBILE MENU OVERLAY */}
+      {/* FULL SCREEN MOBILE MENU OVERLAY */}
       <div 
         ref={mobileMenuRef} 
-        className="fixed inset-0 bg-[#050505]/95 backdrop-blur-2xl z-40 md:hidden flex flex-col opacity-0 pointer-events-none"
+        className="fixed top-0 left-0 w-full h-screen bg-[#050505] z-[9999] md:hidden flex-col opacity-0 pointer-events-none"
+        style={{ display: "none" }}
       >
         {/* Mobile Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 flex-shrink-0">
           <a href="/" className="flex items-center gap-3">
             <div className="relative w-9 h-9">
               <Image src="/logo.png" alt="Innovelous Logo" fill className="object-contain" />
@@ -239,13 +280,13 @@ export default function Navbar() {
           </button>
         </div>
 
-        {/* Mobile Nav Links */}
-        <div className="flex-1 flex flex-col justify-center px-6 overflow-y-auto">
-          <nav className="flex flex-col">
+        {/* Mobile Nav Links - Scrollable Content */}
+        <div className="flex-1 overflow-y-auto px-6 py-8">
+          <nav className="flex flex-col gap-2">
             <Link 
               href="/" 
               onClick={() => setIsMobileMenuOpen(false)}
-              className="mobile-nav-item text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
+              className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
             >
               Home
             </Link>
@@ -253,7 +294,7 @@ export default function Navbar() {
             <div className="mobile-nav-item border-b border-white/5">
               <button 
                 onClick={toggleMobileSolutions}
-                className="w-full flex items-center justify-between text-5xl font-black tracking-tighter text-white py-4 hover:text-purple-400 transition-colors"
+                className="w-full flex items-center justify-between text-4xl md:text-5xl font-black tracking-tighter text-white py-4 hover:text-purple-400 transition-colors"
               >
                 <span>Solutions</span>
                 <svg 
@@ -269,7 +310,7 @@ export default function Navbar() {
                   <Link 
                     href="/solutions/hardware" 
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 text-xl font-light text-neutral-400 py-2 hover:text-white transition-colors"
+                    className="flex items-center gap-3 text-xl font-light text-neutral-400 py-3 hover:text-white transition-colors"
                   >
                     <span className="w-8 h-[1px] bg-neutral-700" />
                     Hardware & IoT
@@ -277,7 +318,7 @@ export default function Navbar() {
                   <Link 
                     href="/solutions/software" 
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className="flex items-center gap-3 text-xl font-light text-neutral-400 py-2 hover:text-white transition-colors"
+                    className="flex items-center gap-3 text-xl font-light text-neutral-400 py-3 hover:text-white transition-colors"
                   >
                     <span className="w-8 h-[1px] bg-neutral-700" />
                     Software Engineering
@@ -286,19 +327,22 @@ export default function Navbar() {
               </div>
             </div>
 
-            <Link 
+            <Link
               href={"/projects" as any}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="mobile-nav-item text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
+              className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
             >
               Projects
             </Link>
           </nav>
         </div>
 
-        {/* Mobile Footer / CTA */}
-        <div className="mobile-footer p-6 border-t border-white/5 bg-black/40">
-          <button className="mobile-cta-btn w-full bg-white text-black py-4 rounded-full font-semibold text-center shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:bg-purple-500 hover:text-white transition-colors duration-300">
+        {/* Mobile Footer / CTA - Fixed at bottom */}
+        <div className="mobile-footer p-6 border-t border-white/5 bg-black/40 flex-shrink-0">
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="mobile-cta-btn w-full bg-white text-black py-4 rounded-full font-semibold text-center shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:bg-purple-500 hover:text-white transition-colors duration-300"
+          >
             Get in Touch
           </button>
           <div className="flex justify-between mt-4 text-[10px] text-neutral-600 font-mono tracking-widest uppercase">
