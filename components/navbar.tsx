@@ -29,16 +29,16 @@ const navItems: NavItem[] = [
 ];
 
 export default function Navbar() {
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [mobileSolutionsOpen, setMobileSolutionsOpen] = useState(false);
   
   const navRef = useRef<HTMLDivElement>(null);
   const hoverPillRef = useRef<HTMLDivElement>(null);
   const menuContainerRef = useRef<HTMLDivElement>(null);
   const dropdownRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const mobileMenuRef = useRef<HTMLDivElement>(null);
-  const mobileTimelineRef = useRef<gsap.core.Timeline | null>(null);
+  const mobileSolutionsRef = useRef<HTMLDivElement>(null);
 
   // Handle scroll effect
   useEffect(() => {
@@ -57,24 +57,42 @@ export default function Navbar() {
     { scope: navRef }
   );
 
-  // Mobile Drawer Open/Close Timeline
+  // Mobile Menu Open/Close Animations
   useGSAP(
     () => {
-      gsap.set(mobileMenuRef.current, { xPercent: 100 });
-      mobileTimelineRef.current = gsap.timeline({ paused: true });
-      mobileTimelineRef.current
-        .to(mobileMenuRef.current, { xPercent: 0, duration: 0.5, ease: "power4.out" })
-        .from(".mobile-nav-link", { x: 50, opacity: 0, stagger: 0.08, duration: 0.4, ease: "power3.out" }, "-=0.2")
-        .from(".mobile-cta-btn", { y: 20, opacity: 0, duration: 0.4, ease: "power3.out" }, "-=0.2");
+      if (!mobileMenuRef.current) return;
+      
+      if (isMobileMenuOpen) {
+        gsap.to(mobileMenuRef.current, { opacity: 1, pointerEvents: "auto", duration: 0.3, ease: "power2.out" });
+        gsap.fromTo(".mobile-nav-item", 
+          { y: 40, opacity: 0 }, 
+          { y: 0, opacity: 1, stagger: 0.08, duration: 0.6, ease: "power3.out", delay: 0.1, overwrite: true }
+        );
+        gsap.fromTo(".mobile-footer", 
+          { y: 20, opacity: 0 }, 
+          { y: 0, opacity: 1, duration: 0.5, ease: "power3.out", delay: 0.4, overwrite: true }
+        );
+      } else {
+        gsap.to(mobileMenuRef.current, { opacity: 0, pointerEvents: "none", duration: 0.2, ease: "power2.in" });
+        if (mobileSolutionsRef.current) {
+          gsap.to(mobileSolutionsRef.current, { height: 0, opacity: 0, duration: 0.2 });
+        }
+        setMobileSolutionsOpen(false);
+      }
     },
-    { scope: navRef }
+    { scope: mobileMenuRef, dependencies: [isMobileMenuOpen] }
   );
 
-  useEffect(() => {
-    if (mobileTimelineRef.current) {
-      isMobileMenuOpen ? mobileTimelineRef.current.play() : mobileTimelineRef.current.reverse();
+  // Mobile Solutions Accordion Animation
+  const toggleMobileSolutions = () => {
+    if (!mobileSolutionsRef.current) return;
+    if (mobileSolutionsOpen) {
+      gsap.to(mobileSolutionsRef.current, { height: 0, opacity: 0, duration: 0.3, ease: "power2.inOut" });
+    } else {
+      gsap.to(mobileSolutionsRef.current, { height: "auto", opacity: 1, duration: 0.4, ease: "power3.out" });
     }
-  }, [isMobileMenuOpen]);
+    setMobileSolutionsOpen(!mobileSolutionsOpen);
+  };
 
   // Desktop Sliding Background Pill logic
   const handleMouseEnter = (e: React.MouseEvent<HTMLDivElement>, label: string) => {
@@ -97,7 +115,6 @@ export default function Navbar() {
     }
 
     if (navItems.find((item) => item.label === label)?.dropdown) {
-      setActiveDropdown(label);
       const dropdown = dropdownRefs.current[label];
       if (dropdown) {
         gsap.to(dropdown, { height: "auto", opacity: 1, y: 0, duration: 0.3, ease: "power3.out", overwrite: "auto" });
@@ -110,7 +127,6 @@ export default function Navbar() {
     if (dropdown) {
       gsap.to(dropdown, {
         height: 0, opacity: 0, y: 10, duration: 0.25, ease: "power3.in", overwrite: "auto",
-        onComplete: () => setActiveDropdown(null),
       });
     }
   };
@@ -139,11 +155,11 @@ export default function Navbar() {
   };
 
   return (
-    <nav ref={navRef} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-black/80 backdrop-blur-md border-b border-purple-500/10" : "bg-transparent"}`}>
+    <nav ref={navRef} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-black/80 backdrop-blur-md border-b border-white/5" : "bg-transparent"}`}>
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="logo flex items-center gap-3 group relative z-55">
+          <a href="/" className="logo flex items-center gap-3 group relative z-50">
             <div className="relative w-11 h-11">
               <Image src="/logo.png" alt="Innovelous Logo" fill className="object-contain" />
             </div>
@@ -189,36 +205,106 @@ export default function Navbar() {
           </button>
 
           {/* Mobile Toggle Trigger */}
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden relative z-55 p-2 text-white focus:outline-none">
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+            className="md:hidden relative z-50 w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-white focus:outline-none transition-colors hover:bg-white/10"
+          >
             {isMobileMenuOpen ? (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             ) : (
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
             )}
           </button>
         </div>
       </div>
 
-      {/* Mobile Screen Full Drawer Takeover */}
-      <div ref={mobileMenuRef} className="fixed inset-0 w-full h-screen bg-gradient-to-b from-purple-950 via-neutral-950 to-black z-50 md:hidden flex flex-col items-center justify-center">
-        <div className="flex flex-col items-center gap-6 text-center max-h-[85vh] overflow-y-auto px-4 w-full">
-          {navItems.map((item) => (
-            <div key={item.label} className="mobile-nav-link flex flex-col items-center w-full">
-              {item.href ? (
-                <Link href={item.href as any} onClick={() => setIsMobileMenuOpen(false)} className="text-2xl font-semibold text-neutral-200 hover:text-purple-400 transition-colors">{item.label}</Link>
-              ) : (
-                <div className="flex flex-col items-center w-full max-w-xs">
-                  <span className="text-2xl font-semibold text-neutral-400 mb-2">{item.label}</span>
-                  <div className="flex flex-col gap-2 mt-1 bg-white/5 p-3 rounded-2xl border border-white/10 w-full">
-                    {item.dropdown?.map((sub) => (
-                      <Link key={sub.label} href={sub.href as any} onClick={() => setIsMobileMenuOpen(false)} className="text-base text-purple-300 hover:text-white block py-1">{sub.label}</Link>
-                    ))}
-                  </div>
-                </div>
-              )}
+      {/* PREMIUM MOBILE MENU OVERLAY */}
+      <div 
+        ref={mobileMenuRef} 
+        className="fixed inset-0 bg-[#050505]/95 backdrop-blur-2xl z-40 md:hidden flex flex-col opacity-0 pointer-events-none"
+      >
+        {/* Mobile Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-white/5">
+          <a href="/" className="flex items-center gap-3">
+            <div className="relative w-9 h-9">
+              <Image src="/logo.png" alt="Innovelous Logo" fill className="object-contain" />
             </div>
-          ))}
-          <button className="mobile-cta-btn mt-4 bg-white text-black px-8 py-3.5 rounded-full font-semibold shadow-[0_0_30px_rgba(168,85,247,0.4)]">Get in Touch</button>
+            <span className="text-base font-bold text-white tracking-wide">Innovelous</span>
+          </a>
+          <button 
+            onClick={() => setIsMobileMenuOpen(false)} 
+            className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+
+        {/* Mobile Nav Links */}
+        <div className="flex-1 flex flex-col justify-center px-6 overflow-y-auto">
+          <nav className="flex flex-col">
+            <Link 
+              href="/" 
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="mobile-nav-item text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
+            >
+              Home
+            </Link>
+            
+            <div className="mobile-nav-item border-b border-white/5">
+              <button 
+                onClick={toggleMobileSolutions}
+                className="w-full flex items-center justify-between text-5xl font-black tracking-tighter text-white py-4 hover:text-purple-400 transition-colors"
+              >
+                <span>Solutions</span>
+                <svg 
+                  className={`w-6 h-6 text-neutral-500 transition-transform duration-300 ${mobileSolutionsOpen ? 'rotate-45' : 'rotate-0'}`} 
+                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              </button>
+              
+              <div ref={mobileSolutionsRef} className="overflow-hidden h-0 opacity-0">
+                <div className="flex flex-col gap-2 pb-4 pl-2">
+                  <Link 
+                    href="/solutions/hardware" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 text-xl font-light text-neutral-400 py-2 hover:text-white transition-colors"
+                  >
+                    <span className="w-8 h-[1px] bg-neutral-700" />
+                    Hardware & IoT
+                  </Link>
+                  <Link 
+                    href="/solutions/software" 
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 text-xl font-light text-neutral-400 py-2 hover:text-white transition-colors"
+                  >
+                    <span className="w-8 h-[1px] bg-neutral-700" />
+                    Software Engineering
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            <Link 
+              href={"/projects" as any}
+              onClick={() => setIsMobileMenuOpen(false)}
+              className="mobile-nav-item text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
+            >
+              Projects
+            </Link>
+          </nav>
+        </div>
+
+        {/* Mobile Footer / CTA */}
+        <div className="mobile-footer p-6 border-t border-white/5 bg-black/40">
+          <button className="mobile-cta-btn w-full bg-white text-black py-4 rounded-full font-semibold text-center shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:bg-purple-500 hover:text-white transition-colors duration-300">
+            Get in Touch
+          </button>
+          <div className="flex justify-between mt-4 text-[10px] text-neutral-600 font-mono tracking-widest uppercase">
+            <span>© 2026 Innovelous</span>
+            <span>Karachi, PK</span>
+          </div>
         </div>
       </div>
     </nav>
