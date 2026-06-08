@@ -4,7 +4,7 @@ import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import Image from "next/image";
 import Link from "next/link";
-import { useLenis } from "@/lib/lenid-provider";
+import { useLenis } from "@/lib/lenis-provider";
 
 interface DropdownItem {
   label: string;

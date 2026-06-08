@@ -7,7 +7,6 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import Navbar from "@/components/navbar";
 import Cursor from "@/components/MouseFollower";
 import ContactSection from "@/components/ContactSection";
-import FAQ from "@/components/FAQ";
 import DraggableMarquee from "@/components/home/DraggableMarquee";
 import CubeSection from "@/components/cubesection";
 import WhatsAppButton from "@/components/whatsapp-button";

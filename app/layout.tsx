@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { LenisProvider } from "@/lib/lenid-provider";
+import { LenisProvider } from "@/lib/lenis-provider";
 import ScrollTriggerManager from "@/components/ScrollTriggerManager";
 import "./globals.css";
 import "lenis/dist/lenis.css";
