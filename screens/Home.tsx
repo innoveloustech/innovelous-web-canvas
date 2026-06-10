@@ -22,12 +22,12 @@ const stats = [
 ];
 
 const services = [
-  { title: "Custom Projects & MVPs", desc: "End-to-end engineering built from the ground up, from rapid MVP launches to complex architectures tailored to your exact business needs." },
-  { title: "Ready-made Solutions", desc: "Pre-validated, high-performance modules designed for rapid integration and immediate scalability." },
-  { title: "Web App Engineering", desc: "Next-generation full-stack applications engineered for speed, security, and seamless interaction." },
-  { title: "Project Consultancy", desc: "Strategic technical guidance to optimize development lifecycles and maximize engineering velocity." },
-  { title: "UI/UX Design", desc: "Immersive, human-centric interface architecture that drives engagement and simplifies complex workflows." },
-  { title: "Design Systems & Prototyping", desc: "Unified component libraries and interactive blueprints to standardize and accelerate production." },
+  { title: "Custom Software & Rapid MVPs", desc: "Scalable engineering by a top software agency. We build high-performance, rapid MVPs tailored to your business goals." },
+  { title: "AI Automation Solutions", desc: "Pre-validated modules built for instant scale. Easily integrate business automation and advanced biometric systems." },
+  { title: "Full-Stack Web & App Dev", desc: "Next-gen full-stack apps engineered for speed, robust security, and seamless, cloud-native performance." },
+  { title: "IT Consultancy & Growth Strategy", desc: "Expert technical guidance and performance engineering. We align robust code with high-impact digital marketing" },
+  { title: "UI/UX Engineering", desc: "Crafting intuitive, human-centered digital interfaces. We merge minimalist design aesthetics with flawless usability to maximize engagement, retention, and conversions." },
+  { title: "Design Systems & Prototyping", desc: "Building reusable component libraries and high-fidelity interactive prototypes. We establish unified frameworks that bridge the gap between design and development." },
 ];
 
 // Array of words, starting with "INNOVELOUS AI"
@@ -40,19 +40,13 @@ export default function Home() {
   const serviceRef = useRef<HTMLDivElement>(null);
   const hasAnimatedRef = useRef(false);
 
-  // State to track current word index
   const [wordIndex, setWordIndex] = useState(0);
 
-  // Dynamic timing: 5 seconds for index 0, 2 seconds for the rest
   useEffect(() => {
-    // If it's the first word (INNOVELOUS AI), wait 5000ms. Otherwise, wait 2000ms.
     const delay = wordIndex === 0 ? 5000 : 2000;
-
     const timeout = setTimeout(() => {
       setWordIndex((prev) => {
         const nextIndex = prev + 1;
-        // If you want it to skip "INNOVELOUS AI" on the next loop, change `0` to `1` below.
-        // Currently, it loops back to the start (0).
         return nextIndex % HERO_WORDS.length; 
       });
     }, delay);
@@ -60,7 +54,6 @@ export default function Home() {
     return () => clearTimeout(timeout);
   }, [wordIndex]);
 
-  // 1. Static Animations (Scroll triggers, hover effects, etc. - Runs Once)
   useGSAP(
     () => {
       if (hasAnimatedRef.current) return;
@@ -70,7 +63,6 @@ export default function Home() {
         opacity: 0, y: 30, duration: 1, stagger: 0.12, ease: "power3.out", delay: 0.35,
       });
 
-      // Page Skew on Scroll
       const proxy = { skew: 0 };
       const skewSetter = gsap.quickSetter(skewContentRef.current, "skewY", "deg");
       const clamp = gsap.utils.clamp(-4, 4);
@@ -88,7 +80,6 @@ export default function Home() {
         },
       });
 
-      // Services Hover Interactions
       gsap.utils.toArray<HTMLElement>(".service-row").forEach((row) => {
         const revealTarget = row.querySelector(".service-reveal");
         const internalText = row.querySelector(".service-title-text");
@@ -103,7 +94,6 @@ export default function Home() {
         });
       });
 
-      // Magnetic CTA
       const cta = ctaRef.current;
       if (cta) {
         const move = (e: MouseEvent) => {
@@ -119,7 +109,6 @@ export default function Home() {
         cta.addEventListener("mouseleave", leave);
       }
 
-      // Hero Title Parallax
       const heroWrapper = containerRef.current?.querySelector(".hero-title-wrapper");
       if (heroWrapper) {
         const move = (e: MouseEvent) => {
@@ -135,7 +124,6 @@ export default function Home() {
         containerRef.current?.addEventListener("mouseleave", leave);
       }
 
-      // Services Pinning
       ScrollTrigger.create({
         trigger: serviceRef.current, start: "top top", end: "+=100%",
         pin: true, pinSpacing: false, pinType: "transform",
@@ -150,7 +138,6 @@ export default function Home() {
     { scope: containerRef, dependencies: [] }
   );
 
-  // 2. Dynamic Text Animation (Runs every time wordIndex changes)
   useGSAP(
     () => {
       gsap.fromTo(
@@ -193,7 +180,6 @@ export default function Home() {
                   style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)" }}
                   data-cursor-text=" "
                 >
-                  {/* Key forces React to re-render fresh spans for GSAP to animate from the bottom */}
                   <div key={wordIndex} className="flex items-center justify-center overflow-hidden flex-wrap">
                     {HERO_WORDS[wordIndex].split("").map((char, i) => (
                       <span key={i} className="hero-char-wrapper inline-block overflow-hidden">
@@ -201,7 +187,6 @@ export default function Home() {
                           className="hero-char inline-block"
                           style={{ transformOrigin: "bottom center", willChange: "transform, opacity" }}
                         >
-                          {/* Handling spaces so they don't collapse in HTML */}
                           {char === " " ? "\u00A0" : char}
                         </span>
                       </span>
@@ -237,15 +222,14 @@ export default function Home() {
             </div>
           </section>
 
-          {/* ── PROFESSIONAL DRAGGABLE MARQUEE ── */}
           <DraggableMarquee />
 
-          {/* SERVICES SECTION */}
-          <section ref={serviceRef} id="service" className="min-h-screen flex flex-col justify-center px-6 md:px-16 py-20 relative z-10">
+          {/* SERVICES SECTION - Compacted Paddings for 100% Zoom Issue */}
+          <section ref={serviceRef} id="service" className="min-h-screen flex flex-col justify-center px-6 md:px-16 py-8 md:py-10 lg:py-10 relative z-10">
             <div className="max-w-7xl mx-auto w-full">
-              <div className="mb-8">
+              <div className="mb-4 md:mb-5 lg:mb-5">
                 <span className="text-purple-500 text-xs font-mono tracking-[0.3em] uppercase block mb-2">01 // CAPABILITIES</span>
-                <h2 className="text-3xl md:text-5xl font-light tracking-tight text-white">Selected Digital Disciplines</h2>
+                <h2 className="text-2xl md:text-4xl lg:text-5xl font-light tracking-tight text-white">Next-Gen Development & IT Solutions</h2>
               </div>
               <div className="flex flex-col border-t border-neutral-800">
                 {services.map((s, i) => (
@@ -253,14 +237,14 @@ export default function Home() {
                     data-cursor-text="Click"
                     key={i}
                     data-cursor-pointer
-                    className="service-row group flex flex-col md:flex-row md:items-center justify-between py-4 border-b border-neutral-800 cursor-pointer transition-all duration-300"
+                    className="service-row group flex flex-col md:flex-row md:items-center justify-between py-2 md:py-3 lg:py-2.5 border-b border-neutral-800 cursor-pointer transition-all duration-300"
                   >
-                    <div className="flex items-center gap-4 md:gap-6 mb-2 md:mb-0">
+                    <div className="flex items-center gap-4 md:gap-6 mb-1 md:mb-0">
                       <span className="text-xs font-mono text-neutral-600">0{i + 1}</span>
-                      <h3 className="service-title-text text-lg md:text-xl font-normal text-white transition-transform duration-300 ease-out">{s.title}</h3>
+                      <h3 className="service-title-text text-base md:text-lg lg:text-lg font-normal text-white transition-transform duration-300 ease-out">{s.title}</h3>
                     </div>
                     <div className="flex items-center gap-6 justify-between md:justify-end md:w-1/2">
-                      <p className="text-sm text-neutral-500 max-w-xs md:text-right font-light">{s.desc}</p>
+                      <p className="text-[11px] md:text-xs lg:text-sm text-neutral-500 max-w-xs md:text-right font-light leading-snug">{s.desc}</p>
                       <div className="service-reveal opacity-0 w-0 overflow-hidden flex items-center text-purple-500 hidden md:flex">
                         <svg className="w-5 h-5 transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -281,7 +265,7 @@ export default function Home() {
                   Built for Growth
                 </h2>
                 <div className="space-y-6 text-neutral-400 text-base md:text-lg leading-relaxed font-light">
-                  <p className="about-desc">At Innovelous Tech, we help businesses accelerate growth through AI-powered solutions, custom software development, automation systems, and digital transformation strategies. Our mission is to bridge innovation with real-world business challenges. </p>
+                  <p className="about-desc">At Innovelous Tech, we help businesses accelerate growth through AI powered solutions, custom software development, automation systems, and digital transformation strategies. Our mission is to bridge innovation with real-world business challenges. </p>
                 </div>
                 <div className="mt-10 flex items-center gap-6">
                   <div className="w-12 h-[1px] bg-purple-500/50"></div>
@@ -291,15 +275,15 @@ export default function Home() {
               <div className="about-stats-col flex flex-col justify-center gap-10 border-t border-neutral-800 pt-12 lg:pt-0 lg:border-t-0 lg:border-l lg:pl-16">
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-6 about-divider" style={{ transformOrigin: "left center" }}>
                   <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">Core Philosophy</span>
-                  <span className="text-xl text-white font-light">Precision First</span>
+                  <span className="text-xl text-white font-light">Execution First</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-6 about-divider" style={{ transformOrigin: "left center" }}>
-                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">Global Reach</span>
-                  <span className="text-xl text-white font-light">42+ Countries</span>
+                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">PRODUCTION SPEED</span>
+                  <span className="text-xl text-white font-light">Rapid MVP Deployment</span>
                 </div>
                 <div className="flex items-center justify-between about-divider" style={{ transformOrigin: "left center" }}>
-                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">Uptime SLA</span>
-                  <span className="text-xl text-white font-light">99.99%</span>
+                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">INFRASTRUCTURE</span>
+                  <span className="text-xl text-white font-light">99.99% Reliable</span>
                 </div>
                 <div className="mt-8 about-stat p-6 bg-neutral-900/30 border border-neutral-800 rounded-2xl">
                   <p className="text-neutral-300 text-sm leading-relaxed italic">"We measure success not by lines of code, but by the seamless interactions we enable across millions of devices daily."</p>

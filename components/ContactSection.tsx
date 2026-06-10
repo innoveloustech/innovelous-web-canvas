@@ -59,8 +59,8 @@ const socialLinks = [
 ];
 
 const LINES = [
-  { text: "Let's Build", ghost: false },
-  { text: "Something Real.", ghost: true },
+  { text: "Ready to Build?", ghost: false },
+  { text: "Let's Talk.", ghost: true },
 ];
 
 // ─── Declarative R3F Hover Interactive Particles ──────────────────────────────
@@ -328,7 +328,7 @@ export default function ContactSection({ showCapabilities }: Props) {
             </div>
           </div>
           <div className="contact-tagline flex flex-col items-start md:items-end gap-2 max-w-sm">
-            <p className="text-neutral-500 text-sm font-light leading-relaxed md:text-right">Headquartered in Karachi.<br />Operating everywhere that matters.</p>
+            <p className="text-neutral-500 text-sm font-light leading-relaxed md:text-right">Based in Karachi.<br />Engineering Scalable Solutions Nationwide.</p>
             <div className="flex items-center gap-2 mt-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" style={{ boxShadow: "0 0 6px rgba(16,185,129,0.75)", animation: "ct-pulse 2.5s ease-in-out infinite" }} />
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Accepting Projects — 2026</span>

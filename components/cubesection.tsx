@@ -6,10 +6,10 @@ import { Text, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
 const testimonials = [
-  { text: "WE SAW RESULTS WITHIN THE FIRST WEEK. IT'S INTUITIVE, FAST, AND RELIABLE.", author: "ALEX RIVERA", role: "PM, LAUNCHPAD", isDark: true },
-  { text: "THIS PRODUCT COMPLETELY TRANSFORMED THE WAY OUR TEAM COLLABORATES. HIGHLY RECOMMEND!", author: "SARAH CHEN", role: "CTO, TECHNOVA", isDark: false },
-  { text: "INCREDIBLE SUPPORT AND A SEAMLESS EXPERIENCE FROM START TO FINISH. FIVE STARS!", author: "PRIYA SHARMA", role: "LEAD DESIGNER, CREATIFY", isDark: true },
-  { text: "THE BEST INVESTMENT WE'VE MADE THIS YEAR. OUR PRODUCTIVITY HAS DOUBLED SINCE ONBOARDING.", author: "JAMES MILLER", role: "CEO, BRIGHTPATH", isDark: false },
+  { text: "WE SAW RESULTS WITHIN THE FIRST WEEK. IT'S INTUITIVE, FAST, AND RELIABLE.", author: "Dr. Naureen Jamshed", role: "CEO,FOUNDER", isDark: true },
+  { text: "THIS PRODUCT COMPLETELY TRANSFORMED THE WAY OUR TEAM COLLABORATES. HIGHLY RECOMMEND!", author: "Chef Gulzar Hussain", role: "Executive Chef GTV", isDark: false },
+  { text: "INCREDIBLE SUPPORT AND A SEAMLESS EXPERIENCE FROM START TO FINISH. FIVE STARS!", author: "Dr Khalid Anjum", role: "Business Owner", isDark: true },
+  { text: "THE BEST INVESTMENT WE'VE MADE THIS YEAR. OUR PRODUCTIVITY HAS DOUBLED SINCE ONBOARDING.", author: "Syed Ashar", role: "CEO", isDark: false },
 ];
 
 function CubeFace({

@@ -29,7 +29,6 @@ Directory structure:
     │   ├── MouseFollower.tsx
     │   ├── navbar.tsx
     │   ├── ScrollTriggerManager.tsx
-    │   ├── Testimonials.tsx
     │   ├── whatsapp-button.tsx
     │   ├── home/
     │   │   └── DraggableMarquee.tsx
@@ -503,8 +502,8 @@ export default function robots(): MetadataRoute.Robots {
 FILE: app/admin/page.tsx
 ================================================
 "use client";
-
 import React, { useState, useEffect, useRef } from "react";
+import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
@@ -524,10 +523,8 @@ export default function AdminDashboardPortal() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
-
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [modalMode, setModalMode] = useState<"CREATE" | "UPDATE" | "DELETE" | null>(null);
-
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("Web Development");
   const [description, setDescription] = useState("");
@@ -565,19 +562,30 @@ export default function AdminDashboardPortal() {
   const dismissModalContext = () => {
     if (modalWrapperRef.current && modalBoxRef.current) {
       const tl = gsap.timeline({ onComplete: () => { setModalMode(null); setActiveProject(null); clearFormFields(); } });
-      tl.to(modalBoxRef.current, { scale: 0.95, y: 10, opacity: 0, duration: 0.2, ease: "power2.in" }).to(modalWrapperRef.current, { opacity: 0, duration: 0.15 }, "-=0.1");
+      tl.to(modalBoxRef.current, { scale: 0.95, y: 10, opacity: 0, duration: 0.2, ease: "power2.in" })
+        .to(modalWrapperRef.current, { opacity: 0, duration: 0.15 }, "-=0.1");
     } else {
       setModalMode(null);
     }
   };
 
   const clearFormFields = () => {
-    setTitle(""); setCategory("Web Development"); setDescription(""); setLink(""); setColor("#a855f7"); setMediaFile(null);
+    setTitle(""); 
+    setCategory("Web Development"); 
+    setDescription(""); 
+    setLink(""); 
+    setColor("#a855f7"); 
+    setMediaFile(null);
   };
 
   const openFormModal = (mode: "CREATE" | "UPDATE" | "DELETE", project?: Project) => {
     if (project) {
-      setActiveProject(project); setTitle(project.title); setCategory(project.category); setDescription(project.description); setLink(project.link); setColor(project.color || "#a855f7");
+      setActiveProject(project); 
+      setTitle(project.title); 
+      setCategory(project.category); 
+      setDescription(project.description); 
+      setLink(project.link); 
+      setColor(project.color || "#a855f7");
     } else {
       clearFormFields();
     }
@@ -593,18 +601,14 @@ export default function AdminDashboardPortal() {
   const handleFormSubmission = async (e: React.FormEvent) => {
     e.preventDefault();
     setProcessing(true);
-
     try {
       let resolvedImageUrl = activeProject?.image_url || "";
-
       if (mediaFile) {
         const ext = mediaFile.name.split(".").pop();
         const prodName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
         const finalPath = `portfolio-assets/${prodName}`;
-
         const { error: uploadError } = await supabase.storage.from("projects_new-images").upload(finalPath, mediaFile);
         if (uploadError) throw uploadError;
-
         const { data: { publicUrl } } = supabase.storage.from("projects_new-images").getPublicUrl(finalPath);
         resolvedImageUrl = publicUrl;
       }
@@ -649,9 +653,25 @@ export default function AdminDashboardPortal() {
           <h2 className="text-3xl font-light tracking-tight mb-1">Terminal</h2>
           <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest mb-6">Internal Access Authorization</p>
           <form onSubmit={executeLogin} className="space-y-4">
-            <input type="email" placeholder="Identifier Email" value={authEmail} onChange={e => setAuthEmail(e.target.value)} required className="w-full p-4 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 transition-colors" />
-            <input type="password" placeholder="Key Verification Token" value={authPassword} onChange={e => setAuthPassword(e.target.value)} required className="w-full p-4 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 transition-colors" />
-            <button type="submit" className="w-full p-4 bg-white text-black text-xs uppercase tracking-wider font-bold rounded-xl hover:bg-neutral-200 transition-colors">Connect Workspace</button>
+            <input 
+              type="email" 
+              placeholder="Identifier Email" 
+              value={authEmail} 
+              onChange={e => setAuthEmail(e.target.value)} 
+              required 
+              className="w-full p-4 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 transition-colors" 
+            />
+            <input 
+              type="password" 
+              placeholder="Key Verification Token" 
+              value={authPassword} 
+              onChange={e => setAuthPassword(e.target.value)} 
+              required 
+              className="w-full p-4 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 transition-colors" 
+            />
+            <button type="submit" className="w-full p-4 bg-white text-black text-xs uppercase tracking-wider font-bold rounded-xl hover:bg-neutral-200 transition-colors">
+              Connect Workspace
+            </button>
           </form>
         </div>
       </div>
@@ -662,12 +682,34 @@ export default function AdminDashboardPortal() {
     <div className="min-h-screen bg-[#0a0a0a] text-white pt-24 pb-12 px-6 md:px-16 font-sans">
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/10 pb-8 mb-12 gap-4">
         <div>
-          <h1 className="text-4xl font-black tracking-tight">Dashboard To Managae Projects</h1>
+          <h1 className="text-4xl font-black tracking-tight">Dashboard To Manage Projects</h1>
           <p className="text-neutral-500 text-xs mt-1 font-light">Manage database rows alongside flat preview visual representation modules.</p>
         </div>
         <div className="flex gap-3">
-          <button onClick={() => openFormModal("CREATE")} className="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs uppercase tracking-wider rounded-xl transition-colors">Create Object</button>
-          <button onClick={() => supabase.auth.signOut()} className="px-5 py-3 border border-white/10 hover:bg-white/5 text-neutral-400 hover:text-white text-xs uppercase tracking-wider rounded-xl transition-colors">Log Out</button>
+          {/* NEW: View Projects Button */}
+          <Link 
+            href={"/projects" as any} 
+            className="px-5 py-3 border border-white/10 hover:bg-white/5 text-neutral-400 hover:text-white text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center gap-2"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            View Projects
+          </Link>
+          
+          <button 
+            onClick={() => openFormModal("CREATE")} 
+            className="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs uppercase tracking-wider rounded-xl transition-colors"
+          >
+            Create Object
+          </button>
+          <button 
+            onClick={() => supabase.auth.signOut()} 
+            className="px-5 py-3 border border-white/10 hover:bg-white/5 text-neutral-400 hover:text-white text-xs uppercase tracking-wider rounded-xl transition-colors"
+          >
+            Log Out
+          </button>
         </div>
       </div>
 
@@ -676,15 +718,31 @@ export default function AdminDashboardPortal() {
           <div key={project.id} className="group border border-white/10 bg-white/[0.01] rounded-2xl p-6 flex flex-col justify-between hover:bg-white/[0.03] transition-colors min-h-[260px]">
             <div>
               <div className="flex justify-between items-start gap-4 mb-4">
-                <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 border rounded-full" style={{ color: project.color, borderColor: project.color }}>{project.category}</span>
-                {project.image_url && <div className="w-12 h-12 rounded-lg border border-white/10 overflow-hidden bg-black flex-shrink-0"><img src={project.image_url} alt="asset node preview" className="w-full h-full object-cover" /></div>}
+                <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 border rounded-full" style={{ color: project.color, borderColor: project.color }}>
+                  {project.category}
+                </span>
+                {project.image_url && (
+                  <div className="w-12 h-12 rounded-lg border border-white/10 overflow-hidden bg-black flex-shrink-0">
+                    <img src={project.image_url} alt="asset node preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
               </div>
               <h3 className="text-xl font-medium tracking-tight mb-2 group-hover:text-purple-400 transition-colors">{project.title}</h3>
               <p className="text-neutral-500 text-xs leading-relaxed line-clamp-3 font-light">{project.description}</p>
             </div>
             <div className="flex gap-2 border-t border-white/5 pt-4 mt-6">
-              <button onClick={() => openFormModal("UPDATE", project)} className="flex-1 py-2 text-center text-xs border border-white/10 rounded-lg text-neutral-300 hover:bg-white/5 transition-colors">Modify</button>
-              <button onClick={() => openFormModal("DELETE", project)} className="px-3 py-2 text-center text-xs border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors">Delete</button>
+              <button 
+                onClick={() => openFormModal("UPDATE", project)} 
+                className="flex-1 py-2 text-center text-xs border border-white/10 rounded-lg text-neutral-300 hover:bg-white/5 transition-colors"
+              >
+                Modify
+              </button>
+              <button 
+                onClick={() => openFormModal("DELETE", project)} 
+                className="px-3 py-2 text-center text-xs border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}
@@ -693,29 +751,49 @@ export default function AdminDashboardPortal() {
       {modalMode && (
         <div ref={modalWrapperRef} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={dismissModalContext}>
           <div ref={modalBoxRef} className="w-full max-w-xl bg-[#0f0f11] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative" onClick={e => e.stopPropagation()}>
-            <button onClick={dismissModalContext} className="absolute top-6 right-6 w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">&times;</button>
-
+            <button onClick={dismissModalContext} className="absolute top-6 right-6 w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
+              &times;
+            </button>
+            
             {modalMode === "DELETE" ? (
               <div>
                 <h3 className="text-2xl font-light tracking-tight text-white mb-2">Destructive Access Instruction</h3>
-                <p className="text-neutral-400 text-sm font-light leading-relaxed mb-6">Are you sure you want to permanently delete <span className="text-white font-medium">{activeProject?.title}</span>? This instruction will drop the values from postgres servers instantly.</p>
+                <p className="text-neutral-400 text-sm font-light leading-relaxed mb-6">
+                  Are you sure you want to permanently delete <span className="text-white font-medium">{activeProject?.title}</span>? This instruction will drop the values from postgres servers instantly.
+                </p>
                 <div className="flex gap-3 justify-end">
-                  <button type="button" onClick={dismissModalContext} className="px-4 py-2.5 text-xs uppercase tracking-wider font-medium text-neutral-400 hover:text-white transition-colors">Cancel</button>
-                  <button onClick={handleDeletionCall} disabled={processing} className="px-5 py-2.5 text-xs uppercase tracking-wider font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl disabled:bg-neutral-800 transition-colors">{processing ? "Purging..." : "Confirm Delete"}</button>
+                  <button type="button" onClick={dismissModalContext} className="px-4 py-2.5 text-xs uppercase tracking-wider font-medium text-neutral-400 hover:text-white transition-colors">
+                    Cancel
+                  </button>
+                  <button onClick={handleDeletionCall} disabled={processing} className="px-5 py-2.5 text-xs uppercase tracking-wider font-semibold bg-red-600 hover:bg-red-700 text-white rounded-xl disabled:bg-neutral-800 transition-colors">
+                    {processing ? "Purging..." : "Confirm Delete"}
+                  </button>
                 </div>
               </div>
             ) : (
               <div>
-                <h3 className="text-2xl font-light tracking-tight text-white mb-6">{modalMode === "CREATE" ? "Initialize Data Object" : "Modify Structural Values"}</h3>
+                <h3 className="text-2xl font-light tracking-tight text-white mb-6">
+                  {modalMode === "CREATE" ? "Initialize Data Object" : "Modify Structural Values"}
+                </h3>
                 <form onSubmit={handleFormSubmission} className="space-y-4">
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Project Name</label>
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none" />
+                    <input 
+                      type="text" 
+                      value={title} 
+                      onChange={e => setTitle(e.target.value)} 
+                      required 
+                      className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none" 
+                    />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Category Classification</label>
-                      <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none">
+                      <select 
+                        value={category} 
+                        onChange={e => setCategory(e.target.value)} 
+                        className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none"
+                      >
                         <option value="Web Development">Web Development</option>
                         <option value="Mobile Development">Mobile Development</option>
                         <option value="UI/UX Design">UI/UX Design</option>
@@ -725,28 +803,59 @@ export default function AdminDashboardPortal() {
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Brand Layout Glow Color</label>
                       <div className="flex gap-2">
-                        <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-10 h-10 bg-transparent border-0 cursor-pointer p-0" />
-                        <input type="text" value={color} onChange={e => setColor(e.target.value)} className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white uppercase font-mono" />
+                        <input 
+                          type="color" 
+                          value={color} 
+                          onChange={e => setColor(e.target.value)} 
+                          className="w-10 h-10 bg-transparent border-0 cursor-pointer p-0" 
+                        />
+                        <input 
+                          type="text" 
+                          value={color} 
+                          onChange={e => setColor(e.target.value)} 
+                          className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white uppercase font-mono" 
+                        />
                       </div>
                     </div>
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Description Context</label>
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} required className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white min-h-[90px] resize-none focus:outline-none" />
+                    <textarea 
+                      value={description} 
+                      onChange={e => setDescription(e.target.value)} 
+                      required 
+                      className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white min-h-[90px] resize-none focus:outline-none" 
+                    />
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Link Target Route URL</label>
-                    <input type="url" value={link} onChange={e => setLink(e.target.value)} placeholder="https://" className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none" />
+                    <input 
+                      type="url" 
+                      value={link} 
+                      onChange={e => setLink(e.target.value)} 
+                      placeholder="https://" 
+                      className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none" 
+                    />
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Thumbnail Media Asset Representation</label>
                     <div className="p-4 border border-dashed border-white/10 rounded-xl text-center relative hover:border-white/20 transition-colors">
-                      <input type="file" accept="image/*" onChange={e => setMediaFile(e.target.files ? e.target.files[0] : null)} required={modalMode === "CREATE"} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
-                      <p className="text-xs text-neutral-400 font-light">{mediaFile ? `Queued: ${mediaFile.name}` : modalMode === "UPDATE" ? "Leave blank to keep current thumbnail asset" : "Click or drop thumbnail image asset package here"}</p>
+                      <input 
+                        type="file" 
+                        accept="image/*" 
+                        onChange={e => setMediaFile(e.target.files ? e.target.files[0] : null)} 
+                        required={modalMode === "CREATE"} 
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                      />
+                      <p className="text-xs text-neutral-400 font-light">
+                        {mediaFile ? `Queued: ${mediaFile.name}` : modalMode === "UPDATE" ? "Leave blank to keep current thumbnail asset" : "Click or drop thumbnail image asset package here"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex gap-2 justify-end pt-4 border-t border-white/5 mt-6">
-                    <button type="button" onClick={dismissModalContext} className="px-4 py-2.5 text-xs uppercase tracking-wider font-medium text-neutral-400 hover:text-white transition-colors">Cancel</button>
+                    <button type="button" onClick={dismissModalContext} className="px-4 py-2.5 text-xs uppercase tracking-wider font-medium text-neutral-400 hover:text-white transition-colors">
+                      Cancel
+                    </button>
                     <button type="submit" disabled={processing} className="px-5 py-2.5 text-xs uppercase tracking-wider font-semibold bg-purple-600 hover:bg-purple-700 text-white rounded-xl disabled:bg-neutral-800 transition-colors">
                       {processing ? "Uploading Assets..." : modalMode === "CREATE" ? "Commit Entry" : "Save Structural Shift"}
                     </button>
@@ -885,16 +994,15 @@ export default function PrivacyPolicy() {
 FILE: app/projects/page.tsx
 ================================================
 "use client";
-
 import React, { useRef, useState, useEffect } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { supabase } from "@/lib/supabase";
-
 import Navbar from "@/components/navbar";
 import Cursor from "@/components/MouseFollower";
 import CanvasBackground from "@/components/canvas-background";
 import WhatsAppButton from "@/components/whatsapp-button";
+import { useLenis } from "@/lib/lenis-provider";
 
 interface Project {
   id: number;
@@ -910,6 +1018,10 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null); // NEW: Track server errors
+
+  // Initialize Lenis hook to control smooth scrolling
+  const lenis = useLenis();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -919,20 +1031,39 @@ export default function ProjectsPage() {
   useEffect(() => {
     async function streamLiveProjects() {
       try {
-        const { data, error } = await supabase
+        const { data, error: fetchError } = await supabase
           .from("projects_new")
           .select("*")
           .order("created_at", { ascending: false });
-        if (error) throw error;
+
+        if (fetchError) throw fetchError;
         if (data) setProjects(data);
       } catch (err: any) {
         console.error("Database Sync Error:", err.message);
+        setError("Connection to the database registry failed.");
       } finally {
         setLoading(false);
       }
     }
     streamLiveProjects();
   }, []);
+
+  // FIX: Stop Lenis and lock body scroll when modal is open
+  useEffect(() => {
+    if (selectedProject) {
+      lenis?.stop();
+      document.body.style.overflow = "hidden";
+    } else {
+      lenis?.start();
+      document.body.style.overflow = "";
+    }
+
+    // Cleanup to ensure smooth scroll is always restored if component unmounts
+    return () => {
+      lenis?.start();
+      document.body.style.overflow = "";
+    };
+  }, [selectedProject, lenis]);
 
   useGSAP(() => {
     if (!loading && projects.length > 0) {
@@ -974,7 +1105,6 @@ export default function ProjectsPage() {
     gsap.to(e.currentTarget.querySelector(".card-arrow"), { x: 0, duration: 0.3, ease: "power2.out" });
   };
 
-  // Option 3 Hover Interactions for the Modal Thumbnail Preview
   const handleModalImageEnter = () => {
     if (modalImageRef.current) {
       gsap.to(modalImageRef.current, { scale: 1.04, duration: 0.4, ease: "power2.out" });
@@ -993,7 +1123,7 @@ export default function ProjectsPage() {
       <Cursor />
       <CanvasBackground />
       <Navbar />
-      
+
       <main ref={containerRef} className="relative min-h-screen bg-[#0a0a0a] text-white pt-32 pb-20 px-6 md:px-16 overflow-hidden">
         <div className="max-w-7xl mx-auto mb-20">
           <h1 className="text-5xl md:text-7xl font-black tracking-tighter leading-[0.9] mb-6">
@@ -1007,11 +1137,23 @@ export default function ProjectsPage() {
 
         {loading ? (
           <div className="max-w-7xl mx-auto flex items-center justify-center py-20">
-            <p className="font-mono text-xs uppercase tracking-widest text-neutral-500 animate-pulse">Syncing production nodes...</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-500 animate-pulse">Loading Projects...</p>
+          </div>
+        ) : error ? (
+          <div className="max-w-7xl mx-auto flex flex-col items-center justify-center py-20 border border-red-500/20 bg-red-500/[0.02] rounded-3xl">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
+              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-red-400 mb-2">Database Sync Exception</p>
+            <p className="text-neutral-400 text-sm font-light text-center max-w-md leading-relaxed">
+              We encountered a server-side routing issue while fetching the project registry. Please refresh the page or try again in a few moments.
+            </p>
           </div>
         ) : projects.length === 0 ? (
           <div className="max-w-7xl mx-auto flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl">
-            <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">No active systems initialized.</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">No Projects Available To Show.</p>
           </div>
         ) : (
           <div className="projects-grid max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -1030,7 +1172,6 @@ export default function ProjectsPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 17L17 7M17 7H7M17 7v10" />
                   </svg>
                 </div>
-
                 <div className="mt-16">
                   <span className="text-[10px] font-mono tracking-[0.25em] uppercase px-3 py-1 border rounded-full mb-6 inline-block" style={{ color: project.color, borderColor: project.color }}>
                     {project.category}
@@ -1049,28 +1190,45 @@ export default function ProjectsPage() {
       </main>
 
       {selectedProject && (
-        <div ref={modalRef} className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md" onClick={closeModal}>
-          <div ref={modalContentRef} className="relative w-full max-w-5xl bg-[#0f0f11] border border-white/10 rounded-3xl overflow-hidden shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <button onClick={closeModal} className="absolute top-6 right-6 z-20 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+        <div
+          ref={modalRef}
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-black/80 backdrop-blur-md"
+          onClick={closeModal}
+        >
+          <div
+            ref={modalContentRef}
+            // Added overflow-hidden here to strictly contain the inner scroll
+            className="relative w-full max-w-5xl bg-[#0f0f11] border border-white/10 rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={closeModal}
+              data-cursor="-exclusion"
+              className="absolute top-4 right-4 md:top-6 md:right-6 z-50 w-10 h-10 rounded-full bg-black/60 backdrop-blur-md border border-white/10 flex items-center justify-center text-white hover:bg-white/10 hover:border-white/20 transition-all duration-200"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2">
-              {/* Option 3 Left Side: High Resolution Image Preview Window with Scale Transition */}
-              <div 
-                className="relative h-64 lg:h-auto min-h-[440px] bg-neutral-900 overflow-hidden cursor-pointer group"
+            {/* Added overscroll-contain to prevent scroll chaining to the background */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 overflow-y-auto overscroll-contain">
+              <div
+                className="relative h-64 lg:h-auto lg:sticky lg:top-0 min-h-[300px] lg:min-h-[500px] bg-neutral-900 overflow-hidden cursor-pointer group"
                 onMouseEnter={handleModalImageEnter}
                 onMouseLeave={handleModalImageLeave}
               >
                 {selectedProject.image_url ? (
-                  <img 
+                  <img
                     ref={modalImageRef}
-                    src={selectedProject.image_url} 
-                    alt={selectedProject.title} 
+                    src={selectedProject.image_url}
+                    alt={selectedProject.title}
                     className="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-90"
                   />
                 ) : (
-                  <div className="absolute inset-0 flex items-center justify-center text-neutral-600 font-mono text-xs uppercase tracking-widest">No Asset Loaded</div>
+                  <div className="absolute inset-0 flex items-center justify-center text-neutral-600 font-mono text-xs uppercase tracking-widest">
+                    No Asset Loaded
+                  </div>
                 )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-60 pointer-events-none" />
                 <div className="absolute bottom-6 left-6 z-10 pointer-events-none">
@@ -1081,20 +1239,45 @@ export default function ProjectsPage() {
               </div>
 
               <div className="p-8 md:p-12 flex flex-col justify-center bg-[#0f0f11]">
-                <span className="text-[10px] font-mono tracking-[0.25em] uppercase mb-4 block" style={{ color: selectedProject.color }}>{selectedProject.category}</span>
-                <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-white mb-6">{selectedProject.title}</h2>
-                <p className="text-neutral-400 text-base leading-relaxed font-light mb-12">{selectedProject.description}</p>
+                <span
+                  className="text-[10px] font-mono tracking-[0.25em] uppercase mb-4 block"
+                  style={{ color: selectedProject.color }}
+                >
+                  {selectedProject.category}
+                </span>
+                <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-white mb-6">
+                  {selectedProject.title}
+                </h2>
+                <p className="text-neutral-400 text-base leading-relaxed font-light mb-12 break-words whitespace-pre-wrap">
+                  {selectedProject.description}
+                </p>
+
                 <div className="flex flex-col sm:flex-row gap-4">
                   {selectedProject.link && (
-                    <a href={selectedProject.link} target="_blank" rel="noopener noreferrer" data-cursor="-exclusion" className="group relative flex items-center justify-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-sm overflow-hidden transition-transform hover:scale-105">
+                    <a
+                      href={selectedProject.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      data-cursor="-exclusion"
+                      className="group relative flex items-center justify-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-sm overflow-hidden transition-transform hover:scale-105"
+                    >
                       <span className="absolute inset-0 w-0 bg-purple-600 group-hover:w-full transition-all duration-500 ease-out" />
                       <span className="relative z-10 group-hover:text-white transition-colors">View Live Project</span>
-                      <svg className="relative z-10 w-4 h-4 text-black group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                      <svg className="relative z-10 w-4 h-4 text-black group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                      </svg>
                     </a>
                   )}
-                  <button onClick={closeModal} className="flex items-center justify-center gap-2 px-8 py-4 rounded-full border border-white/10 text-white text-sm font-medium hover:bg-white/5 transition-colors duration-300">Close</button>
+                  <button
+                    onClick={closeModal}
+                    className="flex items-center justify-center gap-2 px-8 py-4 rounded-full border border-white/10 text-white text-sm font-medium hover:bg-white/5 transition-colors duration-300"
+                    data-cursor="-exclusion"
+                  >
+                    Close
+                  </button>
                 </div>
               </div>
+
             </div>
           </div>
         </div>
@@ -1385,13 +1568,15 @@ FILE: components/canvas-background.tsx
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef, useMemo } from "react";
+import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
 
-const COUNT = 1500; // More particles, but smaller size = premium star-dust effect
+const COUNT = 1500;
+// More particles, but smaller size = premium star-dust effect
 
 const vertexShader = `
   uniform float uTime;
+  uniform vec2 uMouse;
   varying vec3 vPosition;
 
   void main() {
@@ -1401,6 +1586,14 @@ const vertexShader = `
     // Make the wave motion much gentler and slower
     pos.y += sin(uTime * 0.2 + pos.x * 0.1) * 0.4;
     pos.x += cos(uTime * 0.1 + pos.y * 0.1) * 0.2;
+
+    // --- Mouse Repulsion Logic ---
+    vec2 dir = pos.xy - uMouse;
+    float dist = length(dir);
+    // 12.0 is the radius of influence. Particles inside this radius are pushed away.
+    float force = smoothstep(12.0, 0.0, dist); 
+    // 3.5 is the max displacement intensity.
+    pos.xy += normalize(dir + vec2(0.0001)) * force * 3.5; 
 
     vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
     gl_Position = projectionMatrix * mvPosition;
@@ -1425,6 +1618,24 @@ function ParticleField() {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const pointsRef = useRef<THREE.Points>(null);
 
+  // Mouse tracking references
+  const targetMouse = useRef(new THREE.Vector2(-9999, -9999));
+  const currentMouse = useRef(new THREE.Vector2(-9999, -9999));
+  const mouseVec3 = useRef(new THREE.Vector3());
+
+  // Capture global mouse movements because the canvas container is pointer-events-none
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      // Map mouse to Normalized Device Coordinates (-1 to +1)
+      const x = (e.clientX / window.innerWidth) * 2 - 1;
+      const y = -(e.clientY / window.innerHeight) * 2 + 1;
+      targetMouse.current.set(x, y);
+    };
+    
+    window.addEventListener("mousemove", handleMouseMove);
+    return () => window.removeEventListener("mousemove", handleMouseMove);
+  }, []);
+
   const positions = useMemo(() => {
     const pos = new Float32Array(COUNT * 3);
     for (let i = 0; i < COUNT; i++) {
@@ -1439,6 +1650,7 @@ function ParticleField() {
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
+      uMouse: { value: new THREE.Vector2(-9999, -9999) },
     }),
     [],
   );
@@ -1446,10 +1658,28 @@ function ParticleField() {
   useFrame((state) => {
     const time = state.clock.getElapsedTime();
     if (materialRef.current) materialRef.current.uniforms.uTime.value = time;
+    
     if (pointsRef.current) {
       // Incredibly slow rotation so it mimics a natural atmosphere rather than a spinning vortex
       pointsRef.current.rotation.z = time * 0.002;
       pointsRef.current.rotation.y = time * 0.004;
+
+      // Convert target NDC mouse coordinates to actual 3D viewport coordinates
+      const mouseX = (targetMouse.current.x * state.viewport.width) / 2;
+      const mouseY = (targetMouse.current.y * state.viewport.height) / 2;
+      const targetViewportMouse = new THREE.Vector2(mouseX, mouseY);
+
+      // Smooth interpolation for fluid hover tracking
+      currentMouse.current.lerp(targetViewportMouse, 0.08);
+
+      // Transform the world/viewport mouse coordinates into the slowly rotating local space of the points
+      mouseVec3.current.set(currentMouse.current.x, currentMouse.current.y, 0);
+      pointsRef.current.worldToLocal(mouseVec3.current);
+
+      // Update shader uniform
+      if (materialRef.current) {
+        materialRef.current.uniforms.uMouse.value.set(mouseVec3.current.x, mouseVec3.current.y);
+      }
     }
   });
 
@@ -1486,7 +1716,6 @@ export default function CanvasBackground() {
     </div>
   );
 }
-
 
 
 ================================================
@@ -1553,8 +1782,8 @@ const socialLinks = [
 ];
 
 const LINES = [
-  { text: "Let's Build", ghost: false },
-  { text: "Something Real.", ghost: true },
+  { text: "Ready to Build?", ghost: false },
+  { text: "Let's Talk.", ghost: true },
 ];
 
 // ─── Declarative R3F Hover Interactive Particles ──────────────────────────────
@@ -1822,7 +2051,7 @@ export default function ContactSection({ showCapabilities }: Props) {
             </div>
           </div>
           <div className="contact-tagline flex flex-col items-start md:items-end gap-2 max-w-sm">
-            <p className="text-neutral-500 text-sm font-light leading-relaxed md:text-right">Headquartered in Karachi.<br />Operating everywhere that matters.</p>
+            <p className="text-neutral-500 text-sm font-light leading-relaxed md:text-right">Based in Karachi.<br />Engineering Scalable Solutions Nationwide.</p>
             <div className="flex items-center gap-2 mt-1">
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" style={{ boxShadow: "0 0 6px rgba(16,185,129,0.75)", animation: "ct-pulse 2.5s ease-in-out infinite" }} />
               <span className="text-[10px] font-mono uppercase tracking-[0.2em] text-neutral-500">Accepting Projects — 2026</span>
@@ -1852,10 +2081,10 @@ import { Text, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 
 const testimonials = [
-  { text: "WE SAW RESULTS WITHIN THE FIRST WEEK. IT'S INTUITIVE, FAST, AND RELIABLE.", author: "ALEX RIVERA", role: "PM, LAUNCHPAD", isDark: true },
-  { text: "THIS PRODUCT COMPLETELY TRANSFORMED THE WAY OUR TEAM COLLABORATES. HIGHLY RECOMMEND!", author: "SARAH CHEN", role: "CTO, TECHNOVA", isDark: false },
-  { text: "INCREDIBLE SUPPORT AND A SEAMLESS EXPERIENCE FROM START TO FINISH. FIVE STARS!", author: "PRIYA SHARMA", role: "LEAD DESIGNER, CREATIFY", isDark: true },
-  { text: "THE BEST INVESTMENT WE'VE MADE THIS YEAR. OUR PRODUCTIVITY HAS DOUBLED SINCE ONBOARDING.", author: "JAMES MILLER", role: "CEO, BRIGHTPATH", isDark: false },
+  { text: "WE SAW RESULTS WITHIN THE FIRST WEEK. IT'S INTUITIVE, FAST, AND RELIABLE.", author: "Dr. Naureen Jamshed", role: "CEO,FOUNDER", isDark: true },
+  { text: "THIS PRODUCT COMPLETELY TRANSFORMED THE WAY OUR TEAM COLLABORATES. HIGHLY RECOMMEND!", author: "Chef Gulzar Hussain", role: "Executive Chef GTV", isDark: false },
+  { text: "INCREDIBLE SUPPORT AND A SEAMLESS EXPERIENCE FROM START TO FINISH. FIVE STARS!", author: "Dr Khalid Anjum", role: "Business Owner", isDark: true },
+  { text: "THE BEST INVESTMENT WE'VE MADE THIS YEAR. OUR PRODUCTIVITY HAS DOUBLED SINCE ONBOARDING.", author: "Syed Ashar", role: "CEO", isDark: false },
 ];
 
 function CubeFace({
@@ -2446,20 +2675,6 @@ export default function ScrollTriggerManager() {
 
   return null;
 }
-
-
-================================================
-FILE: components/Testimonials.tsx
-================================================
-import React from 'react'
-
-function Testimonials() {
-  return (
-    <div>Testimonials</div>
-  )
-}
-
-export default Testimonials
 
 
 ================================================
@@ -3332,12 +3547,12 @@ const stats = [
 ];
 
 const services = [
-  { title: "Custom Projects & MVPs", desc: "End-to-end engineering built from the ground up, from rapid MVP launches to complex architectures tailored to your exact business needs." },
-  { title: "Ready-made Solutions", desc: "Pre-validated, high-performance modules designed for rapid integration and immediate scalability." },
-  { title: "Web App Engineering", desc: "Next-generation full-stack applications engineered for speed, security, and seamless interaction." },
-  { title: "Project Consultancy", desc: "Strategic technical guidance to optimize development lifecycles and maximize engineering velocity." },
-  { title: "UI/UX Design", desc: "Immersive, human-centric interface architecture that drives engagement and simplifies complex workflows." },
-  { title: "Design Systems & Prototyping", desc: "Unified component libraries and interactive blueprints to standardize and accelerate production." },
+  { title: "Custom Software & Rapid MVPs", desc: "Scalable engineering by a top software agency. We build high-performance, rapid MVPs tailored to your business goals." },
+  { title: "AI Automation Solutions", desc: "Pre-validated modules built for instant scale. Easily integrate business automation and advanced biometric systems." },
+  { title: "Full-Stack Web & App Dev", desc: "Next-gen full-stack apps engineered for speed, robust security, and seamless, cloud-native performance." },
+  { title: "IT Consultancy & Growth Strategy", desc: "Expert technical guidance and performance engineering. We align robust code with high-impact digital marketing" },
+  { title: "UI/UX Engineering", desc: "Crafting intuitive, human-centered digital interfaces. We merge minimalist design aesthetics with flawless usability to maximize engagement, retention, and conversions." },
+  { title: "Design Systems & Prototyping", desc: "Building reusable component libraries and high-fidelity interactive prototypes. We establish unified frameworks that bridge the gap between design and development." },
 ];
 
 // Array of words, starting with "INNOVELOUS AI"
@@ -3350,19 +3565,13 @@ export default function Home() {
   const serviceRef = useRef<HTMLDivElement>(null);
   const hasAnimatedRef = useRef(false);
 
-  // State to track current word index
   const [wordIndex, setWordIndex] = useState(0);
 
-  // Dynamic timing: 5 seconds for index 0, 2 seconds for the rest
   useEffect(() => {
-    // If it's the first word (INNOVELOUS AI), wait 5000ms. Otherwise, wait 2000ms.
     const delay = wordIndex === 0 ? 5000 : 2000;
-
     const timeout = setTimeout(() => {
       setWordIndex((prev) => {
         const nextIndex = prev + 1;
-        // If you want it to skip "INNOVELOUS AI" on the next loop, change `0` to `1` below.
-        // Currently, it loops back to the start (0).
         return nextIndex % HERO_WORDS.length; 
       });
     }, delay);
@@ -3370,7 +3579,6 @@ export default function Home() {
     return () => clearTimeout(timeout);
   }, [wordIndex]);
 
-  // 1. Static Animations (Scroll triggers, hover effects, etc. - Runs Once)
   useGSAP(
     () => {
       if (hasAnimatedRef.current) return;
@@ -3380,7 +3588,6 @@ export default function Home() {
         opacity: 0, y: 30, duration: 1, stagger: 0.12, ease: "power3.out", delay: 0.35,
       });
 
-      // Page Skew on Scroll
       const proxy = { skew: 0 };
       const skewSetter = gsap.quickSetter(skewContentRef.current, "skewY", "deg");
       const clamp = gsap.utils.clamp(-4, 4);
@@ -3398,7 +3605,6 @@ export default function Home() {
         },
       });
 
-      // Services Hover Interactions
       gsap.utils.toArray<HTMLElement>(".service-row").forEach((row) => {
         const revealTarget = row.querySelector(".service-reveal");
         const internalText = row.querySelector(".service-title-text");
@@ -3413,7 +3619,6 @@ export default function Home() {
         });
       });
 
-      // Magnetic CTA
       const cta = ctaRef.current;
       if (cta) {
         const move = (e: MouseEvent) => {
@@ -3429,7 +3634,6 @@ export default function Home() {
         cta.addEventListener("mouseleave", leave);
       }
 
-      // Hero Title Parallax
       const heroWrapper = containerRef.current?.querySelector(".hero-title-wrapper");
       if (heroWrapper) {
         const move = (e: MouseEvent) => {
@@ -3445,7 +3649,6 @@ export default function Home() {
         containerRef.current?.addEventListener("mouseleave", leave);
       }
 
-      // Services Pinning
       ScrollTrigger.create({
         trigger: serviceRef.current, start: "top top", end: "+=100%",
         pin: true, pinSpacing: false, pinType: "transform",
@@ -3460,7 +3663,6 @@ export default function Home() {
     { scope: containerRef, dependencies: [] }
   );
 
-  // 2. Dynamic Text Animation (Runs every time wordIndex changes)
   useGSAP(
     () => {
       gsap.fromTo(
@@ -3503,7 +3705,6 @@ export default function Home() {
                   style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)" }}
                   data-cursor-text=" "
                 >
-                  {/* Key forces React to re-render fresh spans for GSAP to animate from the bottom */}
                   <div key={wordIndex} className="flex items-center justify-center overflow-hidden flex-wrap">
                     {HERO_WORDS[wordIndex].split("").map((char, i) => (
                       <span key={i} className="hero-char-wrapper inline-block overflow-hidden">
@@ -3511,7 +3712,6 @@ export default function Home() {
                           className="hero-char inline-block"
                           style={{ transformOrigin: "bottom center", willChange: "transform, opacity" }}
                         >
-                          {/* Handling spaces so they don't collapse in HTML */}
                           {char === " " ? "\u00A0" : char}
                         </span>
                       </span>
@@ -3547,15 +3747,14 @@ export default function Home() {
             </div>
           </section>
 
-          {/* ── PROFESSIONAL DRAGGABLE MARQUEE ── */}
           <DraggableMarquee />
 
-          {/* SERVICES SECTION */}
-          <section ref={serviceRef} id="service" className="min-h-screen flex flex-col justify-center px-6 md:px-16 py-20 relative z-10">
+          {/* SERVICES SECTION - Compacted Paddings for 100% Zoom Issue */}
+          <section ref={serviceRef} id="service" className="min-h-screen flex flex-col justify-center px-6 md:px-16 py-8 md:py-10 lg:py-10 relative z-10">
             <div className="max-w-7xl mx-auto w-full">
-              <div className="mb-8">
+              <div className="mb-4 md:mb-5 lg:mb-5">
                 <span className="text-purple-500 text-xs font-mono tracking-[0.3em] uppercase block mb-2">01 // CAPABILITIES</span>
-                <h2 className="text-3xl md:text-5xl font-light tracking-tight text-white">Selected Digital Disciplines</h2>
+                <h2 className="text-2xl md:text-4xl lg:text-5xl font-light tracking-tight text-white">Next-Gen Development & IT Solutions</h2>
               </div>
               <div className="flex flex-col border-t border-neutral-800">
                 {services.map((s, i) => (
@@ -3563,14 +3762,14 @@ export default function Home() {
                     data-cursor-text="Click"
                     key={i}
                     data-cursor-pointer
-                    className="service-row group flex flex-col md:flex-row md:items-center justify-between py-4 border-b border-neutral-800 cursor-pointer transition-all duration-300"
+                    className="service-row group flex flex-col md:flex-row md:items-center justify-between py-2 md:py-3 lg:py-2.5 border-b border-neutral-800 cursor-pointer transition-all duration-300"
                   >
-                    <div className="flex items-center gap-4 md:gap-6 mb-2 md:mb-0">
+                    <div className="flex items-center gap-4 md:gap-6 mb-1 md:mb-0">
                       <span className="text-xs font-mono text-neutral-600">0{i + 1}</span>
-                      <h3 className="service-title-text text-lg md:text-xl font-normal text-white transition-transform duration-300 ease-out">{s.title}</h3>
+                      <h3 className="service-title-text text-base md:text-lg lg:text-lg font-normal text-white transition-transform duration-300 ease-out">{s.title}</h3>
                     </div>
                     <div className="flex items-center gap-6 justify-between md:justify-end md:w-1/2">
-                      <p className="text-sm text-neutral-500 max-w-xs md:text-right font-light">{s.desc}</p>
+                      <p className="text-[11px] md:text-xs lg:text-sm text-neutral-500 max-w-xs md:text-right font-light leading-snug">{s.desc}</p>
                       <div className="service-reveal opacity-0 w-0 overflow-hidden flex items-center text-purple-500 hidden md:flex">
                         <svg className="w-5 h-5 transform -rotate-45" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
@@ -3591,7 +3790,7 @@ export default function Home() {
                   Built for Growth
                 </h2>
                 <div className="space-y-6 text-neutral-400 text-base md:text-lg leading-relaxed font-light">
-                  <p className="about-desc">At Innovelous Tech, we help businesses accelerate growth through AI-powered solutions, custom software development, automation systems, and digital transformation strategies. Our mission is to bridge innovation with real-world business challenges. </p>
+                  <p className="about-desc">At Innovelous Tech, we help businesses accelerate growth through AI powered solutions, custom software development, automation systems, and digital transformation strategies. Our mission is to bridge innovation with real-world business challenges. </p>
                 </div>
                 <div className="mt-10 flex items-center gap-6">
                   <div className="w-12 h-[1px] bg-purple-500/50"></div>
@@ -3601,15 +3800,15 @@ export default function Home() {
               <div className="about-stats-col flex flex-col justify-center gap-10 border-t border-neutral-800 pt-12 lg:pt-0 lg:border-t-0 lg:border-l lg:pl-16">
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-6 about-divider" style={{ transformOrigin: "left center" }}>
                   <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">Core Philosophy</span>
-                  <span className="text-xl text-white font-light">Precision First</span>
+                  <span className="text-xl text-white font-light">Execution First</span>
                 </div>
                 <div className="flex items-center justify-between border-b border-neutral-800 pb-6 about-divider" style={{ transformOrigin: "left center" }}>
-                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">Global Reach</span>
-                  <span className="text-xl text-white font-light">42+ Countries</span>
+                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">PRODUCTION SPEED</span>
+                  <span className="text-xl text-white font-light">Rapid MVP Deployment</span>
                 </div>
                 <div className="flex items-center justify-between about-divider" style={{ transformOrigin: "left center" }}>
-                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">Uptime SLA</span>
-                  <span className="text-xl text-white font-light">99.99%</span>
+                  <span className="text-sm uppercase tracking-widest text-neutral-500 font-mono">INFRASTRUCTURE</span>
+                  <span className="text-xl text-white font-light">99.99% Reliable</span>
                 </div>
                 <div className="mt-8 about-stat p-6 bg-neutral-900/30 border border-neutral-800 rounded-2xl">
                   <p className="text-neutral-300 text-sm leading-relaxed italic">"We measure success not by lines of code, but by the seamless interactions we enable across millions of devices daily."</p>
