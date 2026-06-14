@@ -5,6 +5,7 @@ import gsap from "gsap";
 import Image from "next/image";
 import Link from "next/link";
 import { useLenis } from "@/lib/lenis-provider";
+import TransitionLink from "./TransitionLink";
 
 interface DropdownItem {
   label: string;
@@ -216,7 +217,7 @@ export default function Navbar() {
             {navItems.map((item) => (
               <div key={item.label} className="nav-item-wrapper relative z-10" onMouseEnter={(e) => handleMouseEnter(e, item.label)} onMouseLeave={() => handleMouseLeave(item.label)}>
                 {item.href ? (
-                  <Link href={item.href as any} className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</Link>
+                  <TransitionLink href={item.href as any} className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</TransitionLink>
                 ) : (
                   <div className="nav-item px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white cursor-pointer transition-colors duration-200">{item.label}</div>
                 )}
@@ -226,7 +227,7 @@ export default function Navbar() {
                     <div className="absolute top-0 left-0 right-0 h-2 -mt-2 bg-transparent pointer-events-auto" />
                     <div className="py-2 px-1.5">
                       {item.dropdown.map((dropdownItem) => (
-                        <Link key={dropdownItem.label} href={dropdownItem.href as any} className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</Link>
+                        <TransitionLink key={dropdownItem.label} href={dropdownItem.href as any} className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</TransitionLink>
                       ))}
                     </div>
                   </div>
@@ -283,13 +284,13 @@ export default function Navbar() {
         {/* Mobile Nav Links - Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 py-8">
           <nav className="flex flex-col gap-2">
-            <Link 
+            <TransitionLink 
               href="/" 
               onClick={() => setIsMobileMenuOpen(false)}
               className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
             >
               Home
-            </Link>
+            </TransitionLink>
             
             <div className="mobile-nav-item border-b border-white/5">
               <button 
@@ -307,33 +308,33 @@ export default function Navbar() {
               
               <div ref={mobileSolutionsRef} className="overflow-hidden h-0 opacity-0">
                 <div className="flex flex-col gap-2 pb-4 pl-2">
-                  <Link 
+                  <TransitionLink 
                     href="/solutions/hardware" 
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 text-xl font-light text-neutral-400 py-3 hover:text-white transition-colors"
                   >
                     <span className="w-8 h-[1px] bg-neutral-700" />
                     Hardware & IoT
-                  </Link>
-                  <Link 
+                  </TransitionLink>
+                  <TransitionLink 
                     href="/solutions/software" 
                     onClick={() => setIsMobileMenuOpen(false)}
                     className="flex items-center gap-3 text-xl font-light text-neutral-400 py-3 hover:text-white transition-colors"
                   >
                     <span className="w-8 h-[1px] bg-neutral-700" />
                     Software Engineering
-                  </Link>
+                  </TransitionLink>
                 </div>
               </div>
             </div>
 
-            <Link
+            <TransitionLink
               href={"/projects" as any}
               onClick={() => setIsMobileMenuOpen(false)}
               className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
             >
               Projects
-            </Link>
+            </TransitionLink>
           </nav>
         </div>
 

@@ -4,6 +4,7 @@ import { LenisProvider } from "@/lib/lenis-provider";
 import ScrollTriggerManager from "@/components/ScrollTriggerManager";
 import "./globals.css";
 import "lenis/dist/lenis.css";
+import TransitionCanvas from "@/components/TransitionCanvas";
 
 
 const geistSans = Geist({
@@ -73,6 +74,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <LenisProvider>
+        <TransitionCanvas />
           <ScrollTriggerManager /> 
           {children}
         </LenisProvider>
