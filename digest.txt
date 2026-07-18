@@ -33,8 +33,10 @@ Directory structure:
     │   ├── TransitionLink.tsx
     │   ├── whatsapp-button.tsx
     │   ├── home/
-    │   │   └── DraggableMarquee.tsx
+    │   │   ├── DraggableMarquee.tsx
+    │   │   └── ImpactSection.tsx
     │   ├── solutions/
+    │   │   ├── SolutionClientWrapper.tsx
     │   │   ├── SolutionHero.tsx
     │   │   └── SolutionScenes.tsx
     │   └── ui/
@@ -147,6 +149,9 @@ export default nextConfig;
 ================================================
 FILE: pnpm-workspace.yaml
 ================================================
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
 ignoredBuiltDependencies:
   - sharp
   - unrs-resolver
@@ -497,12 +502,15 @@ FILE: app/robots.ts
 ================================================
 import type { MetadataRoute } from "next";
 
+export const dynamic = 'force-static';
+
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: {
       userAgent: "*",
       allow: "/",
     },
+    sitemap: "https://innovelous-web-canvas.pages.dev/sitemap.xml"
   };
 }
 
@@ -1106,23 +1114,31 @@ export default function ProjectsPage() {
 
   const handleCardEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     const projectColor = e.currentTarget.getAttribute("data-color") || "rgba(168, 85, 247, 0.5)";
+    const arrow = e.currentTarget.querySelector(".card-arrow");
+    gsap.killTweensOf(e.currentTarget);
+    gsap.killTweensOf(arrow);
     gsap.to(e.currentTarget, { y: -5, borderColor: projectColor, duration: 0.3, ease: "power2.out" });
-    gsap.to(e.currentTarget.querySelector(".card-arrow"), { x: 5, duration: 0.3, ease: "power2.out" });
+    gsap.to(arrow, { x: 5, duration: 0.3, ease: "power2.out" });
   };
 
   const handleCardLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    const arrow = e.currentTarget.querySelector(".card-arrow");
+    gsap.killTweensOf(e.currentTarget);
+    gsap.killTweensOf(arrow);
     gsap.to(e.currentTarget, { y: 0, borderColor: "rgba(255, 255, 255, 0.1)", duration: 0.3, ease: "power2.out" });
-    gsap.to(e.currentTarget.querySelector(".card-arrow"), { x: 0, duration: 0.3, ease: "power2.out" });
+    gsap.to(arrow, { x: 0, duration: 0.3, ease: "power2.out" });
   };
 
   const handleModalImageEnter = () => {
     if (modalImageRef.current) {
+      gsap.killTweensOf(modalImageRef.current);
       gsap.to(modalImageRef.current, { scale: 1.04, duration: 0.4, ease: "power2.out" });
     }
   };
 
   const handleModalImageLeave = () => {
     if (modalImageRef.current) {
+      gsap.killTweensOf(modalImageRef.current);
       gsap.to(modalImageRef.current, { scale: 1, duration: 0.4, ease: "power2.out" });
     }
   };
@@ -1300,81 +1316,25 @@ export default function ProjectsPage() {
 ================================================
 FILE: app/solutions/[slug]/page.tsx
 ================================================
-"use client";
-import { useParams } from "next/navigation";
-import { useRef } from "react";
-import dynamic from "next/dynamic";
 import { getSolutionData } from "@/lib/solutions-data";
-import CanvasBackground from "@/components/canvas-background";
-import Navbar from "@/components/navbar";
-import Cursor from "@/components/MouseFollower";
-import SolutionScene from "@/components/solutions/SolutionScenes";
-import gsap from "gsap";
-import { useGSAP } from "@gsap/react";
-import ContactSection from "@/components/ContactSection";
-import WhatsAppButton from "@/components/whatsapp-button";
+import SolutionClientWrapper from "@/components/solutions/SolutionClientWrapper";
 
-// Dynamically import Aceternity Globe client component wrapper to shield from SSR issues
-const DynamicGlobeViewport = dynamic(
-  async () => {
-    const { World } = await import("@/components/ui/globe");
-    return function GlobeViewport() {
-      const globeConfig = {
-        pointSize: 4,
-        globeColor: "#070708",
-        showAtmosphere: true,
-        atmosphereColor: "#a855f7",
-        atmosphereAltitude: 0.1,
-        emissive: "#060608",
-        emissiveIntensity: 0.1,
-        shininess: 0.9,
-        polygonColor: "rgba(168, 85, 247, 0.4)",
-        ambientLight: "#a855f7",
-        directionalLeftLight: "#ffffff",
-        directionalTopLight: "#ffffff",
-        pointLight: "#a855f7",
-        arcTime: 2000,
-        arcLength: 0.9,
-        rings: 1,
-        maxRings: 3,
-        initialPosition: { lat: 22.3193, lng: 114.1694 },
-        autoRotate: true,
-        autoRotateSpeed: 0.5,
-      };
+// 1. Tell Next.js explicitly what static slug paths exist at build time for Cloudflare export
+export async function generateStaticParams() {
+  return [
+    { slug: "hardware" },
+    { slug: "software" },
+  ];
+}
 
-      const sampleArcs = [
-        { order: 1, startLat: 24.8607, startLng: 67.0011, endLat: 35.6762, endLng: 139.6503, arcAlt: 0.2, color: "#a855f7" },
-        { order: 2, startLat: 24.8607, startLng: 67.0011, endLat: 37.7749, endLng: -122.4194, arcAlt: 0.5, color: "#c084fc" },
-        { order: 3, startLat: 37.7749, startLng: -122.4194, endLat: 51.5074, endLng: -0.1278, arcAlt: 0.3, color: "#9333ea" }
-      ];
+interface PageProps {
+  params: Promise<{ slug: string }>;
+}
 
-      return (
-        <div className="w-full h-full relative flex items-center justify-center">
-          <div className="absolute w-[500px] h-[500px] rounded-full bg-sky-500/5 blur-[120px] pointer-events-none z-0" />
-          <div className="w-full h-full relative z-10">
-            <World data={sampleArcs} globeConfig={globeConfig} />
-          </div>
-        </div>
-      );
-    };
-  },
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-full flex items-center justify-center text-neutral-600 font-mono text-xs tracking-widest">
-        INITIALIZING_GITHUB_VECTOR_GLOBE...
-      </div>
-    ),
-  }
-);
-
-export default function SolutionPage() {
-  const params = useParams();
-  const slug = params.slug as string;
+// 2. Pure clean static Server Component acting as the entry point route
+export default async function SolutionPage({ params }: PageProps) {
+  const { slug } = await params;
   const data = getSolutionData(slug);
-
-  const containerRef = useRef<HTMLDivElement>(null);
-  const hasAnimatedRef = useRef(false);
 
   if (!data) {
     return (
@@ -1384,191 +1344,7 @@ export default function SolutionPage() {
     );
   }
 
-  useGSAP(
-    () => {
-      if (hasAnimatedRef.current) return;
-      hasAnimatedRef.current = true;
-
-      const tl = gsap.timeline();
-      
-      tl.from(".solution-nav", { y: -50, opacity: 0, duration: 1, ease: "power3.out" })
-        .from(".solution-hero-title .line", {
-          y: 100,
-          opacity: 0,
-          rotateX: -90,
-          stagger: 0.1,
-          duration: 1.2,
-          ease: "back.out(1.7)",
-        }, "-=0.6")
-        .from(".solution-meta", { x: -30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.8")
-        .from(".solution-desc", { y: 20, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.5")
-        .from(".solution-globe-wrapper", {
-          scale: 0.8,
-          opacity: 0,
-          duration: 1.5,
-          ease: "power4.out"
-        }, "-=0.8")
-        .from(".stat-card", {
-          y: 40,
-          opacity: 0,
-          stagger: 0.15,
-          duration: 0.8,
-          ease: "power3.out",
-        }, "-=0.6")
-        .from(".feature-row", {
-          x: -20,
-          opacity: 0,
-          stagger: 0.1,
-          duration: 0.7,
-          ease: "power3.out",
-        }, "-=0.4")
-        .from(".solution-cta-btn", {
-          y: 30,
-          opacity: 0,
-          scale: 0.9,
-          duration: 0.8,
-          ease: "elastic.out(1, 0.5)",
-        }, "-=0.3");
-    },
-    { scope: containerRef, dependencies: [] }
-  );
-
-  return (
-    <div ref={containerRef} className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
-      <WhatsAppButton phoneNumber="+92 334 9251936" />
-      <Cursor />
-      <CanvasBackground />
-      <SolutionScene config={data.threeDConfig} />
-      
-      <div className="solution-nav sticky top-0 z-50">
-        <Navbar />
-      </div>
-
-      <main className="relative z-10">
-        {/* HERO SECTION */}
-        <section className="min-h-screen flex flex-col justify-end px-6 md:px-16 pb-20 md:pb-32 pt-32">
-          <div className="max-w-7xl mx-auto w-full">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
-              <div className="flex flex-col lg:col-span-7 justify-center">
-                <div className="solution-meta flex items-center gap-4 mb-6">
-                  <span
-                    className="text-xs font-mono tracking-[0.25em] uppercase px-3 py-1 border rounded-full"
-                    style={{ color: data.threeDConfig.color, borderColor: data.threeDConfig.color }}
-                  >
-                    {data.label}
-                  </span>
-                  <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest">
-                    {data.category}
-                  </span>
-                </div>
-
-                <h1 className="solution-hero-title text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] mb-8">
-                  {data.title.split('\n').map((line, i) => (
-                    <span key={i} className="line block overflow-hidden">
-                      <span className="inline-block" style={{ willChange: "transform, opacity" }}>{line}</span>
-                    </span>
-                  ))}
-                </h1>
-
-                <p className="solution-desc text-neutral-400 text-lg md:text-xl max-w-xl font-light leading-relaxed mb-12">
-                  {data.description}
-                </p>
-
-                <div className="flex gap-6 md:gap-10 border-t border-neutral-800 pt-8 w-full md:w-auto self-start">
-                  {data.stats.map((stat, i) => (
-                    <div key={i} className="stat-card flex flex-col gap-1">
-                      <span className="text-2xl md:text-4xl font-light tracking-tight text-white">{stat.value}</span>
-                      <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono">{stat.label}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Aceternity GitHub Globe Canvas Layout - Hidden on mobile */}
-              <div className="solution-globe-wrapper hidden lg:block lg:col-span-5 h-[600px] w-full relative">
-                <DynamicGlobeViewport />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* DETAILS GRID */}
-        <section className="min-h-screen bg-[#050505] relative px-6 md:px-16 py-32 rounded-t-3xl border-t border-neutral-900 z-20">
-          <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
-            <div className="flex flex-col gap-0 opacity-100">
-              <span
-                className="text-xs font-mono tracking-[0.25em] uppercase mb-8 block"
-                style={{ color: data.threeDConfig.color }}
-              >
-                Capabilities & Tech
-              </span>
-              
-              <div className="flex flex-col">
-                {data.features.map((feature, i) => (
-                  <div data-cursor="-exclusion" key={i} className="feature-row group flex items-center justify-between py-5 border-b border-neutral-800 cursor-pointer">
-                    <div className="flex items-center gap-4">
-                      <span className="text-[10px] font-mono text-neutral-600">0{i + 1}</span>
-                      <h3 
-                        className="text-xl md:text-2xl font-normal text-white transition-colors duration-300 group-hover:text-[var(--hover-color)]"
-                        style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
-                      >
-                        {feature}
-                      </h3>
-                    </div>
-                    <svg
-                      className="w-5 h-5 text-neutral-700 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-[var(--hover-color)]"
-                      style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
-                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            <div className="relative flex flex-col justify-center">
-              <div className="p-8 md:p-12 rounded-3xl border border-neutral-800 bg-[#0c0c0c] backdrop-blur-sm">
-                <h3 className="text-3xl md:text-4xl font-light mb-4 tracking-tight">
-                  Ready to Scale?
-                </h3>
-                <p className="text-neutral-400 text-sm leading-relaxed mb-8">
-                  Our engineering team is ready to deploy this solution into your infrastructure. 
-                  We handle everything from architecture design to production rollout.
-                </p>
-                
-                <div className="solution-cta-btn">
-                  <button className="group relative flex items-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-sm overflow-hidden transition-transform hover:scale-105">
-                    <span
-                      className="absolute inset-0 w-0 bg-[var(--hover-color)] group-hover:w-full transition-all duration-500 ease-out"
-                      style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
-                    />
-                    <span className="relative z-10 group-hover:text-white transition-colors">{data.ctaText}</span>
-                    <svg className="relative z-10 w-4 h-4 text-black group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-
-              <div className="mt-12 flex items-center justify-between border-t border-neutral-800 pt-8">
-                <a data-cursor="-exclusion" href="#contact" className="text-xs font-mono text-neutral-500 hover:text-white transition-colors flex items-center gap-2">
-                  <span>↓</span> Contact Us
-                </a>
-                <a data-cursor="-exclusion" href="/" className="text-xs font-mono text-neutral-500 hover:text-white transition-colors flex items-center gap-2">
-                  Back to Home <span>↑</span>
-                </a>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="contact">
-          <ContactSection showCapabilities={false} />
-        </section>
-      </main>
-    </div>
-  );
+  return <SolutionClientWrapper data={data} />;
 }
 
 
@@ -2025,12 +1801,18 @@ export default function ContactSection({ showCapabilities }: Props) {
   }, { scope: sectionRef });
 
   const onSocialEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const arrow = e.currentTarget.querySelector(".soc-arrow");
+    gsap.killTweensOf(e.currentTarget);
+    gsap.killTweensOf(arrow);
     gsap.to(e.currentTarget, { color: "#ffffff", duration: 0.25 });
-    gsap.to(e.currentTarget.querySelector(".soc-arrow"), { x: 4, y: -4, opacity: 1, duration: 0.25 });
+    gsap.to(arrow, { x: 4, y: -4, opacity: 1, duration: 0.25 });
   };
   const onSocialLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const arrow = e.currentTarget.querySelector(".soc-arrow");
+    gsap.killTweensOf(e.currentTarget);
+    gsap.killTweensOf(arrow);
     gsap.to(e.currentTarget, { color: "#71717a", duration: 0.25 });
-    gsap.to(e.currentTarget.querySelector(".soc-arrow"), { x: 0, y: 0, opacity: 0, duration: 0.25 });
+    gsap.to(arrow, { x: 0, y: 0, opacity: 0, duration: 0.25 });
   };
 
   return (
@@ -2069,7 +1851,12 @@ export default function ContactSection({ showCapabilities }: Props) {
           </div>
         </div>
         <div className="flex items-center justify-between border-t border-neutral-900 pt-6">
-          <span className="text-[10px] font-mono text-neutral-700 tracking-widest uppercase">© 2026 Innovelous Tech</span>
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-mono text-neutral-700 tracking-widest uppercase">© 2026 Innovelous Tech</span>
+            <a href="https://github.com/sarwanazhar" target="_blank" rel="noopener noreferrer" data-cursor="-hidden" className="text-[9px] font-mono text-neutral-600 hover:text-purple-400 tracking-widest uppercase transition-colors duration-200">
+              Website by Sarwan Azhar
+            </a>
+          </div>
           <Link href="/privacy" data-cursor="-exclusion" className="text-[10px] font-mono text-neutral-500 hover:text-purple-400 tracking-widest uppercase transition-colors duration-200">Privacy Policy</Link>
           <span className="text-[10px] font-mono text-neutral-700 tracking-widest uppercase hidden md:block">All Rights Reserved</span>
         </div>
@@ -2485,18 +2272,32 @@ export default function Navbar() {
   // CTA Button hover animation handlers
   const handleCtaMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
-    gsap.to(btn.querySelector(".cta-bg-fill"), { width: "100%", duration: 0.45, ease: "power3.out" });
-    gsap.to(btn.querySelector(".cta-text"), { color: "#ffffff", duration: 0.35, ease: "power3.out", delay: 0.08 });
-    gsap.to(btn.querySelector(".cta-icon-bg"), { backgroundColor: "#ffffff", duration: 0.35, ease: "power3.out", delay: 0.08 });
-    gsap.to(btn.querySelector(".cta-icon-svg"), { color: "#9333ea", x: 2, duration: 0.35, ease: "power3.out", delay: 0.08 });
+    const bgFill = btn.querySelector(".cta-bg-fill");
+    const text = btn.querySelector(".cta-text");
+    const iconBg = btn.querySelector(".cta-icon-bg");
+    const iconSvg = btn.querySelector(".cta-icon-svg");
+
+    gsap.killTweensOf([bgFill, text, iconBg, iconSvg]);
+
+    gsap.to(bgFill, { width: "100%", duration: 0.45, ease: "power3.out" });
+    gsap.to(text, { color: "#ffffff", duration: 0.35, ease: "power3.out", delay: 0.08 });
+    gsap.to(iconBg, { backgroundColor: "#ffffff", duration: 0.35, ease: "power3.out", delay: 0.08 });
+    gsap.to(iconSvg, { color: "#9333ea", x: 2, duration: 0.35, ease: "power3.out", delay: 0.08 });
   };
 
   const handleCtaMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
-    gsap.to(btn.querySelector(".cta-bg-fill"), { width: "0%", duration: 0.3, ease: "power3.in" });
-    gsap.to(btn.querySelector(".cta-text"), { color: "#000000", duration: 0.25, ease: "power3.in" });
-    gsap.to(btn.querySelector(".cta-icon-bg"), { backgroundColor: "#000000", duration: 0.25, ease: "power3.in" });
-    gsap.to(btn.querySelector(".cta-icon-svg"), { color: "#ffffff", x: 0, duration: 0.25, ease: "power3.in" });
+    const bgFill = btn.querySelector(".cta-bg-fill");
+    const text = btn.querySelector(".cta-text");
+    const iconBg = btn.querySelector(".cta-icon-bg");
+    const iconSvg = btn.querySelector(".cta-icon-svg");
+
+    gsap.killTweensOf([bgFill, text, iconBg, iconSvg]);
+
+    gsap.to(bgFill, { width: "0%", duration: 0.3, ease: "power3.in" });
+    gsap.to(text, { color: "#000000", duration: 0.25, ease: "power3.in" });
+    gsap.to(iconBg, { backgroundColor: "#000000", duration: 0.25, ease: "power3.in" });
+    gsap.to(iconSvg, { color: "#ffffff", x: 0, duration: 0.25, ease: "power3.in" });
   };
 
   return (
@@ -3193,6 +2994,444 @@ export default function DraggableMarquee() {
 
 
 ================================================
+FILE: components/home/ImpactSection.tsx
+================================================
+"use client";
+
+import React, { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+// Safely register ScrollTrigger for Next.js SSR
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+interface MetricItem {
+  id: string;
+  metric: string;
+  label: string;
+  description: string;
+}
+
+const metrics: MetricItem[] = [
+  {
+    id: "01",
+    metric: "100%",
+    label: "Partnership Retention",
+    description:
+      "Every partner we collaborate with chooses to retain our team for continuous scaling, optimization, and post-launch support.",
+  },
+  {
+    id: "02",
+    metric: "2-3x",
+    label: "Faster Deployment",
+    description:
+      "By engineering custom, static-first architectures, we bypass legacy framework bloat to deploy high-performing systems at record speeds.",
+  },
+  {
+    id: "03",
+    metric: "Zero",
+    label: "Missed Deadlines",
+    description:
+      "We treat your launch window as a sacred commitment. Precision workflow architecture meets rigorous, transparent execution.",
+  },
+];
+
+export default function ImpactSection() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      // 1. Animate the upper editorial header
+      gsap.fromTo(
+        headerRef.current,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1.2,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 85%",
+            toggleActions: "play none none reverse",
+          },
+        }
+      );
+
+      // 2. Animate the metric cards with a luxurious, staggered fade-up
+      if (cardsRef.current) {
+        const cards = cardsRef.current.children;
+        gsap.fromTo(
+          cards,
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1.4,
+            stagger: 0.15,
+            ease: "power4.out",
+            scrollTrigger: {
+              trigger: cardsRef.current,
+              start: "top 80%",
+              toggleActions: "play none none reverse",
+            },
+          }
+        );
+      }
+    }, containerRef);
+
+    return () => ctx.revert(); // Clean up GSAP context on unmount to prevent memory leaks
+  }, []);
+
+  return (
+    <section
+      ref={containerRef}
+      className="relative w-full bg-zinc-950 py-24 md:py-36 text-neutral-100 overflow-hidden border-t border-neutral-900"
+    >
+      {/* Subtle, soft background ambient glow to pull it away from flat black */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-neutral-900/20 blur-[120px] rounded-full pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
+
+        {/* UPPER EDITORIAL HEADER */}
+        <div
+          ref={headerRef}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start pb-16 md:pb-24 border-b border-neutral-900"
+        >
+          <div className="lg:col-span-4">
+            <span className="text-xs font-mono tracking-[0.2em] text-neutral-500 uppercase">
+              // 03 / Proven Outcomes
+            </span>
+          </div>
+          <div className="lg:col-span-8">
+            <h2 className="text-3xl md:text-5xl font-light tracking-tight leading-[1.15] text-neutral-200 max-w-3xl">
+              We don&apos;t measure the success of a project solely by the cleanliness of our code, but by the tangible momentum it brings to your business.
+            </h2>
+          </div>
+        </div>
+
+        {/* METRICS GRID */}
+        <div
+          ref={cardsRef}
+          className="grid grid-cols-1 md:grid-cols-3 gap-12 md:gap-8 lg:gap-16 pt-16 md:pt-20"
+        >
+          {metrics.map((item) => (
+            <div
+              key={item.id}
+              className="group flex flex-col justify-between items-start space-y-6 md:space-y-8"
+            >
+              <div className="space-y-4">
+                {/* ID/Number Indicator */}
+                <span className="block text-xs font-mono text-neutral-600 transition-colors duration-300 group-hover:text-neutral-400">
+                  {item.id}
+                </span>
+
+                {/* Massive, Highly Legible Metric Accent */}
+                <div className="text-6xl lg:text-7xl xl:text-8xl font-extralight tracking-tighter text-neutral-100 transition-transform duration-500 ease-out group-hover:translate-x-1">
+                  {item.metric}
+                </div>
+              </div>
+
+              {/* Text Context */}
+              <div className="space-y-2">
+                <h3 className="text-lg font-normal tracking-tight text-neutral-200">
+                  {item.label}
+                </h3>
+                <p className="text-sm leading-relaxed text-neutral-400 font-light max-w-sm">
+                  {item.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+
+      </div>
+    </section>
+  );
+}
+
+
+
+================================================
+FILE: components/solutions/SolutionClientWrapper.tsx
+================================================
+"use client";
+
+import { useRef } from "react";
+import dynamic from "next/dynamic";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import CanvasBackground from "@/components/canvas-background";
+import Navbar from "@/components/navbar";
+import Cursor from "@/components/MouseFollower";
+import SolutionScene from "@/components/solutions/SolutionScenes";
+import ContactSection from "@/components/ContactSection";
+import WhatsAppButton from "@/components/whatsapp-button";
+
+// Dynamically import Aceternity Globe client component wrapper to shield from SSR issues
+const DynamicGlobeViewport = dynamic(
+  async () => {
+    const { World } = await import("@/components/ui/globe");
+    return function GlobeViewport() {
+      const globeConfig = {
+        pointSize: 4,
+        globeColor: "#070708",
+        showAtmosphere: true,
+        atmosphereColor: "#a855f7",
+        atmosphereAltitude: 0.1,
+        emissive: "#060608",
+        emissiveIntensity: 0.1,
+        shininess: 0.9,
+        polygonColor: "rgba(168, 85, 247, 0.4)",
+        ambientLight: "#a855f7",
+        directionalLeftLight: "#ffffff",
+        directionalTopLight: "#ffffff",
+        pointLight: "#a855f7",
+        arcTime: 2000,
+        arcLength: 0.9,
+        rings: 1,
+        maxRings: 3,
+        initialPosition: { lat: 22.3193, lng: 114.1694 },
+        autoRotate: true,
+        autoRotateSpeed: 0.5,
+      };
+
+      const sampleArcs = [
+        { order: 1, startLat: 24.8607, startLng: 67.0011, endLat: 35.6762, endLng: 139.6503, arcAlt: 0.2, color: "#a855f7" },
+        { order: 2, startLat: 24.8607, startLng: 67.0011, endLat: 37.7749, endLng: -122.4194, arcAlt: 0.5, color: "#c084fc" },
+        { order: 3, startLat: 37.7749, startLng: -122.4194, endLat: 51.5074, endLng: -0.1278, arcAlt: 0.3, color: "#9333ea" }
+      ];
+
+      return (
+        <div className="w-full h-full relative flex items-center justify-center">
+          <div className="absolute w-[500px] h-[500px] rounded-full bg-sky-500/5 blur-[120px] pointer-events-none z-0" />
+          <div className="w-full h-full relative z-10">
+            <World data={sampleArcs} globeConfig={globeConfig} />
+          </div>
+        </div>
+      );
+    };
+  },
+  {
+    ssr: false,
+    loading: () => (
+      <div className="w-full h-full flex items-center justify-center text-neutral-600 font-mono text-xs tracking-widest">
+        INITIALIZING_GITHUB_VECTOR_GLOBE...
+      </div>
+    ),
+  }
+);
+
+interface ClientLayoutProps {
+  data: {
+    label: string;
+    category: string;
+    title: string;
+    description: string;
+    ctaText: string;
+    stats: Array<{ value: string; label: string }>;
+    features: string[];
+    threeDConfig: any;
+  };
+}
+
+export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const hasAnimatedRef = useRef(false);
+
+  useGSAP(
+    () => {
+      if (hasAnimatedRef.current) return;
+      hasAnimatedRef.current = true;
+
+      const tl = gsap.timeline();
+      
+      tl.from(".solution-nav", { y: -50, opacity: 0, duration: 1, ease: "power3.out" })
+        .from(".solution-hero-title .line", {
+          y: 100,
+          opacity: 0,
+          rotateX: -90,
+          stagger: 0.1,
+          duration: 1.2,
+          ease: "back.out(1.7)",
+        }, "-=0.6")
+        .from(".solution-meta", { x: -30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.8")
+        .from(".solution-desc", { y: 20, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.5")
+        .from(".solution-globe-wrapper", {
+          scale: 0.8,
+          opacity: 0,
+          duration: 1.5,
+          ease: "power4.out"
+        }, "-=0.8")
+        .from(".stat-card", {
+          y: 40,
+          opacity: 0,
+          stagger: 0.15,
+          duration: 0.8,
+          ease: "power3.out",
+        }, "-=0.6")
+        .from(".feature-row", {
+          x: -20,
+          opacity: 0,
+          stagger: 0.1,
+          duration: 0.7,
+          ease: "power3.out",
+          }, "-=0.4")
+        .from(".solution-cta-btn", {
+          y: 30,
+          opacity: 0,
+          scale: 0.9,
+          duration: 0.8,
+          ease: "elastic.out(1, 0.5)",
+        }, "-=0.3");
+    },
+    { scope: containerRef, dependencies: [] }
+  );
+
+  return (
+    <div ref={containerRef} className="relative min-h-screen bg-[#0a0a0a] text-white overflow-hidden">
+      <WhatsAppButton phoneNumber="+92 334 9251936" />
+      <Cursor />
+      <CanvasBackground />
+      <SolutionScene config={data.threeDConfig} />
+      
+      <div className="solution-nav sticky top-0 z-50">
+        <Navbar />
+      </div>
+
+          <main className="relative z-10">
+            {/* HERO SECTION */}
+            <section className="min-h-screen flex flex-col justify-end px-6 md:px-16 pb-20 md:pb-32 pt-32">
+              <div className="max-w-7xl mx-auto w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
+                  <div className="flex flex-col lg:col-span-7 justify-center">
+                    <div className="solution-meta flex items-center gap-4 mb-6">
+                      <span
+                        className="text-xs font-mono tracking-[0.25em] uppercase px-3 py-1 border rounded-full"
+                    style={{ color: data.threeDConfig.color, borderColor: data.threeDConfig.color }}
+                      >
+                        {data.label}
+                      </span>
+                      <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest">
+                        {data.category}
+                      </span>
+                    </div>
+
+                <h1 className="solution-hero-title text-6xl md:text-8xl lg:text-9xl font-black tracking-tighter leading-[0.85] mb-8">
+                  {data.title.split('\n').map((line, i) => (
+                    <span key={i} className="line block overflow-hidden">
+                      <span className="inline-block" style={{ willChange: "transform, opacity" }}>{line}</span>
+                    </span>
+                  ))}
+                </h1>
+
+                    <p className="solution-desc text-neutral-400 text-lg md:text-xl max-w-xl font-light leading-relaxed mb-12">
+                      {data.description}
+                    </p>
+
+                    <div className="flex gap-6 md:gap-10 border-t border-neutral-800 pt-8 w-full md:w-auto self-start">
+                  {data.stats.map((stat, i) => (
+                        <div key={i} className="stat-card flex flex-col gap-1">
+                          <span className="text-2xl md:text-4xl font-light tracking-tight text-white">{stat.value}</span>
+                          <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono">{stat.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Aceternity GitHub Globe Canvas Layout */}
+                  <div className="solution-globe-wrapper hidden lg:block lg:col-span-5 h-[600px] w-full relative">
+                    <DynamicGlobeViewport />
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* DETAILS GRID */}
+            <section className="min-h-screen bg-[#050505] relative px-6 md:px-16 py-32 rounded-t-3xl border-t border-neutral-900 z-20">
+              <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
+                <div className="flex flex-col gap-0 opacity-100">
+                  <span
+                    className="text-xs font-mono tracking-[0.25em] uppercase mb-8 block"
+                    style={{ color: data.threeDConfig.color }}
+                  >
+                    Capabilities & Tech
+                  </span>
+                  
+                  <div className="flex flex-col">
+                {data.features.map((feature, i) => (
+                      <div data-cursor="-exclusion" key={i} className="feature-row group flex items-center justify-between py-5 border-b border-neutral-800 cursor-pointer">
+                        <div className="flex items-center gap-4">
+                          <span className="text-[10px] font-mono text-neutral-600">0{i + 1}</span>
+                          <h3 
+                            className="text-xl md:text-2xl font-normal text-white transition-colors duration-300 group-hover:text-[var(--hover-color)]"
+                        style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
+                          >
+                            {feature}
+                          </h3>
+                        </div>
+                        <svg
+                          className="w-5 h-5 text-neutral-700 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-[var(--hover-color)]"
+                      style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
+                          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="relative flex flex-col justify-center">
+                  <div className="p-8 md:p-12 rounded-3xl border border-neutral-800 bg-[#0c0c0c] backdrop-blur-sm">
+                    <h3 className="text-3xl md:text-4xl font-light mb-4 tracking-tight">
+                      Ready to Scale?
+                    </h3>
+                    <p className="text-neutral-400 text-sm leading-relaxed mb-8">
+                      Our engineering team is ready to deploy this solution into your infrastructure. 
+                      We handle everything from architecture design to production rollout.
+                    </p>
+                    
+                    <div className="solution-cta-btn">
+                      <button className="group relative flex items-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-sm overflow-hidden transition-transform hover:scale-105">
+                        <span
+                          className="absolute inset-0 w-0 bg-[var(--hover-color)] group-hover:w-full transition-all duration-500 ease-out"
+                      style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
+                        />
+                    <span className="relative z-10 group-hover:text-white transition-colors">{data.ctaText}</span>
+                        <svg className="relative z-10 w-4 h-4 text-black group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="mt-12 flex items-center justify-between border-t border-neutral-800 pt-8">
+                    <a data-cursor="-exclusion" href="#contact" className="text-xs font-mono text-neutral-500 hover:text-white transition-colors flex items-center gap-2">
+                      <span>↓</span> Contact Us
+                    </a>
+                    <a data-cursor="-exclusion" href="/" className="text-xs font-mono text-neutral-500 hover:text-white transition-colors flex items-center gap-2">
+                      Back to Home <span>↑</span>
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section id="contact">
+              <ContactSection showCapabilities={false} />
+            </section>
+          </main>
+    </div>
+  );
+}
+
+
+================================================
 FILE: components/solutions/SolutionHero.tsx
 ================================================
 "use client";
@@ -3873,6 +4112,7 @@ import ContactSection from "@/components/ContactSection";
 import DraggableMarquee from "@/components/home/DraggableMarquee";
 import CubeSection from "@/components/cubesection";
 import WhatsAppButton from "@/components/whatsapp-button";
+import ImpactSection from "@/components/home/ImpactSection";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
@@ -3910,7 +4150,7 @@ export default function Home() {
     const timeout = setTimeout(() => {
       setWordIndex((prev) => {
         const nextIndex = prev + 1;
-        return nextIndex % HERO_WORDS.length; 
+        return nextIndex % HERO_WORDS.length;
       });
     }, delay);
 
@@ -3929,7 +4169,7 @@ export default function Home() {
       const proxy = { skew: 0 };
       const skewSetter = gsap.quickSetter(skewContentRef.current, "skewY", "deg");
       const clamp = gsap.utils.clamp(-4, 4);
-      
+
       ScrollTrigger.create({
         onUpdate: (self) => {
           const skew = clamp(self.getVelocity() / -300);
@@ -3946,12 +4186,14 @@ export default function Home() {
       gsap.utils.toArray<HTMLElement>(".service-row").forEach((row) => {
         const revealTarget = row.querySelector(".service-reveal");
         const internalText = row.querySelector(".service-title-text");
-        
+
         row.addEventListener("mouseenter", () => {
+          gsap.killTweensOf([revealTarget, internalText]);
           gsap.to(revealTarget, { width: "auto", opacity: 1, x: 10, duration: 0.4, ease: "power2.out" });
           gsap.to(internalText, { x: 15, color: "#a855f7", duration: 0.3 });
         });
         row.addEventListener("mouseleave", () => {
+          gsap.killTweensOf([revealTarget, internalText]);
           gsap.to(revealTarget, { width: 0, opacity: 0, x: 0, duration: 0.3, ease: "power2.in" });
           gsap.to(internalText, { x: 0, color: "#ffffff", duration: 0.3 });
         });
@@ -4006,13 +4248,13 @@ export default function Home() {
       gsap.fromTo(
         ".hero-char",
         { y: "115%", opacity: 0, rotateX: -90 },
-        { 
-          y: "0%", 
-          opacity: 1, 
-          rotateX: 0, 
-          duration: 0.8, 
-          stagger: { amount: 0.4, ease: "power2.out", from: "start" }, 
-          ease: "back.out(1.4)" 
+        {
+          y: "0%",
+          opacity: 1,
+          rotateX: 0,
+          duration: 0.8,
+          stagger: { amount: 0.4, ease: "power2.out", from: "start" },
+          ease: "back.out(1.4)"
         }
       );
     },
@@ -4161,6 +4403,7 @@ export default function Home() {
             </div>
           </section>
 
+          <ImpactSection />
           <CubeSection />
           <ContactSection showCapabilities />
         </div>
@@ -4168,4 +4411,5 @@ export default function Home() {
     </>
   );
 }
+
 

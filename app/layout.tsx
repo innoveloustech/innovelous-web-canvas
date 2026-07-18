@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ViewTransitions } from "next-view-transitions";
 import { LenisProvider } from "@/lib/lenis-provider";
 import ScrollTriggerManager from "@/components/ScrollTriggerManager";
 import "./globals.css";
@@ -68,17 +69,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <LenisProvider>
-        <TransitionCanvas />
-          <ScrollTriggerManager /> 
-          {children}
-        </LenisProvider>
-      </body>
-    </html>
+    <ViewTransitions>
+      <html
+        lang="en"
+        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      >
+        <body className="min-h-full flex flex-col">
+          <LenisProvider>
+          <TransitionCanvas />
+            <ScrollTriggerManager /> 
+            {children}
+          </LenisProvider>
+        </body>
+      </html>
+    </ViewTransitions>
   );
 }

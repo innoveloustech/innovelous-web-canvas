@@ -138,7 +138,7 @@ export default function CubeSection() {
   const [domElement, setDomElement] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div className="h-screen w-full bg-zinc-950 flex items-center justify-center overflow-hidden relative">
+    <div className="h-screen w-full bg-zinc-950 flex items-center justify-center overflow-hidden relative rounded-b-3xl">
       
       <div className="absolute top-10 left-10 z-10 pointer-events-none">
         <p className="text-zinc-500 text-xs font-bold tracking-[0.25em] uppercase mb-3">

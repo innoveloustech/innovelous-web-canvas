@@ -1,7 +1,8 @@
 "use client";
 
 import Link, { LinkProps } from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { useTransitionRouter } from "next-view-transitions";
 import React from "react";
 
 interface TransitionLinkProps extends Omit<LinkProps<unknown>, "href"> {
@@ -18,7 +19,7 @@ export default function TransitionLink({
   onClick, 
   ...props 
 }: TransitionLinkProps) {
-  const router = useRouter();
+  const router = useTransitionRouter();
   const pathname = usePathname();
 
   const handleTransition = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -33,12 +34,18 @@ export default function TransitionLink({
     // Lock interactions during the transition
     document.body.style.pointerEvents = "none";
 
-    // Dispatch event to the 3D Canvas
-    window.dispatchEvent(
-      new CustomEvent("start-3d-transition", { 
-        detail: { href, router } 
-      })
-    );
+    // Use the real browser View Transitions API via next-view-transitions.
+    // `onTransitionReady` fires at the exact moment the browser has captured
+    // the "before" screenshot — the ideal time to start the 3D WebGL shader.
+    router.push(href, {
+      onTransitionReady: () => {
+        window.dispatchEvent(
+          new CustomEvent("start-3d-transition", { 
+            detail: { href, router } 
+          })
+        );
+      }
+    });
   };
 
   return (

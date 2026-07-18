@@ -10,6 +10,8 @@ import ContactSection from "@/components/ContactSection";
 import DraggableMarquee from "@/components/home/DraggableMarquee";
 import CubeSection from "@/components/cubesection";
 import WhatsAppButton from "@/components/whatsapp-button";
+import ImpactSection from "@/components/home/ImpactSection";
+import InteractiveBentoFAQ from "@/components/home/FAQ";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
@@ -47,7 +49,7 @@ export default function Home() {
     const timeout = setTimeout(() => {
       setWordIndex((prev) => {
         const nextIndex = prev + 1;
-        return nextIndex % HERO_WORDS.length; 
+        return nextIndex % HERO_WORDS.length;
       });
     }, delay);
 
@@ -66,7 +68,7 @@ export default function Home() {
       const proxy = { skew: 0 };
       const skewSetter = gsap.quickSetter(skewContentRef.current, "skewY", "deg");
       const clamp = gsap.utils.clamp(-4, 4);
-      
+
       ScrollTrigger.create({
         onUpdate: (self) => {
           const skew = clamp(self.getVelocity() / -300);
@@ -83,12 +85,14 @@ export default function Home() {
       gsap.utils.toArray<HTMLElement>(".service-row").forEach((row) => {
         const revealTarget = row.querySelector(".service-reveal");
         const internalText = row.querySelector(".service-title-text");
-        
+
         row.addEventListener("mouseenter", () => {
+          gsap.killTweensOf([revealTarget, internalText]);
           gsap.to(revealTarget, { width: "auto", opacity: 1, x: 10, duration: 0.4, ease: "power2.out" });
           gsap.to(internalText, { x: 15, color: "#a855f7", duration: 0.3 });
         });
         row.addEventListener("mouseleave", () => {
+          gsap.killTweensOf([revealTarget, internalText]);
           gsap.to(revealTarget, { width: 0, opacity: 0, x: 0, duration: 0.3, ease: "power2.in" });
           gsap.to(internalText, { x: 0, color: "#ffffff", duration: 0.3 });
         });
@@ -143,13 +147,13 @@ export default function Home() {
       gsap.fromTo(
         ".hero-char",
         { y: "115%", opacity: 0, rotateX: -90 },
-        { 
-          y: "0%", 
-          opacity: 1, 
-          rotateX: 0, 
-          duration: 0.8, 
-          stagger: { amount: 0.4, ease: "power2.out", from: "start" }, 
-          ease: "back.out(1.4)" 
+        {
+          y: "0%",
+          opacity: 1,
+          rotateX: 0,
+          duration: 0.8,
+          stagger: { amount: 0.4, ease: "power2.out", from: "start" },
+          ease: "back.out(1.4)"
         }
       );
     },
@@ -160,7 +164,7 @@ export default function Home() {
     <>
       <WhatsAppButton phoneNumber="+92 334 9251936" />
       <Cursor />
-      <div ref={containerRef} className="text-white min-h-screen overflow-x-hidden relative bg-transparent">
+      <div ref={containerRef} style={{ viewTransitionName: "page-content" }} className="text-white min-h-screen overflow-x-hidden relative bg-transparent">
         <CanvasBackground />
         <Navbar />
         <div ref={skewContentRef} className="origin-right w-full home-skew-wrapper">
@@ -228,7 +232,6 @@ export default function Home() {
           <section ref={serviceRef} id="service" className="min-h-screen flex flex-col justify-center px-6 md:px-16 py-8 md:py-10 lg:py-10 relative z-10">
             <div className="max-w-7xl mx-auto w-full">
               <div className="mb-4 md:mb-5 lg:mb-5">
-                <span className="text-purple-500 text-xs font-mono tracking-[0.3em] uppercase block mb-2">01 // CAPABILITIES</span>
                 <h2 className="text-2xl md:text-4xl lg:text-5xl font-light tracking-tight text-white">Next-Gen Development & IT Solutions</h2>
               </div>
               <div className="flex flex-col border-t border-neutral-800">
@@ -298,8 +301,10 @@ export default function Home() {
             </div>
           </section>
 
+          <ImpactSection />
           <CubeSection />
-          <ContactSection showCapabilities />
+          <InteractiveBentoFAQ />
+          <ContactSection showCapabilities hasBackground={false} />
         </div>
       </div>
     </>

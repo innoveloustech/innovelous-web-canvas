@@ -149,18 +149,9 @@ const SHADERS = {
 };
 
 // ==========================================
-// 3. RANDOM SHADER PICKER
+// 3. ACTIVE SHADER — locked to RGB Glitch
 // ==========================================
-const SHADER_KEYS = Object.keys(SHADERS) as (keyof typeof SHADERS)[];
-
-/**
- * Pick a random shader key, optionally excluding the last one used
- * so the same effect never plays twice in a row.
- */
-function pickRandomShader(exclude?: keyof typeof SHADERS): keyof typeof SHADERS {
-  const pool = exclude ? SHADER_KEYS.filter((k) => k !== exclude) : SHADER_KEYS;
-  return pool[Math.floor(Math.random() * pool.length)];
-}
+const ACTIVE_SHADER: keyof typeof SHADERS = "rgbGlitch";
 
 // ==========================================
 // 4. R3F COMPONENT WITH GSAP ROUTING
@@ -171,10 +162,7 @@ function PixelShaderScene() {
   const isTransitioning = useRef(false);
   const { viewport } = useThree();
 
-  // Pick a random starting shader on mount
-  const currentShaderKey = useRef<keyof typeof SHADERS>(
-    SHADER_KEYS[Math.floor(Math.random() * SHADER_KEYS.length)]
-  );
+  // Always use the RGB Glitch shader
 
   const uniforms = useMemo(
     () => ({
@@ -200,17 +188,14 @@ function PixelShaderScene() {
 
       isTransitioning.current = true;
 
-      // 🎲 Pick a new random effect (never the same one twice in a row)
-      const nextShader = pickRandomShader(currentShaderKey.current);
-      currentShaderKey.current = nextShader;
-
-      // Hot-swap the fragment shader before the animation starts
-      materialRef.current.fragmentShader = SHADERS[nextShader];
+      // Ensure the RGB Glitch shader is active
+      materialRef.current.fragmentShader = SHADERS[ACTIVE_SHADER];
       materialRef.current.needsUpdate = true;
 
+      // Slow animation so the glitch effect is clearly visible
       gsap.to(materialRef.current.uniforms.uProgress, {
         value: 1.0,
-        duration: 0.9,
+        duration: 1.8,
         ease: "power2.inOut",
         onComplete: () => {
           router.push(href);
@@ -226,7 +211,7 @@ function PixelShaderScene() {
     if (isTransitioning.current && materialRef.current) {
       gsap.to(materialRef.current.uniforms.uProgress, {
         value: 0.0,
-        duration: 0.8,
+        duration: 1.4,
         ease: "power2.inOut",
         delay: 0.1,
         onComplete: () => {
@@ -243,7 +228,7 @@ function PixelShaderScene() {
       <shaderMaterial
         ref={materialRef}
         vertexShader={vertexShader}
-        fragmentShader={SHADERS[currentShaderKey.current]}
+        fragmentShader={SHADERS[ACTIVE_SHADER]}
         uniforms={uniforms}
         transparent={true}
       />

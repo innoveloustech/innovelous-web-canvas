@@ -101,23 +101,31 @@ export default function ProjectsPage() {
 
   const handleCardEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     const projectColor = e.currentTarget.getAttribute("data-color") || "rgba(168, 85, 247, 0.5)";
+    const arrow = e.currentTarget.querySelector(".card-arrow");
+    gsap.killTweensOf(e.currentTarget);
+    gsap.killTweensOf(arrow);
     gsap.to(e.currentTarget, { y: -5, borderColor: projectColor, duration: 0.3, ease: "power2.out" });
-    gsap.to(e.currentTarget.querySelector(".card-arrow"), { x: 5, duration: 0.3, ease: "power2.out" });
+    gsap.to(arrow, { x: 5, duration: 0.3, ease: "power2.out" });
   };
 
   const handleCardLeave = (e: React.MouseEvent<HTMLDivElement>) => {
+    const arrow = e.currentTarget.querySelector(".card-arrow");
+    gsap.killTweensOf(e.currentTarget);
+    gsap.killTweensOf(arrow);
     gsap.to(e.currentTarget, { y: 0, borderColor: "rgba(255, 255, 255, 0.1)", duration: 0.3, ease: "power2.out" });
-    gsap.to(e.currentTarget.querySelector(".card-arrow"), { x: 0, duration: 0.3, ease: "power2.out" });
+    gsap.to(arrow, { x: 0, duration: 0.3, ease: "power2.out" });
   };
 
   const handleModalImageEnter = () => {
     if (modalImageRef.current) {
+      gsap.killTweensOf(modalImageRef.current);
       gsap.to(modalImageRef.current, { scale: 1.04, duration: 0.4, ease: "power2.out" });
     }
   };
 
   const handleModalImageLeave = () => {
     if (modalImageRef.current) {
+      gsap.killTweensOf(modalImageRef.current);
       gsap.to(modalImageRef.current, { scale: 1, duration: 0.4, ease: "power2.out" });
     }
   };

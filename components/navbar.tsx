@@ -181,30 +181,44 @@ export default function Navbar() {
   // CTA Button hover animation handlers
   const handleCtaMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
-    gsap.to(btn.querySelector(".cta-bg-fill"), { width: "100%", duration: 0.45, ease: "power3.out" });
-    gsap.to(btn.querySelector(".cta-text"), { color: "#ffffff", duration: 0.35, ease: "power3.out", delay: 0.08 });
-    gsap.to(btn.querySelector(".cta-icon-bg"), { backgroundColor: "#ffffff", duration: 0.35, ease: "power3.out", delay: 0.08 });
-    gsap.to(btn.querySelector(".cta-icon-svg"), { color: "#9333ea", x: 2, duration: 0.35, ease: "power3.out", delay: 0.08 });
+    const bgFill = btn.querySelector(".cta-bg-fill");
+    const text = btn.querySelector(".cta-text");
+    const iconBg = btn.querySelector(".cta-icon-bg");
+    const iconSvg = btn.querySelector(".cta-icon-svg");
+
+    gsap.killTweensOf([bgFill, text, iconBg, iconSvg]);
+
+    gsap.to(bgFill, { width: "100%", duration: 0.45, ease: "power3.out" });
+    gsap.to(text, { color: "#ffffff", duration: 0.35, ease: "power3.out", delay: 0.08 });
+    gsap.to(iconBg, { backgroundColor: "#ffffff", duration: 0.35, ease: "power3.out", delay: 0.08 });
+    gsap.to(iconSvg, { color: "#9333ea", x: 2, duration: 0.35, ease: "power3.out", delay: 0.08 });
   };
 
   const handleCtaMouseLeave = (e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
-    gsap.to(btn.querySelector(".cta-bg-fill"), { width: "0%", duration: 0.3, ease: "power3.in" });
-    gsap.to(btn.querySelector(".cta-text"), { color: "#000000", duration: 0.25, ease: "power3.in" });
-    gsap.to(btn.querySelector(".cta-icon-bg"), { backgroundColor: "#000000", duration: 0.25, ease: "power3.in" });
-    gsap.to(btn.querySelector(".cta-icon-svg"), { color: "#ffffff", x: 0, duration: 0.25, ease: "power3.in" });
+    const bgFill = btn.querySelector(".cta-bg-fill");
+    const text = btn.querySelector(".cta-text");
+    const iconBg = btn.querySelector(".cta-icon-bg");
+    const iconSvg = btn.querySelector(".cta-icon-svg");
+
+    gsap.killTweensOf([bgFill, text, iconBg, iconSvg]);
+
+    gsap.to(bgFill, { width: "0%", duration: 0.3, ease: "power3.in" });
+    gsap.to(text, { color: "#000000", duration: 0.25, ease: "power3.in" });
+    gsap.to(iconBg, { backgroundColor: "#000000", duration: 0.25, ease: "power3.in" });
+    gsap.to(iconSvg, { color: "#ffffff", x: 0, duration: 0.25, ease: "power3.in" });
   };
 
   return (
-    <nav ref={navRef} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-black/80 backdrop-blur-md border-b border-white/5" : "bg-transparent"}`}>
+    <nav ref={navRef} style={{ viewTransitionName: "navbar" }} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-black/80 backdrop-blur-md border-b border-white/5" : "bg-transparent"}`}>
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="logo flex items-center gap-3 group relative z-50">
-            <div className="relative w-11 h-11">
+          <a href="/" className="logo flex items-center gap-3 group relative z-50" style={{ viewTransitionName: "nav-logo" }}>
+            <div className="relative w-11 h-11" style={{ viewTransitionName: "nav-logo-image" }}>
               <Image src="/logo.png" alt="Innovelous Logo" fill className="object-contain" />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col" style={{ viewTransitionName: "nav-logo-text" }}>
               <span className="text-lg font-bold text-white leading-tight tracking-wide">Innovelous</span>
               <span className="text-xs text-purple-400 tracking-wider">Tech</span>
             </div>

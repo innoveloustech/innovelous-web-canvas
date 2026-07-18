@@ -89,3 +89,78 @@ html.lenis body {
 .lenis.lenis-smooth iframe {
   pointer-events: none;
 }
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   BROWSER VIEW TRANSITIONS API
+   next-view-transitions wraps navigation in document.startViewTransition()
+   which activates these rules.
+   ============================================================ */
+
+/* 
+  The root cross-fade: we set it to nearly instant (0.01s) because the 
+  3D WebGL shader (TransitionCanvas) is our primary visual transition. 
+  We don't want two competing transitions — the browser's default white flash 
+  and our custom one. This makes the browser-side invisible, leaving the stage 
+  entirely to the WebGL effect.
+*/
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.01s;
+  animation-timing-function: ease-in-out;
+}
+
+/* 
+  Named element: navbar
+  The navbar is a persisted layout element — giving it a view-transition-name 
+  lets the browser smoothly morph it between pages instead of a hard swap.
+  Set on the element itself via style prop in the Navbar component.
+*/
+::view-transition-old(navbar),
+::view-transition-new(navbar) {
+  animation: none; /* Navbar is persistent — no animation needed */
+}
+
+/* 
+  Named element: page-content
+  Main content area slides in smoothly.
+*/
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-to-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+::view-transition-old(page-content) {
+  animation: 0.3s ease-in slide-out-to-left;
+}
+
+::view-transition-new(page-content) {
+  animation: 0.35s ease-out 0.05s slide-in-from-right both;
+}

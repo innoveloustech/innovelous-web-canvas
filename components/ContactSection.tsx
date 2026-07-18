@@ -276,9 +276,12 @@ function ScrubHeading() {
   );
 }
 
-interface Props { showCapabilities: boolean; }
+interface Props {
+  showCapabilities: boolean;
+  hasBackground?: boolean;
+}
 
-export default function ContactSection({ showCapabilities }: Props) {
+export default function ContactSection({ showCapabilities, hasBackground = true }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
   useGSAP(() => {
     const s = sectionRef.current;
@@ -292,16 +295,22 @@ export default function ContactSection({ showCapabilities }: Props) {
   }, { scope: sectionRef });
 
   const onSocialEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const arrow = e.currentTarget.querySelector(".soc-arrow");
+    gsap.killTweensOf(e.currentTarget);
+    gsap.killTweensOf(arrow);
     gsap.to(e.currentTarget, { color: "#ffffff", duration: 0.25 });
-    gsap.to(e.currentTarget.querySelector(".soc-arrow"), { x: 4, y: -4, opacity: 1, duration: 0.25 });
+    gsap.to(arrow, { x: 4, y: -4, opacity: 1, duration: 0.25 });
   };
   const onSocialLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const arrow = e.currentTarget.querySelector(".soc-arrow");
+    gsap.killTweensOf(e.currentTarget);
+    gsap.killTweensOf(arrow);
     gsap.to(e.currentTarget, { color: "#71717a", duration: 0.25 });
-    gsap.to(e.currentTarget.querySelector(".soc-arrow"), { x: 0, y: 0, opacity: 0, duration: 0.25 });
+    gsap.to(arrow, { x: 0, y: 0, opacity: 0, duration: 0.25 });
   };
 
   return (
-    <section ref={sectionRef} id="contact" className="relative min-h-screen bg-zinc-950 flex flex-col justify-center overflow-hidden px-6 md:px-16 py-24">
+    <section ref={sectionRef} id="contact" className={`relative min-h-screen ${hasBackground ? "bg-zinc-950" : "bg-transparent"} flex flex-col justify-center overflow-hidden px-6 md:px-16 py-24`}>
       <div className="absolute pointer-events-none" aria-hidden style={{ bottom: "-18%", left: "-8%", width: "60vw", height: "60vw", background: "radial-gradient(circle, rgba(88,28,135,0.14) 0%, transparent 65%)", filter: "blur(48px)" }} />
       <div className="absolute pointer-events-none" aria-hidden style={{ top: "5%", right: "-10%", width: "38vw", height: "38vw", background: "radial-gradient(circle, rgba(88,28,135,0.08) 0%, transparent 65%)", filter: "blur(64px)" }} />
       <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col gap-16">
@@ -336,7 +345,12 @@ export default function ContactSection({ showCapabilities }: Props) {
           </div>
         </div>
         <div className="flex items-center justify-between border-t border-neutral-900 pt-6">
-          <span className="text-[10px] font-mono text-neutral-700 tracking-widest uppercase">© 2026 Innovelous Tech</span>
+          <div className="flex flex-col gap-1">
+            <span className="text-[10px] font-mono text-neutral-700 tracking-widest uppercase">© 2026 Innovelous Tech</span>
+            <a href="https://github.com/sarwanazhar" target="_blank" rel="noopener noreferrer" data-cursor="-hidden" className="text-[9px] font-mono text-neutral-600 hover:text-purple-400 tracking-widest uppercase transition-colors duration-200">
+              Website by Sarwan Azhar
+            </a>
+          </div>
           <Link href="/privacy" data-cursor="-exclusion" className="text-[10px] font-mono text-neutral-500 hover:text-purple-400 tracking-widest uppercase transition-colors duration-200">Privacy Policy</Link>
           <span className="text-[10px] font-mono text-neutral-700 tracking-widest uppercase hidden md:block">All Rights Reserved</span>
         </div>
