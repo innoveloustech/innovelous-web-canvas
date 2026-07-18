@@ -1,60 +1,67 @@
 "use client";
 
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { supabase } from "@/lib/supabase";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-interface Product {
-  id: string;
+interface Project {
+  id: number;
   name: string;
   tagline: string;
   description: string;
   tags: string[];
+  image_url?: string;
+  link?: string;
+  color?: string;
 }
-
-const products: Product[] = [
-  {
-    id: "01",
-    name: "Synapse AI",
-    tagline: "Intelligent Workflow Engine",
-    description:
-      "An AI-powered automation platform that learns from your team's patterns to eliminate repetitive tasks and surface actionable insights in real time.",
-    tags: ["AI/ML", "Automation", "SaaS"],
-  },
-  {
-    id: "02",
-    name: "Prism Commerce",
-    tagline: "Headless Retail Suite",
-    description:
-      "A blazing-fast headless commerce stack built on edge infrastructure, delivering sub-50ms page loads and conversion-optimized checkout flows.",
-    tags: ["E-Commerce", "Edge", "Payments"],
-  },
-  {
-    id: "03",
-    name: "Vaultkeep",
-    tagline: "Zero-Trust Data Vault",
-    description:
-      "End-to-end encrypted storage and collaboration platform designed for regulated industries where data sovereignty is non-negotiable.",
-    tags: ["Security", "Encryption", "Compliance"],
-  },
-  {
-    id: "04",
-    name: "Lumina Analytics",
-    tagline: "Real-Time BI Dashboard",
-    description:
-      "Unified business intelligence layer that ingests data from dozens of sources and renders interactive, drill-down dashboards with zero setup overhead.",
-    tags: ["Analytics", "Data Viz", "Real-Time"],
-  },
-];
 
 export default function FeaturedProducts() {
   const containerRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchFeaturedProjects() {
+      try {
+        const { data, error: fetchError } = await supabase
+          .from("projects_new")
+          .select("*")
+          .eq("is_featured", true)
+          .order("sort_order", { ascending: true });
+
+        if (fetchError) throw fetchError;
+
+        if (data) {
+          const mapped: Project[] = data.map((p: any) => ({
+            id: p.id,
+            name: p.title,
+            tagline: p.category,
+            description: p.description,
+            tags: [p.category],
+            image_url: p.image_url,
+            link: p.link,
+            color: p.color,
+          }));
+          setProjects(mapped);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch featured projects:", err.message);
+        setError("Database connection failed. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchFeaturedProjects();
+  }, []);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
@@ -96,7 +103,7 @@ export default function FeaturedProducts() {
     }, containerRef);
 
     return () => ctx.revert();
-  }, []);
+  }, [projects]);
 
   return (
     <section
@@ -118,63 +125,96 @@ export default function FeaturedProducts() {
           </div>
           <div className="lg:col-span-8">
             <h2 className="text-3xl md:text-5xl font-light tracking-tight leading-[1.15] text-neutral-200 max-w-3xl">
-              A curated selection of products we&apos; engineered from concept
+              A curated selection of products we've engineered from concept
               to production — each built for scale, speed, and real-world
               impact.
             </h2>
           </div>
         </div>
 
-        <div
-          ref={cardsRef}
-          className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pt-16 md:pt-20"
-        >
-          {products.map((product) => (
-            <div
-              key={product.id}
-              className="relative rounded-2xl border border-neutral-800/60 bg-neutral-900/30 backdrop-blur-sm p-8 md:p-10 flex flex-col justify-between space-y-8"
-            >
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-mono text-neutral-600">
-                    {product.id}
-                  </span>
-                  <div className="w-8 h-[1px] bg-neutral-700" />
-                </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-500 animate-pulse">
+              Loading featured projects...
+            </p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 border border-red-500/20 bg-red-500/[0.02] rounded-3xl mt-16">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
+              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-red-400 mb-2">Database Connection Failed</p>
+            <p className="text-neutral-400 text-sm font-light text-center max-w-md leading-relaxed">
+              {error}
+            </p>
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl mt-16">
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">
+              No featured projects available yet.
+            </p>
+          </div>
+        ) : (
+          <div
+            ref={cardsRef}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pt-16 md:pt-20"
+          >
+            {projects.map((product) => (
+              <div
+                key={product.id}
+                className="relative rounded-2xl border border-neutral-800/60 bg-neutral-900/30 backdrop-blur-sm p-8 md:p-10 flex flex-col justify-between space-y-8"
+              >
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-neutral-600">
+                      {String(product.id).padStart(2, "0")}
+                    </span>
+                    <div className="w-8 h-[1px] bg-neutral-700" />
+                  </div>
 
-                <div className="space-y-2">
-                  <h3 className="text-2xl md:text-3xl font-light tracking-tight text-neutral-100">
-                    {product.name}
-                  </h3>
-                  <p className="text-sm font-mono text-purple-400/80 tracking-wide">
-                    {product.tagline}
+                  <div className="space-y-2">
+                    <h3 className="text-2xl md:text-3xl font-light tracking-tight text-neutral-100">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm font-mono text-purple-400/80 tracking-wide">
+                      {product.tagline}
+                    </p>
+                  </div>
+
+                  <p className="text-sm leading-relaxed text-neutral-400 font-light max-w-md">
+                    {product.description}
                   </p>
                 </div>
 
-                <p className="text-sm leading-relaxed text-neutral-400 font-light max-w-md">
-                  {product.description}
-                </p>
-              </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    {product.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-xs font-mono px-3 py-1 rounded-full border border-neutral-800 text-neutral-500"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
 
-              <div className="flex items-center justify-between">
-                <div className="flex flex-wrap gap-2">
-                  {product.tags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="text-xs font-mono px-3 py-1 rounded-full border border-neutral-800 text-neutral-500"
+                  {product.link && (
+                    <a
+                      href={product.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-mono tracking-wider uppercase px-5 py-2.5 rounded-full border border-neutral-700 text-neutral-300 cursor-pointer transition-colors duration-300 hover:border-purple-500/60 hover:text-purple-300"
                     >
-                      {tag}
-                    </span>
-                  ))}
+                      View
+                    </a>
+                  )}
                 </div>
-
-                <button className="text-xs font-mono tracking-wider uppercase px-5 py-2.5 rounded-full border border-neutral-700 text-neutral-300 cursor-pointer transition-colors duration-300 hover:border-purple-500/60 hover:text-purple-300">
-                  View
-                </button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
