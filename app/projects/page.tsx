@@ -17,6 +17,8 @@ interface Project {
   link: string;
   image_url: string;
   color: string;
+  is_featured: boolean;
+  sort_order: number;
 }
 
 export default function ProjectsPage() {
@@ -39,7 +41,7 @@ export default function ProjectsPage() {
         const { data, error: fetchError } = await supabase
           .from("projects_new")
           .select("*")
-          .order("created_at", { ascending: false });
+          .order("sort_order", { ascending: true });
 
         if (fetchError) throw fetchError;
         if (data) setProjects(data);

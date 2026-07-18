@@ -12,6 +12,7 @@ import CubeSection from "@/components/cubesection";
 import WhatsAppButton from "@/components/whatsapp-button";
 import ImpactSection from "@/components/home/ImpactSection";
 import InteractiveBentoFAQ from "@/components/home/FAQ";
+import FeaturedProducts from "@/components/home/FeaturedProducts";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
@@ -302,6 +303,7 @@ export default function Home() {
           </section>
 
           <ImpactSection />
+          <FeaturedProducts />
           <CubeSection />
           <InteractiveBentoFAQ />
           <ContactSection showCapabilities hasBackground={false} />
