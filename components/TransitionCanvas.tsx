@@ -4,7 +4,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 // ==========================================
 // 1. GLSL HELPER FUNCTIONS & UNIFORMS
@@ -158,7 +158,7 @@ const ACTIVE_SHADER: keyof typeof SHADERS = "rgbGlitch";
 // ==========================================
 function PixelShaderScene() {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const pathname = usePathname();
+  const router = useRouter();
   const isTransitioning = useRef(false);
   const { viewport } = useThree();
 
@@ -183,8 +183,8 @@ function PixelShaderScene() {
   useEffect(() => {
     const handleStart = (e: Event) => {
       const customEvent = e as CustomEvent;
-      const { href, router } = customEvent.detail;
-      if (!materialRef.current) return;
+      const { href } = customEvent.detail;
+      if (!materialRef.current || isTransitioning.current) return;
 
       isTransitioning.current = true;
 
@@ -192,35 +192,38 @@ function PixelShaderScene() {
       materialRef.current.fragmentShader = SHADERS[ACTIVE_SHADER];
       materialRef.current.needsUpdate = true;
 
-      // Slow animation so the glitch effect is clearly visible
-      gsap.to(materialRef.current.uniforms.uProgress, {
-        value: 1.0,
-        duration: 1.8,
-        ease: "power2.inOut",
-        onComplete: () => {
+      const uProgress = materialRef.current.uniforms.uProgress;
+
+      // Single self-contained timeline:
+      //   1. Glitch sweeps in (1.2s)
+      //   2. Navigate to new page at the peak
+      //   3. Glitch sweeps back out (0.9s)
+      // This prevents any double-navigation and the resulting black screen.
+      gsap.timeline()
+        .to(uProgress, {
+          value: 1.0,
+          duration: 0.75,
+          ease: "power2.inOut",
+        })
+        .call(() => {
+          // Navigate at the glitch peak — page swap is hidden under the overlay
           router.push(href);
-        },
-      });
+        })
+        .to(uProgress, {
+          value: 0.0,
+          duration: 0.5,
+          ease: "power2.inOut",
+          delay: 0.1,
+          onComplete: () => {
+            isTransitioning.current = false;
+            document.body.style.pointerEvents = "";
+          },
+        });
     };
 
     window.addEventListener("start-3d-transition", handleStart);
     return () => window.removeEventListener("start-3d-transition", handleStart);
-  }, []);
-
-  useEffect(() => {
-    if (isTransitioning.current && materialRef.current) {
-      gsap.to(materialRef.current.uniforms.uProgress, {
-        value: 0.0,
-        duration: 1.4,
-        ease: "power2.inOut",
-        delay: 0.1,
-        onComplete: () => {
-          isTransitioning.current = false;
-          document.body.style.pointerEvents = "";
-        },
-      });
-    }
-  }, [pathname]);
+  }, [router]);
 
   return (
     <mesh>
