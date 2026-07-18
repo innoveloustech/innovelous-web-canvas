@@ -7,6 +7,10 @@ Directory structure:
     ├── next.config.ts
     ├── pnpm-workspace.yaml
     ├── postcss.config.mjs
+    ├── vitest.config.ts
+    ├── vitest.setup.ts
+    ├── __tests__/
+    │   └── projects.test.ts
     ├── app/
     │   ├── globals.css
     │   ├── layout.tsx
@@ -34,6 +38,8 @@ Directory structure:
     │   ├── whatsapp-button.tsx
     │   ├── home/
     │   │   ├── DraggableMarquee.tsx
+    │   │   ├── FAQ.tsx
+    │   │   ├── FeaturedProducts.tsx
     │   │   └── ImpactSection.tsx
     │   ├── solutions/
     │   │   ├── SolutionClientWrapper.tsx
@@ -172,6 +178,553 @@ export default config;
 
 
 ================================================
+FILE: vitest.config.ts
+================================================
+import { defineConfig } from 'vitest/config';
+import path from 'path';
+
+export default defineConfig({
+  test: {
+    environment: 'jsdom',
+    globals: true,
+    setupFiles: ['./vitest.setup.ts'],
+  },
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, '.'),
+    },
+  },
+});
+
+
+================================================
+FILE: vitest.setup.ts
+================================================
+import '@testing-library/jest-dom';
+
+
+================================================
+FILE: __tests__/projects.test.ts
+================================================
+import fs from 'fs';
+import path from 'path';
+
+// Load env variables from .env.local before anything else
+try {
+  const envPath = path.resolve(process.cwd(), '.env.local');
+  if (fs.existsSync(envPath)) {
+    const envConfig = fs.readFileSync(envPath, 'utf8');
+    for (const line of envConfig.split('\n')) {
+      const parts = line.split('=');
+      if (parts.length >= 2) {
+        const key = parts[0].trim();
+        const value = parts.slice(1).join('=').trim().replace(/^['"]|['"]$/g, '');
+        if (key && process.env[key] === undefined) {
+          process.env[key] = value;
+        }
+      }
+    }
+  }
+} catch (e) {
+  console.error('Error loading env variables:', e);
+}
+
+import React from 'react';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vitest';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { supabase } from '@/lib/supabase';
+import ProjectsPage from '@/app/projects/page';
+import AdminDashboardPortal from '@/app/admin/page';
+
+// ----------------------------------------------------
+// Mock `@/lib/supabase` at the top level
+// ----------------------------------------------------
+vi.mock('@/lib/supabase', () => {
+  return {
+    supabase: {
+      from: vi.fn(() => ({
+        select: vi.fn().mockReturnThis(),
+        insert: vi.fn().mockReturnThis(),
+        update: vi.fn().mockReturnThis(),
+        delete: vi.fn().mockReturnThis(),
+        eq: vi.fn().mockReturnThis(),
+        order: vi.fn().mockReturnThis(),
+        single: vi.fn().mockReturnThis(),
+      })),
+      auth: {
+        getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
+        onAuthStateChange: vi.fn(() => ({
+          data: { subscription: { unsubscribe: vi.fn() } },
+        })),
+        signInWithPassword: vi.fn(),
+        signOut: vi.fn(),
+      },
+      storage: {
+        from: vi.fn(() => ({
+          upload: vi.fn(),
+          getPublicUrl: vi.fn(() => ({
+            data: { publicUrl: 'https://example.com/image.png' },
+          })),
+        })),
+      },
+    },
+  };
+});
+
+// ----------------------------------------------------
+// Mock GSAP and ScrollTrigger to prevent layout errors
+// ----------------------------------------------------
+vi.mock('gsap', () => {
+  const dummyFn = vi.fn().mockReturnThis();
+  const dummyTimeline = vi.fn(() => ({
+    to: dummyFn,
+    fromTo: dummyFn,
+  }));
+  return {
+    default: {
+      from: dummyFn,
+      to: dummyFn,
+      fromTo: dummyFn,
+      timeline: dummyTimeline,
+      registerPlugin: vi.fn(),
+      ticker: {
+        add: vi.fn(),
+        remove: vi.fn(),
+        lagSmoothing: vi.fn(),
+      },
+    },
+    gsap: {
+      from: dummyFn,
+      to: dummyFn,
+      fromTo: dummyFn,
+      timeline: dummyTimeline,
+      registerPlugin: vi.fn(),
+      ticker: {
+        add: vi.fn(),
+        remove: vi.fn(),
+        lagSmoothing: vi.fn(),
+      },
+    },
+  };
+});
+
+vi.mock('gsap/ScrollTrigger', () => ({
+  ScrollTrigger: {
+    update: vi.fn(),
+  },
+}));
+
+vi.mock('@gsap/react', () => ({
+  useGSAP: (fn: any, config?: any) => {
+    const deps = config?.dependencies || [];
+    React.useEffect(fn, deps);
+  },
+}));
+
+// ----------------------------------------------------
+// Mock Next.js & UI components to isolate behavior tests
+// ----------------------------------------------------
+vi.mock('next/link', () => ({
+  default: ({ children, href }: any) => React.createElement('a', { href }, children),
+}));
+
+vi.mock('@/components/canvas-background', () => ({
+  default: () => React.createElement('div', { 'data-testid': 'canvas-background' }),
+}));
+
+vi.mock('@/components/MouseFollower', () => ({
+  default: () => React.createElement('div', { 'data-testid': 'mouse-follower' }),
+}));
+
+vi.mock('@/components/navbar', () => ({
+  default: () => React.createElement('div', { 'data-testid': 'navbar' }),
+}));
+
+vi.mock('@/components/whatsapp-button', () => ({
+  default: () => React.createElement('div', { 'data-testid': 'whatsapp-button' }),
+}));
+
+vi.mock('@/lib/lenis-provider', () => ({
+  useLenis: () => ({
+    stop: vi.fn(),
+    start: vi.fn(),
+  }),
+}));
+
+// ----------------------------------------------------
+// Mock dnd-kit modules to bypass drag and drop requirements
+// ----------------------------------------------------
+vi.mock('@dnd-kit/core', () => ({
+  DndContext: ({ children }: any) => React.createElement('div', { 'data-testid': 'dnd-context' }, children),
+  closestCenter: vi.fn(),
+  KeyboardSensor: vi.fn(),
+  PointerSensor: vi.fn(),
+  useSensor: vi.fn(),
+  useSensors: vi.fn(),
+}));
+
+vi.mock('@dnd-kit/sortable', () => ({
+  SortableContext: ({ children }: any) => React.createElement('div', { 'data-testid': 'sortable-context' }, children),
+  sortableKeyboardCoordinates: vi.fn(),
+  useSortable: () => ({
+    attributes: {},
+    listeners: {},
+    setNodeRef: vi.fn(),
+    transform: null,
+    transition: null,
+    isDragging: false,
+  }),
+  verticalListSortingStrategy: {},
+}));
+
+vi.mock('@dnd-kit/utilities', () => ({
+  CSS: {
+    Transform: {
+      toString: vi.fn(() => ''),
+    },
+  },
+}));
+
+// ----------------------------------------------------
+// ProjectsPage Component Tests
+// ------------------------------------
+describe('ProjectsPage Component Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should render the loading state initially', () => {
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockReturnValue(new Promise(() => {})), // Never resolves
+    } as any);
+
+    render(React.createElement(ProjectsPage));
+    expect(screen.getByText('Loading Projects...')).toBeInTheDocument();
+  });
+
+  it('should render projects on successful data fetch', async () => {
+    const mockProjects = [
+      { id: 1, title: 'Project One', category: 'Web Development', description: 'Web Desc', link: 'https://one.com', image_url: 'https://one.com/img.png', color: '#a855f7', is_featured: false, sort_order: 0 },
+      { id: 2, title: 'Project Two', category: 'Mobile Development', description: 'Mobile Desc', link: 'https://two.com', image_url: 'https://two.com/img.png', color: '#a855f7', is_featured: true, sort_order: 1 },
+    ];
+
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: mockProjects, error: null }),
+    } as any);
+
+    render(React.createElement(ProjectsPage));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading Projects...')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Project One')).toBeInTheDocument();
+    expect(screen.getByText('Project Two')).toBeInTheDocument();
+  });
+
+  it('should render empty state when no projects are returned', async () => {
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+    } as any);
+
+    render(React.createElement(ProjectsPage));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading Projects...')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText(/No Projects Available/i)).toBeInTheDocument();
+  });
+
+  it('should render error state when database sync fails', async () => {
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: null, error: { message: 'Database query failed' } }),
+    } as any);
+
+    render(React.createElement(ProjectsPage));
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading Projects...')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Database Sync Exception')).toBeInTheDocument();
+  });
+});
+
+// ----------------------------------------------------
+// AdminDashboardPortal Component Tests
+// ----------------------------------------------------
+describe('AdminDashboardPortal Component Tests', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('should enforce auth gate when session is null', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: null },
+      error: null,
+    } as any);
+
+    render(React.createElement(AdminDashboardPortal));
+
+    await waitFor(() => {
+      expect(screen.getByText('Internal Access Authorization')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Identifier Email')).toBeInTheDocument();
+      expect(screen.getByPlaceholderText('Key Verification Token')).toBeInTheDocument();
+    });
+  });
+
+  it('should process login submission correctly', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: null },
+      error: null,
+    } as any);
+
+    const signInMock = vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
+      data: { session: {} },
+      error: null,
+    } as any);
+
+    render(React.createElement(AdminDashboardPortal));
+
+    const user = userEvent.setup();
+    await user.type(screen.getByPlaceholderText('Identifier Email'), 'admin@innovelous.com');
+    await user.type(screen.getByPlaceholderText('Key Verification Token'), 'secretpassword');
+    await user.click(screen.getByRole('button', { name: /Connect Workspace/i }));
+
+    expect(signInMock).toHaveBeenCalledWith({
+      email: 'admin@innovelous.com',
+      password: 'secretpassword',
+    });
+  });
+
+  it('should block create submission and show warning alert when image asset is missing', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { user: { id: 'admin-id' } } },
+      error: null,
+    } as any);
+
+    const insertMock = vi.fn().mockResolvedValue({ data: null, error: null });
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: [], error: null }),
+      insert: insertMock,
+    } as any);
+
+    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
+
+    render(React.createElement(AdminDashboardPortal));
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Create Object/i })).toBeInTheDocument();
+    });
+
+    const user = userEvent.setup();
+    await user.click(screen.getByRole('button', { name: /Create Object/i }));
+
+    expect(screen.getByText('Initialize Data Object')).toBeInTheDocument();
+
+    const nameInput = screen.getByText('Project Name').closest('div')?.querySelector('input');
+    const descInput = screen.getByText('Description Context').closest('div')?.querySelector('textarea');
+    expect(nameInput).not.toBeNull();
+    expect(descInput).not.toBeNull();
+
+    await user.type(nameInput!, 'New Dynamic Project');
+    await user.type(descInput!, 'Dynamic Project Description');
+
+    const form = screen.getByText('Initialize Data Object').closest('div')?.querySelector('form');
+    expect(form).not.toBeNull();
+    
+    // Direct submit form event triggers form handler asynchronously
+    fireEvent.submit(form!);
+
+    // Wait for the async alert message to be called
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith('An image asset file is required for initial project creations.');
+    });
+    expect(insertMock).not.toHaveBeenCalled();
+
+    alertSpy.mockRestore();
+  });
+
+  it('should debounce query filter input by 300ms', async () => {
+    vi.mocked(supabase.auth.getSession).mockResolvedValue({
+      data: { session: { user: { id: 'admin-id' } } },
+      error: null,
+    } as any);
+
+    const mockProjects = [
+      { id: 1, title: 'React Web Canvas', category: 'Web Development', description: 'desc', link: '', image_url: '', color: '#111', is_featured: false, sort_order: 0 },
+      { id: 2, title: 'Vue Dashboard Tool', category: 'Web Development', description: 'desc', link: '', image_url: '', color: '#222', is_featured: false, sort_order: 1 },
+    ];
+
+    vi.mocked(supabase.from).mockReturnValue({
+      select: vi.fn().mockReturnThis(),
+      order: vi.fn().mockResolvedValue({ data: mockProjects, error: null }),
+    } as any);
+
+    render(React.createElement(AdminDashboardPortal));
+
+    // 1. Wait for projects to load with real timers
+    await waitFor(() => {
+      expect(screen.getByText('React Web Canvas')).toBeInTheDocument();
+      expect(screen.getByText('Vue Dashboard Tool')).toBeInTheDocument();
+    });
+
+    // 2. Enable fake timers ONLY after initial wait is resolved
+    vi.useFakeTimers();
+
+    const searchInput = screen.getByPlaceholderText('Search projects by title, category, or description...');
+
+    // 3. Update search input
+    fireEvent.change(searchInput, { target: { value: 'React' } });
+
+    // 4. Verify both remain visible before debounce fires
+    expect(screen.getByText('React Web Canvas')).toBeInTheDocument();
+    expect(screen.getByText('Vue Dashboard Tool')).toBeInTheDocument();
+
+    // 5. Advance timers by 300ms inside act() to flush the state update
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    // 6. Verify Vue project is filtered out
+    expect(screen.getByText('React Web Canvas')).toBeInTheDocument();
+    expect(screen.queryByText('Vue Dashboard Tool')).not.toBeInTheDocument();
+
+    vi.useRealTimers();
+  });
+});
+
+// ----------------------------------------------------
+// Integration Test: Real DB CRUD & Cleanup
+// ----------------------------------------------------
+describe('Integration Test: Real DB CRUD & Cleanup', () => {
+  let realSupabase: any;
+  let testProjectTitle: string;
+  const hasPassword = !!(process.env.PASSWORD);
+
+  beforeAll(async () => {
+    // Dynamically fetch the actual unmocked client instance
+    const actualModule = await vi.importActual<any>('@/lib/supabase');
+    realSupabase = actualModule.supabase;
+  });
+
+  beforeEach(() => {
+    testProjectTitle = `TEST_PROJECT_${Date.now()}`;
+  });
+
+  afterEach(async () => {
+    try {
+      if (realSupabase) {
+        await realSupabase.from('projects_new').delete().ilike('title', 'TEST_PROJECT_%');
+      }
+    } catch (err) {
+      console.error('Integration Test Cleanup Error:', err);
+    }
+  });
+
+  // Verify that Row-Level Security (RLS) restricts unauthenticated inserts on the real database
+  it('should enforce RLS and reject insert for unauthenticated users', async () => {
+    // Only call signOut if there is an active session to save network calls
+    const { data: { session } } = await realSupabase.auth.getSession();
+    if (session) {
+      await realSupabase.auth.signOut();
+    }
+
+    const testProject = {
+      title: testProjectTitle,
+      category: 'Web Development',
+      description: 'Automated RLS validation integration test project.',
+      link: 'https://innovelous.com',
+      image_url: 'https://example.com/mock-asset.png',
+      color: '#8b5cf6',
+      is_featured: false,
+      sort_order: 9999,
+    };
+
+    const { data, error } = await realSupabase
+      .from('projects_new')
+      .insert([testProject])
+      .select();
+
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+    // 42501 PostgreSQL error code for policy violations / permission errors
+    expect(error.code).toBe('42501');
+  }, 20000); // 20 seconds timeout to prevent transient network timeout failures
+
+  // Skip the authenticated integration test block dynamically if password is not configured
+  it.skipIf(!hasPassword)('should safely execute INSERT and UPDATE actions against the database when authenticated, then purge data', async () => {
+    // Authenticate using env variables
+    const email = 'admin@innovelous.com';
+    const password = process.env.PASSWORD || '';
+    const { error: signInError } = await realSupabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (signInError) {
+      throw new Error(`Authentication failed for integration test: ${signInError.message}`);
+    }
+
+    try {
+      const testProject = {
+        title: testProjectTitle,
+        category: 'Web Development',
+        description: 'Automated integration test object representation.',
+        link: 'https://innovelous.com',
+        image_url: 'https://example.com/mock-asset.png',
+        color: '#8b5cf6',
+        is_featured: false,
+        sort_order: 9999,
+      };
+
+      // 1. Insert data row
+      const { data: insertData, error: insertError } = await realSupabase
+        .from('projects_new')
+        .insert([testProject])
+        .select();
+
+      expect(insertError).toBeNull();
+      expect(insertData).not.toBeNull();
+      expect(insertData!.length).toBe(1);
+      expect(insertData![0].title).toBe(testProjectTitle);
+
+      const insertedId = insertData![0].id;
+
+      // 2. Modify value updates
+      const updatedTitle = `${testProjectTitle}_UPDATED`;
+      const { data: updateData, error: updateError } = await realSupabase
+        .from('projects_new')
+        .update({ title: updatedTitle })
+        .eq('id', insertedId)
+        .select();
+
+      expect(updateError).toBeNull();
+      expect(updateData).not.toBeNull();
+      expect(updateData!.length).toBe(1);
+      expect(updateData![0].title).toBe(updatedTitle);
+    } finally {
+      // Double check cleanup is run for this specific test case immediately
+      await realSupabase.from('projects_new').delete().ilike('title', 'TEST_PROJECT_%');
+      
+      // Restore clean state
+      const { data: { session } } = await realSupabase.auth.getSession();
+      if (session) {
+        await realSupabase.auth.signOut();
+      }
+    }
+  }, 20000); // 20 seconds timeout to prevent transient network timeout failures
+});
+
+
+
+================================================
 FILE: app/globals.css
 ================================================
 @import "tailwindcss";
@@ -266,6 +819,81 @@ html.lenis body {
   pointer-events: none;
 }
 
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   BROWSER VIEW TRANSITIONS API
+   next-view-transitions wraps navigation in document.startViewTransition()
+   which activates these rules.
+   ============================================================ */
+
+/* 
+  The root cross-fade: we set it to nearly instant (0.01s) because the 
+  3D WebGL shader (TransitionCanvas) is our primary visual transition. 
+  We don't want two competing transitions — the browser's default white flash 
+  and our custom one. This makes the browser-side invisible, leaving the stage 
+  entirely to the WebGL effect.
+*/
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.01s;
+  animation-timing-function: ease-in-out;
+}
+
+/* 
+  Named element: navbar
+  The navbar is a persisted layout element — giving it a view-transition-name 
+  lets the browser smoothly morph it between pages instead of a hard swap.
+  Set on the element itself via style prop in the Navbar component.
+*/
+::view-transition-old(navbar),
+::view-transition-new(navbar) {
+  animation: none; /* Navbar is persistent — no animation needed */
+}
+
+/* 
+  Named element: page-content
+  Main content area slides in smoothly.
+*/
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-to-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+::view-transition-old(page-content) {
+  animation: 0.3s ease-in slide-out-to-left;
+}
+
+::view-transition-new(page-content) {
+  animation: 0.35s ease-out 0.05s slide-in-from-right both;
+}
+
 
 
 ================================================
@@ -273,6 +901,7 @@ FILE: app/layout.tsx
 ================================================
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { ViewTransitions } from "next-view-transitions";
 import { LenisProvider } from "@/lib/lenis-provider";
 import ScrollTriggerManager from "@/components/ScrollTriggerManager";
 import "./globals.css";
@@ -341,18 +970,20 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <LenisProvider>
-        <TransitionCanvas />
-          <ScrollTriggerManager /> 
-          {children}
-        </LenisProvider>
-      </body>
-    </html>
+    <ViewTransitions>
+      <html
+        lang="en"
+        className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      >
+        <body className="min-h-full flex flex-col">
+          <LenisProvider>
+          <TransitionCanvas />
+            <ScrollTriggerManager /> 
+            {children}
+          </LenisProvider>
+        </body>
+      </html>
+    </ViewTransitions>
   );
 }
 
@@ -520,11 +1151,28 @@ export default function robots(): MetadataRoute.Robots {
 FILE: app/admin/page.tsx
 ================================================
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 interface Project {
   id: number;
@@ -534,6 +1182,93 @@ interface Project {
   link: string;
   image_url: string;
   color: string;
+  is_featured: boolean;
+  sort_order: number;
+}
+
+function SortableProjectCard({
+  project,
+  onEdit,
+  onDelete,
+}: {
+  project: Project;
+  onEdit: (p: Project) => void;
+  onDelete: (p: Project) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: project.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group border border-white/10 bg-white/[0.01] rounded-2xl p-6 flex flex-col justify-between hover:bg-white/[0.03] transition-colors min-h-[260px]"
+    >
+      <div>
+        <div className="flex justify-between items-start gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-1 text-neutral-500 hover:text-white transition-colors"
+              title="Drag to reorder"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zM8 11h2v2H8v-2zm6 0h2v2h-2v-2zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
+              </svg>
+            </button>
+            <span
+              className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 border rounded-full"
+              style={{ color: project.color, borderColor: project.color }}
+            >
+              {project.category}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            {project.is_featured && (
+              <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 border rounded-full border-yellow-500/50 text-yellow-400">
+                Featured
+              </span>
+            )}
+            {project.image_url && (
+              <div className="w-12 h-12 rounded-lg border border-white/10 overflow-hidden bg-black flex-shrink-0">
+                <img src={project.image_url} alt="asset node preview" className="w-full h-full object-cover" />
+              </div>
+            )}
+          </div>
+        </div>
+        <h3 className="text-xl font-medium tracking-tight mb-2 group-hover:text-purple-400 transition-colors">
+          {project.title}
+        </h3>
+        <p className="text-neutral-500 text-xs leading-relaxed line-clamp-3 font-light">{project.description}</p>
+        <div className="mt-3 flex items-center gap-3 text-[10px] font-mono text-neutral-600">
+          <span>Order: {project.sort_order}</span>
+        </div>
+      </div>
+      <div className="flex gap-2 border-t border-white/5 pt-4 mt-6">
+        <button
+          onClick={() => onEdit(project)}
+          className="flex-1 py-2 text-center text-xs border border-white/10 rounded-lg text-neutral-300 hover:bg-white/5 transition-colors"
+        >
+          Modify
+        </button>
+        <button
+          onClick={() => onDelete(project)}
+          className="px-3 py-2 text-center text-xs border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function AdminDashboardPortal() {
@@ -548,11 +1283,32 @@ export default function AdminDashboardPortal() {
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
   const [color, setColor] = useState("#a855f7");
+  const [isFeatured, setIsFeatured] = useState(false);
+  const [sortOrder, setSortOrder] = useState(0);
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
 
   const modalWrapperRef = useRef<HTMLDivElement>(null);
   const modalBoxRef = useRef<HTMLDivElement>(null);
+  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounced search
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    searchTimerRef.current = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 300);
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [searchQuery]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
@@ -561,7 +1317,10 @@ export default function AdminDashboardPortal() {
   }, []);
 
   const syncWorkspaceData = async () => {
-    const { data, error } = await supabase.from("projects_new").select("*").order("created_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("projects_new")
+      .select("*")
+      .order("sort_order", { ascending: true });
     if (data) setProjects(data);
     if (error) console.error("Database Sync error:", error.message);
   };
@@ -588,22 +1347,26 @@ export default function AdminDashboardPortal() {
   };
 
   const clearFormFields = () => {
-    setTitle(""); 
-    setCategory("Web Development"); 
-    setDescription(""); 
-    setLink(""); 
-    setColor("#a855f7"); 
+    setTitle("");
+    setCategory("Web Development");
+    setDescription("");
+    setLink("");
+    setColor("#a855f7");
+    setIsFeatured(false);
+    setSortOrder(0);
     setMediaFile(null);
   };
 
   const openFormModal = (mode: "CREATE" | "UPDATE" | "DELETE", project?: Project) => {
     if (project) {
-      setActiveProject(project); 
-      setTitle(project.title); 
-      setCategory(project.category); 
-      setDescription(project.description); 
-      setLink(project.link); 
+      setActiveProject(project);
+      setTitle(project.title);
+      setCategory(project.category);
+      setDescription(project.description);
+      setLink(project.link);
       setColor(project.color || "#a855f7");
+      setIsFeatured(project.is_featured);
+      setSortOrder(project.sort_order);
     } else {
       clearFormFields();
     }
@@ -633,10 +1396,15 @@ export default function AdminDashboardPortal() {
 
       if (modalMode === "CREATE") {
         if (!mediaFile) throw new Error("An image asset file is required for initial project creations.");
-        const { error: insErr } = await supabase.from("projects_new").insert([{ title, category, description, link, color, image_url: resolvedImageUrl }]);
+        const { error: insErr } = await supabase.from("projects_new").insert([
+          { title, category, description, link, color, image_url: resolvedImageUrl, is_featured: isFeatured, sort_order: sortOrder }
+        ]);
         if (insErr) throw insErr;
       } else if (modalMode === "UPDATE" && activeProject) {
-        const { error: updErr } = await supabase.from("projects_new").update({ title, category, description, link, color, image_url: resolvedImageUrl }).eq("id", activeProject.id);
+        const { error: updErr } = await supabase
+          .from("projects_new")
+          .update({ title, category, description, link, color, image_url: resolvedImageUrl, is_featured: isFeatured, sort_order: sortOrder })
+          .eq("id", activeProject.id);
         if (updErr) throw updErr;
       }
 
@@ -664,6 +1432,42 @@ export default function AdminDashboardPortal() {
     }
   };
 
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = projects.findIndex((p) => p.id === active.id);
+    const newIndex = projects.findIndex((p) => p.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+
+    const reordered = arrayMove(projects, oldIndex, newIndex);
+    const updated = reordered.map((p, i) => ({ ...p, sort_order: i }));
+    setProjects(updated);
+
+    // Batch update sort_order in database
+    try {
+      const updates = updated.map((p) =>
+        supabase.from("projects_new").update({ sort_order: p.sort_order }).eq("id", p.id)
+      );
+      await Promise.all(updates);
+    } catch (err: any) {
+      console.error("Failed to update sort_order:", err.message);
+      await syncWorkspaceData(); // revert on failure
+    }
+  };
+
+  // Filter projects by debounced search
+  const filteredProjects = useMemo(() => {
+    if (!debouncedSearch.trim()) return projects;
+    const q = debouncedSearch.toLowerCase();
+    return projects.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.category.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q)
+    );
+  }, [projects, debouncedSearch]);
+
   if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white px-4 font-sans">
@@ -671,21 +1475,21 @@ export default function AdminDashboardPortal() {
           <h2 className="text-3xl font-light tracking-tight mb-1">Terminal</h2>
           <p className="text-[10px] font-mono text-neutral-500 uppercase tracking-widest mb-6">Internal Access Authorization</p>
           <form onSubmit={executeLogin} className="space-y-4">
-            <input 
-              type="email" 
-              placeholder="Identifier Email" 
-              value={authEmail} 
-              onChange={e => setAuthEmail(e.target.value)} 
-              required 
-              className="w-full p-4 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 transition-colors" 
+            <input
+              type="email"
+              placeholder="Identifier Email"
+              value={authEmail}
+              onChange={e => setAuthEmail(e.target.value)}
+              required
+              className="w-full p-4 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 transition-colors"
             />
-            <input 
-              type="password" 
-              placeholder="Key Verification Token" 
-              value={authPassword} 
-              onChange={e => setAuthPassword(e.target.value)} 
-              required 
-              className="w-full p-4 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 transition-colors" 
+            <input
+              type="password"
+              placeholder="Key Verification Token"
+              value={authPassword}
+              onChange={e => setAuthPassword(e.target.value)}
+              required
+              className="w-full p-4 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-500 transition-colors"
             />
             <button type="submit" className="w-full p-4 bg-white text-black text-xs uppercase tracking-wider font-bold rounded-xl hover:bg-neutral-200 transition-colors">
               Connect Workspace
@@ -701,12 +1505,11 @@ export default function AdminDashboardPortal() {
       <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-white/10 pb-8 mb-12 gap-4">
         <div>
           <h1 className="text-4xl font-black tracking-tight">Dashboard To Manage Projects</h1>
-          <p className="text-neutral-500 text-xs mt-1 font-light">Manage database rows alongside flat preview visual representation modules.</p>
+          <p className="text-neutral-500 text-xs mt-1 font-light">Drag cards to reorder. Search to filter.</p>
         </div>
         <div className="flex gap-3">
-          {/* NEW: View Projects Button */}
-          <Link 
-            href={"/projects" as any} 
+          <Link
+            href={"/projects" as any}
             className="px-5 py-3 border border-white/10 hover:bg-white/5 text-neutral-400 hover:text-white text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -715,15 +1518,14 @@ export default function AdminDashboardPortal() {
             </svg>
             View Projects
           </Link>
-          
-          <button 
-            onClick={() => openFormModal("CREATE")} 
+          <button
+            onClick={() => openFormModal("CREATE")}
             className="px-5 py-3 bg-purple-600 hover:bg-purple-700 text-white font-medium text-xs uppercase tracking-wider rounded-xl transition-colors"
           >
             Create Object
           </button>
-          <button 
-            onClick={() => supabase.auth.signOut()} 
+          <button
+            onClick={() => supabase.auth.signOut()}
             className="px-5 py-3 border border-white/10 hover:bg-white/5 text-neutral-400 hover:text-white text-xs uppercase tracking-wider rounded-xl transition-colors"
           >
             Log Out
@@ -731,40 +1533,64 @@ export default function AdminDashboardPortal() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
-        {projects.map((project) => (
-          <div key={project.id} className="group border border-white/10 bg-white/[0.01] rounded-2xl p-6 flex flex-col justify-between hover:bg-white/[0.03] transition-colors min-h-[260px]">
-            <div>
-              <div className="flex justify-between items-start gap-4 mb-4">
-                <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 border rounded-full" style={{ color: project.color, borderColor: project.color }}>
-                  {project.category}
-                </span>
-                {project.image_url && (
-                  <div className="w-12 h-12 rounded-lg border border-white/10 overflow-hidden bg-black flex-shrink-0">
-                    <img src={project.image_url} alt="asset node preview" className="w-full h-full object-cover" />
-                  </div>
-                )}
-              </div>
-              <h3 className="text-xl font-medium tracking-tight mb-2 group-hover:text-purple-400 transition-colors">{project.title}</h3>
-              <p className="text-neutral-500 text-xs leading-relaxed line-clamp-3 font-light">{project.description}</p>
-            </div>
-            <div className="flex gap-2 border-t border-white/5 pt-4 mt-6">
-              <button 
-                onClick={() => openFormModal("UPDATE", project)} 
-                className="flex-1 py-2 text-center text-xs border border-white/10 rounded-lg text-neutral-300 hover:bg-white/5 transition-colors"
-              >
-                Modify
-              </button>
-              <button 
-                onClick={() => openFormModal("DELETE", project)} 
-                className="px-3 py-2 text-center text-xs border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        ))}
+      {/* Search Bar */}
+      <div className="max-w-6xl mx-auto mb-8">
+        <div className="relative">
+          <svg
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+            />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search projects by title, category, or description..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full p-4 pl-12 bg-black border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 transition-colors placeholder:text-neutral-600"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
+
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={filteredProjects.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {filteredProjects.map((project) => (
+              <SortableProjectCard
+                key={project.id}
+                project={project}
+                onEdit={(p) => openFormModal("UPDATE", p)}
+                onDelete={(p) => openFormModal("DELETE", p)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
+
+      {filteredProjects.length === 0 && (
+        <div className="max-w-6xl mx-auto flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl">
+          <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">
+            {debouncedSearch ? "No projects match your search." : "No Projects Available. Create one to get started."}
+          </p>
+        </div>
+      )}
 
       {modalMode && (
         <div ref={modalWrapperRef} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={dismissModalContext}>
@@ -772,7 +1598,7 @@ export default function AdminDashboardPortal() {
             <button onClick={dismissModalContext} className="absolute top-6 right-6 w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">
               &times;
             </button>
-            
+
             {modalMode === "DELETE" ? (
               <div>
                 <h3 className="text-2xl font-light tracking-tight text-white mb-2">Destructive Access Instruction</h3>
@@ -796,20 +1622,20 @@ export default function AdminDashboardPortal() {
                 <form onSubmit={handleFormSubmission} className="space-y-4">
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Project Name</label>
-                    <input 
-                      type="text" 
-                      value={title} 
-                      onChange={e => setTitle(e.target.value)} 
-                      required 
-                      className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none" 
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={e => setTitle(e.target.value)}
+                      required
+                      className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none"
                     />
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Category Classification</label>
-                      <select 
-                        value={category} 
-                        onChange={e => setCategory(e.target.value)} 
+                      <select
+                        value={category}
+                        onChange={e => setCategory(e.target.value)}
                         className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none"
                       >
                         <option value="Web Development">Web Development</option>
@@ -821,49 +1647,82 @@ export default function AdminDashboardPortal() {
                     <div>
                       <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Brand Layout Glow Color</label>
                       <div className="flex gap-2">
-                        <input 
-                          type="color" 
-                          value={color} 
-                          onChange={e => setColor(e.target.value)} 
-                          className="w-10 h-10 bg-transparent border-0 cursor-pointer p-0" 
+                        <input
+                          type="color"
+                          value={color}
+                          onChange={e => setColor(e.target.value)}
+                          className="w-10 h-10 bg-transparent border-0 cursor-pointer p-0"
                         />
-                        <input 
-                          type="text" 
-                          value={color} 
-                          onChange={e => setColor(e.target.value)} 
-                          className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white uppercase font-mono" 
+                        <input
+                          type="text"
+                          value={color}
+                          onChange={e => setColor(e.target.value)}
+                          className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white uppercase font-mono"
                         />
                       </div>
                     </div>
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Description Context</label>
-                    <textarea 
-                      value={description} 
-                      onChange={e => setDescription(e.target.value)} 
-                      required 
-                      className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white min-h-[90px] resize-none focus:outline-none" 
+                    <textarea
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      required
+                      className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white min-h-[90px] resize-none focus:outline-none"
                     />
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Link Target Route URL</label>
-                    <input 
-                      type="url" 
-                      value={link} 
-                      onChange={e => setLink(e.target.value)} 
-                      placeholder="https://" 
-                      className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none" 
+                    <input
+                      type="url"
+                      value={link}
+                      onChange={e => setLink(e.target.value)}
+                      placeholder="https://"
+                      className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none"
                     />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Sort Order</label>
+                      <input
+                        type="number"
+                        value={sortOrder}
+                        onChange={e => setSortOrder(parseInt(e.target.value) || 0)}
+                        min={0}
+                        className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Featured on Homepage</label>
+                      <div className="flex items-center gap-3 h-full pt-2">
+                        <button
+                          type="button"
+                          onClick={() => setIsFeatured(!isFeatured)}
+                          className={`relative w-12 h-6 rounded-full transition-colors duration-300 ${
+                            isFeatured ? "bg-purple-600" : "bg-neutral-700"
+                          }`}
+                        >
+                          <span
+                            className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-300 ${
+                              isFeatured ? "translate-x-6" : "translate-x-0"
+                            }`}
+                          />
+                        </button>
+                        <span className="text-xs text-neutral-400 font-mono">
+                          {isFeatured ? "Enabled" : "Disabled"}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Thumbnail Media Asset Representation</label>
                     <div className="p-4 border border-dashed border-white/10 rounded-xl text-center relative hover:border-white/20 transition-colors">
-                      <input 
-                        type="file" 
-                        accept="image/*" 
-                        onChange={e => setMediaFile(e.target.files ? e.target.files[0] : null)} 
-                        required={modalMode === "CREATE"} 
-                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" 
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={e => setMediaFile(e.target.files ? e.target.files[0] : null)}
+                        required={modalMode === "CREATE"}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
                       />
                       <p className="text-xs text-neutral-400 font-light">
                         {mediaFile ? `Queued: ${mediaFile.name}` : modalMode === "UPDATE" ? "Leave blank to keep current thumbnail asset" : "Click or drop thumbnail image asset package here"}
@@ -1030,6 +1889,8 @@ interface Project {
   link: string;
   image_url: string;
   color: string;
+  is_featured: boolean;
+  sort_order: number;
 }
 
 export default function ProjectsPage() {
@@ -1052,7 +1913,7 @@ export default function ProjectsPage() {
         const { data, error: fetchError } = await supabase
           .from("projects_new")
           .select("*")
-          .order("created_at", { ascending: false });
+          .order("sort_order", { ascending: true });
 
         if (fetchError) throw fetchError;
         if (data) setProjects(data);
@@ -1785,9 +2646,12 @@ function ScrubHeading() {
   );
 }
 
-interface Props { showCapabilities: boolean; }
+interface Props {
+  showCapabilities: boolean;
+  hasBackground?: boolean;
+}
 
-export default function ContactSection({ showCapabilities }: Props) {
+export default function ContactSection({ showCapabilities, hasBackground = true }: Props) {
   const sectionRef = useRef<HTMLElement>(null);
   useGSAP(() => {
     const s = sectionRef.current;
@@ -1816,7 +2680,7 @@ export default function ContactSection({ showCapabilities }: Props) {
   };
 
   return (
-    <section ref={sectionRef} id="contact" className="relative min-h-screen bg-zinc-950 flex flex-col justify-center overflow-hidden px-6 md:px-16 py-24">
+    <section ref={sectionRef} id="contact" className={`relative min-h-screen ${hasBackground ? "bg-zinc-950" : "bg-transparent"} flex flex-col justify-center overflow-hidden px-6 md:px-16 py-24`}>
       <div className="absolute pointer-events-none" aria-hidden style={{ bottom: "-18%", left: "-8%", width: "60vw", height: "60vw", background: "radial-gradient(circle, rgba(88,28,135,0.14) 0%, transparent 65%)", filter: "blur(48px)" }} />
       <div className="absolute pointer-events-none" aria-hidden style={{ top: "5%", right: "-10%", width: "38vw", height: "38vw", background: "radial-gradient(circle, rgba(88,28,135,0.08) 0%, transparent 65%)", filter: "blur(64px)" }} />
       <div className="relative z-10 max-w-7xl mx-auto w-full flex flex-col gap-16">
@@ -2010,7 +2874,7 @@ export default function CubeSection() {
   const [domElement, setDomElement] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div className="h-screen w-full bg-zinc-950 flex items-center justify-center overflow-hidden relative">
+    <div className="h-screen w-full bg-zinc-950 flex items-center justify-center overflow-hidden relative rounded-b-3xl">
       
       <div className="absolute top-10 left-10 z-10 pointer-events-none">
         <p className="text-zinc-500 text-xs font-bold tracking-[0.25em] uppercase mb-3">
@@ -2301,15 +3165,15 @@ export default function Navbar() {
   };
 
   return (
-    <nav ref={navRef} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-black/80 backdrop-blur-md border-b border-white/5" : "bg-transparent"}`}>
+    <nav ref={navRef} style={{ viewTransitionName: "navbar" }} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-black/80 backdrop-blur-md border-b border-white/5" : "bg-transparent"}`}>
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="logo flex items-center gap-3 group relative z-50">
-            <div className="relative w-11 h-11">
+          <a href="/" className="logo flex items-center gap-3 group relative z-50" style={{ viewTransitionName: "nav-logo" }}>
+            <div className="relative w-11 h-11" style={{ viewTransitionName: "nav-logo-image" }}>
               <Image src="/logo.png" alt="Innovelous Logo" fill className="object-contain" />
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col" style={{ viewTransitionName: "nav-logo-text" }}>
               <span className="text-lg font-bold text-white leading-tight tracking-wide">Innovelous</span>
               <span className="text-xs text-purple-400 tracking-wider">Tech</span>
             </div>
@@ -2498,7 +3362,7 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 // ==========================================
 // 1. GLSL HELPER FUNCTIONS & UNIFORMS
@@ -2643,32 +3507,20 @@ const SHADERS = {
 };
 
 // ==========================================
-// 3. RANDOM SHADER PICKER
+// 3. ACTIVE SHADER — locked to RGB Glitch
 // ==========================================
-const SHADER_KEYS = Object.keys(SHADERS) as (keyof typeof SHADERS)[];
-
-/**
- * Pick a random shader key, optionally excluding the last one used
- * so the same effect never plays twice in a row.
- */
-function pickRandomShader(exclude?: keyof typeof SHADERS): keyof typeof SHADERS {
-  const pool = exclude ? SHADER_KEYS.filter((k) => k !== exclude) : SHADER_KEYS;
-  return pool[Math.floor(Math.random() * pool.length)];
-}
+const ACTIVE_SHADER: keyof typeof SHADERS = "rgbGlitch";
 
 // ==========================================
 // 4. R3F COMPONENT WITH GSAP ROUTING
 // ==========================================
 function PixelShaderScene() {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const pathname = usePathname();
+  const router = useRouter();
   const isTransitioning = useRef(false);
   const { viewport } = useThree();
 
-  // Pick a random starting shader on mount
-  const currentShaderKey = useRef<keyof typeof SHADERS>(
-    SHADER_KEYS[Math.floor(Math.random() * SHADER_KEYS.length)]
-  );
+  // Always use the RGB Glitch shader
 
   const uniforms = useMemo(
     () => ({
@@ -2689,47 +3541,47 @@ function PixelShaderScene() {
   useEffect(() => {
     const handleStart = (e: Event) => {
       const customEvent = e as CustomEvent;
-      const { href, router } = customEvent.detail;
-      if (!materialRef.current) return;
+      const { href } = customEvent.detail;
+      if (!materialRef.current || isTransitioning.current) return;
 
       isTransitioning.current = true;
 
-      // 🎲 Pick a new random effect (never the same one twice in a row)
-      const nextShader = pickRandomShader(currentShaderKey.current);
-      currentShaderKey.current = nextShader;
-
-      // Hot-swap the fragment shader before the animation starts
-      materialRef.current.fragmentShader = SHADERS[nextShader];
+      // Ensure the RGB Glitch shader is active
+      materialRef.current.fragmentShader = SHADERS[ACTIVE_SHADER];
       materialRef.current.needsUpdate = true;
 
-      gsap.to(materialRef.current.uniforms.uProgress, {
-        value: 1.0,
-        duration: 0.9,
-        ease: "power2.inOut",
-        onComplete: () => {
+      const uProgress = materialRef.current.uniforms.uProgress;
+
+      // Single self-contained timeline:
+      //   1. Glitch sweeps in (1.2s)
+      //   2. Navigate to new page at the peak
+      //   3. Glitch sweeps back out (0.9s)
+      // This prevents any double-navigation and the resulting black screen.
+      gsap.timeline()
+        .to(uProgress, {
+          value: 1.0,
+          duration: 0.75,
+          ease: "power2.inOut",
+        })
+        .call(() => {
+          // Navigate at the glitch peak — page swap is hidden under the overlay
           router.push(href);
-        },
-      });
+        })
+        .to(uProgress, {
+          value: 0.0,
+          duration: 0.5,
+          ease: "power2.inOut",
+          delay: 0.1,
+          onComplete: () => {
+            isTransitioning.current = false;
+            document.body.style.pointerEvents = "";
+          },
+        });
     };
 
     window.addEventListener("start-3d-transition", handleStart);
     return () => window.removeEventListener("start-3d-transition", handleStart);
-  }, []);
-
-  useEffect(() => {
-    if (isTransitioning.current && materialRef.current) {
-      gsap.to(materialRef.current.uniforms.uProgress, {
-        value: 0.0,
-        duration: 0.8,
-        ease: "power2.inOut",
-        delay: 0.1,
-        onComplete: () => {
-          isTransitioning.current = false;
-          document.body.style.pointerEvents = "";
-        },
-      });
-    }
-  }, [pathname]);
+  }, [router]);
 
   return (
     <mesh>
@@ -2737,7 +3589,7 @@ function PixelShaderScene() {
       <shaderMaterial
         ref={materialRef}
         vertexShader={vertexShader}
-        fragmentShader={SHADERS[currentShaderKey.current]}
+        fragmentShader={SHADERS[ACTIVE_SHADER]}
         uniforms={uniforms}
         transparent={true}
       />
@@ -2768,7 +3620,7 @@ FILE: components/TransitionLink.tsx
 "use client";
 
 import Link, { LinkProps } from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { usePathname } from "next/navigation";
 import React from "react";
 
 interface TransitionLinkProps extends Omit<LinkProps<unknown>, "href"> {
@@ -2785,7 +3637,6 @@ export default function TransitionLink({
   onClick, 
   ...props 
 }: TransitionLinkProps) {
-  const router = useRouter();
   const pathname = usePathname();
 
   const handleTransition = (e: React.MouseEvent<HTMLAnchorElement>) => {
@@ -2800,10 +3651,12 @@ export default function TransitionLink({
     // Lock interactions during the transition
     document.body.style.pointerEvents = "none";
 
-    // Dispatch event to the 3D Canvas
+    // Dispatch event to the TransitionCanvas.
+    // The canvas owns the full animation lifecycle and will call router.push
+    // at the right moment (after the glitch effect peaks), then animate back out.
     window.dispatchEvent(
       new CustomEvent("start-3d-transition", { 
-        detail: { href, router } 
+        detail: { href } 
       })
     );
   };
@@ -2994,6 +3847,402 @@ export default function DraggableMarquee() {
 
 
 ================================================
+FILE: components/home/FAQ.tsx
+================================================
+import { useRef, useState } from 'react';
+import gsap from 'gsap';
+import { Flip } from 'gsap/Flip';
+import { useGSAP } from '@gsap/react';
+
+gsap.registerPlugin(Flip);
+
+interface BentoItem {
+    id: string;
+    q: string;
+    a: string;
+    defaultClass: string;
+    expandedClass: string;
+}
+
+const bentoData: BentoItem[] = [
+    {
+        id: "01",
+        q: "What is your typical development process for a project?",
+        a: "We start with deep discovery and strategy alignment, followed by interactive UI/UX prototyping. We then move into rapid, iterative MVP development, rigorous quality assurance, and seamless deployment with continuous post-launch optimization.",
+        defaultClass: "md:col-span-2 md:row-span-1",
+        expandedClass: "md:col-span-3 md:row-span-2"
+    },
+    {
+        id: "02",
+        q: "How long does it take to build and launch an MVP?",
+        a: "A typical high-performance MVP takes between 4 to 8 weeks. Thanks to our pre-built architectural modules and agile workflows, we bypass traditional development bottlenecks to ship fast.",
+        defaultClass: "md:col-span-1 md:row-span-1",
+        expandedClass: "md:col-span-3 md:row-span-2"
+    },
+    {
+        id: "03",
+        q: "How do you integrate AI automation into existing workflows?",
+        a: "We analyze your operations to find manual bottlenecks, then design custom AI pipelines—ranging from intelligent chatbots and LLM-powered content agents to advanced data processing automation.",
+        defaultClass: "md:col-span-1 md:row-span-2",
+        expandedClass: "md:col-span-3 md:row-span-2"
+    },
+    {
+        id: "04",
+        q: "Do you provide long-term maintenance and scaling support?",
+        a: "Yes, we partner with clients long-term through dedicated support agreements. This covers proactive security updates, performance monitoring, scaling infrastructure, and continuous feature updates.",
+        defaultClass: "md:col-span-2 md:row-span-1",
+        expandedClass: "md:col-span-3 md:row-span-2"
+    }
+];
+
+export default function InteractiveBentoFAQ() {
+    const containerRef = useRef<HTMLDivElement>(null);
+    const stateRef = useRef<any>(null);
+    const [activeId, setActiveId] = useState<string | null>(null);
+
+    const handleCardClick = (id: string) => {
+        // Snapshot layouts of the cards
+        stateRef.current = Flip.getState(".bento-card");
+        setActiveId(activeId === id ? null : id);
+    };
+
+    useGSAP(() => {
+        if (!stateRef.current) return;
+
+        // Tween the layout states fluidly
+        Flip.from(stateRef.current, {
+            duration: 0.65,
+            ease: "power4.inOut",
+            /* 
+              CRITICAL FIX: 
+              We remove 'absolute: true' so the container height doesn't collapse to 0px.
+              By specifying 'width,height', GSAP smoothly alters structural dimensions 
+              directly instead of using scale transforms, avoiding text skewing.
+            */
+            props: "width,height",
+            stagger: 0.01,
+            onComplete: () => {
+                stateRef.current = null;
+            }
+        });
+    }, { dependencies: [activeId], scope: containerRef });
+
+    return (
+        <section className="relative text-[#f3f3f3] min-h-screen py-24 px-6 font-sans selection:bg-purple-900/40 overflow-hidden bg-transparent border-t border-neutral-900/50">
+            {/* Subtle, soft ambient glows to tie into the website's theme */}
+            <div className="absolute top-1/2 left-1/4 -translate-y-1/2 w-[500px] h-[500px] bg-purple-900/10 blur-[130px] rounded-full pointer-events-none animate-pulse duration-[8000ms]" />
+            <div className="absolute top-1/3 right-1/4 -translate-y-1/2 w-[450px] h-[450px] bg-indigo-900/10 blur-[120px] rounded-full pointer-events-none animate-pulse duration-[10000ms]" />
+
+            <div className="max-w-6xl mx-auto relative z-10">
+
+                {/* Top Header */}
+                <div className="mb-16 pb-10 border-b border-purple-950/20">
+                    <h2 className="text-4xl md:text-6xl font-extralight tracking-tight text-white">
+                        Frequently Asked <span className="italic font-serif text-purple-400">Questions</span>
+                    </h2>
+                </div>
+
+                {/* Bento Grid Container - Added relative positioning to anchor sizing changes */}
+                <div
+                    ref={containerRef}
+                    className="relative grid grid-cols-1 md:grid-cols-3 gap-4 auto-rows-auto md:auto-rows-[220px]"
+                >
+                    {bentoData.map((card) => {
+                        const isExpanded = activeId === card.id;
+                        const cardLayoutClass = isExpanded ? card.expandedClass : card.defaultClass;
+
+                        return (
+                            <div
+                                key={card.id}
+                                data-flip-id={`card-${card.id}`}
+                                className={`bento-card group relative rounded-2xl border p-8 flex flex-col justify-between overflow-hidden cursor-pointer transition-[background-color,border-color,box-shadow] duration-300 select-none backdrop-blur-md
+                  ${cardLayoutClass}
+                  ${isExpanded 
+                    ? 'bg-purple-950/20 border-purple-500/40 shadow-[0_0_30px_rgba(168,85,247,0.15)]' 
+                    : 'bg-purple-950/8 border-purple-950/40 hover:bg-purple-950/15 hover:border-purple-500/25 hover:shadow-[0_0_20px_rgba(168,85,247,0.06)]'
+                  }
+                `}
+                                onClick={() => handleCardClick(card.id)}
+                            >
+                                {/* Low opacity background purple matrix pattern */}
+                                <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#a855f7_1px,transparent_1px),linear-gradient(to_bottom,#a855f7_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
+
+                                {/* Question Info Box */}
+                                <div className="relative z-10 max-w-2xl">
+                                    <div className="flex items-center gap-4 mb-4">
+                                        <span className="text-xs font-mono text-purple-400/70">{card.id}</span>
+                                        <div className={`h-1.5 w-1.5 rounded-full bg-purple-800/80 transition-all duration-300 ${isExpanded ? 'scale-150 bg-purple-300' : ''}`} />
+                                    </div>
+
+                                    <h3 className={`font-light tracking-tight transition-all duration-300 ${isExpanded ? 'text-2xl md:text-3xl mb-6 text-purple-100' : 'text-lg text-zinc-300 group-hover:text-purple-100'}`}>
+                                        {card.q}
+                                    </h3>
+
+                                    {/* Clean Fade-In for the Answer text once card expands */}
+                                    <div
+                                        className={`overflow-hidden transition-opacity duration-300 ease-out ${isExpanded ? 'h-auto opacity-100 mt-4 delay-150' : 'h-0 opacity-0 mt-0 pointer-events-none'}`}
+                                    >
+                                        <p className="text-zinc-300 font-light leading-relaxed max-w-xl text-sm md:text-base">
+                                            {card.a}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Bottom Card Footer Actions */}
+                                <div className="card-footer relative z-10 flex items-center justify-between w-full border-t border-purple-950/40 pt-4 mt-4">
+                                    <span className="text-[10px] font-mono tracking-widest text-purple-300/50 uppercase">
+                                        {isExpanded ? "[ CLICK TO COLLAPSE ]" : "[ VIEW ANSWER ]"}
+                                    </span>
+
+                                    <div className="w-6 h-6 rounded-full flex items-center justify-center border border-purple-950/60 bg-purple-950/40 group-hover:border-purple-500/35 group-hover:bg-purple-900/30 transition-all duration-300">
+                                        <svg
+                                            className={`w-2.5 h-2.5 text-purple-300 transition-transform duration-500 ${isExpanded ? 'rotate-45 text-white' : ''}`}
+                                            viewBox="0 0 10 10"
+                                            fill="none"
+                                        >
+                                            <path d="M5 0V10M0 5H10" stroke="currentColor" strokeWidth="1.5" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                            </div>
+                        );
+                    })}
+                </div>
+
+            </div>
+        </section>
+    );
+}
+
+
+================================================
+FILE: components/home/FeaturedProducts.tsx
+================================================
+"use client";
+
+import React, { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { supabase } from "@/lib/supabase";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
+interface Project {
+  id: number;
+  name: string;
+  tagline: string;
+  description: string;
+  tags: string[];
+  image_url?: string;
+  link?: string;
+  color?: string;
+}
+
+export default function FeaturedProducts() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const cardsRef = useRef<HTMLDivElement>(null);
+  const [projects, setProjects] = useState<Project[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchFeaturedProjects() {
+      try {
+        const { data, error: fetchError } = await supabase
+          .from("projects_new")
+          .select("*")
+          .eq("is_featured", true)
+          .order("sort_order", { ascending: true });
+
+        if (fetchError) throw fetchError;
+
+        if (data) {
+          const mapped: Project[] = data.map((p: any) => ({
+            id: p.id,
+            name: p.title,
+            tagline: p.category,
+            description: p.description,
+            tags: [p.category],
+            image_url: p.image_url,
+            link: p.link,
+            color: p.color,
+          }));
+          setProjects(mapped);
+        }
+      } catch (err: any) {
+        console.error("Failed to fetch featured projects:", err.message);
+        setError("Database connection failed. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchFeaturedProjects();
+  }, []);
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        headerRef.current,
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1.2,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: headerRef.current,
+            start: "top 85%",
+            toggleActions: "play none none reverse",
+          },
+        }
+      );
+
+      if (cardsRef.current) {
+        const cards = cardsRef.current.children;
+        gsap.fromTo(
+          cards,
+          { opacity: 0, y: 40 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 1.4,
+            stagger: 0.15,
+            ease: "power4.out",
+            scrollTrigger: {
+              trigger: cardsRef.current,
+              start: "top 80%",
+              toggleActions: "play none none reverse",
+            },
+          }
+        );
+      }
+    }, containerRef);
+
+    return () => ctx.revert();
+  }, [projects]);
+
+  return (
+    <section
+      ref={containerRef}
+      className="relative w-full bg-zinc-950 py-24 md:py-36 text-neutral-100 overflow-hidden border-t border-neutral-900"
+    >
+      <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-purple-900/10 blur-[130px] rounded-full pointer-events-none" />
+      <div className="absolute bottom-1/3 left-1/4 w-[400px] h-[400px] bg-indigo-900/10 blur-[120px] rounded-full pointer-events-none" />
+
+      <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
+        <div
+          ref={headerRef}
+          className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start pb-16 md:pb-24 border-b border-neutral-900"
+        >
+          <div className="lg:col-span-4">
+            <span className="text-xs font-mono tracking-[0.2em] text-neutral-500 uppercase">
+              Featured Work
+            </span>
+          </div>
+          <div className="lg:col-span-8">
+            <h2 className="text-3xl md:text-5xl font-light tracking-tight leading-[1.15] text-neutral-200 max-w-3xl">
+              A curated selection of products we've engineered from concept
+              to production — each built for scale, speed, and real-world
+              impact.
+            </h2>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="flex items-center justify-center py-20">
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-500 animate-pulse">
+              Loading featured projects...
+            </p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center justify-center py-20 border border-red-500/20 bg-red-500/[0.02] rounded-3xl mt-16">
+            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
+              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+            </div>
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-red-400 mb-2">Database Connection Failed</p>
+            <p className="text-neutral-400 text-sm font-light text-center max-w-md leading-relaxed">
+              {error}
+            </p>
+          </div>
+        ) : projects.length === 0 ? (
+          <div className="flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl mt-16">
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">
+              No featured projects available yet.
+            </p>
+          </div>
+        ) : (
+          <div
+            ref={cardsRef}
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pt-16 md:pt-20"
+          >
+            {projects.map((product) => (
+              <div
+                key={product.id}
+                className="relative rounded-2xl border border-neutral-800/60 bg-neutral-900/30 backdrop-blur-sm p-8 md:p-10 flex flex-col justify-between space-y-8"
+              >
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-mono text-neutral-600">
+                      {String(product.id).padStart(2, "0")}
+                    </span>
+                    <div className="w-8 h-[1px] bg-neutral-700" />
+                  </div>
+
+                  <div className="space-y-2">
+                    <h3 className="text-2xl md:text-3xl font-light tracking-tight text-neutral-100">
+                      {product.name}
+                    </h3>
+                    <p className="text-sm font-mono text-purple-400/80 tracking-wide">
+                      {product.tagline}
+                    </p>
+                  </div>
+
+                  <p className="text-sm leading-relaxed text-neutral-400 font-light max-w-md">
+                    {product.description}
+                  </p>
+                </div>
+
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-wrap gap-2">
+                    {product.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-xs font-mono px-3 py-1 rounded-full border border-neutral-800 text-neutral-500"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  {product.link && (
+                    <a
+                      href={product.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs font-mono tracking-wider uppercase px-5 py-2.5 rounded-full border border-neutral-700 text-neutral-300 cursor-pointer transition-colors duration-300 hover:border-purple-500/60 hover:text-purple-300"
+                    >
+                      View
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+
+================================================
 FILE: components/home/ImpactSection.tsx
 ================================================
 "use client";
@@ -3104,7 +4353,7 @@ export default function ImpactSection() {
         >
           <div className="lg:col-span-4">
             <span className="text-xs font-mono tracking-[0.2em] text-neutral-500 uppercase">
-              // 03 / Proven Outcomes
+              Proven Outcomes
             </span>
           </div>
           <div className="lg:col-span-8">
@@ -4113,6 +5362,8 @@ import DraggableMarquee from "@/components/home/DraggableMarquee";
 import CubeSection from "@/components/cubesection";
 import WhatsAppButton from "@/components/whatsapp-button";
 import ImpactSection from "@/components/home/ImpactSection";
+import InteractiveBentoFAQ from "@/components/home/FAQ";
+import FeaturedProducts from "@/components/home/FeaturedProducts";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
@@ -4265,7 +5516,7 @@ export default function Home() {
     <>
       <WhatsAppButton phoneNumber="+92 334 9251936" />
       <Cursor />
-      <div ref={containerRef} className="text-white min-h-screen overflow-x-hidden relative bg-transparent">
+      <div ref={containerRef} style={{ viewTransitionName: "page-content" }} className="text-white min-h-screen overflow-x-hidden relative bg-transparent">
         <CanvasBackground />
         <Navbar />
         <div ref={skewContentRef} className="origin-right w-full home-skew-wrapper">
@@ -4333,7 +5584,6 @@ export default function Home() {
           <section ref={serviceRef} id="service" className="min-h-screen flex flex-col justify-center px-6 md:px-16 py-8 md:py-10 lg:py-10 relative z-10">
             <div className="max-w-7xl mx-auto w-full">
               <div className="mb-4 md:mb-5 lg:mb-5">
-                <span className="text-purple-500 text-xs font-mono tracking-[0.3em] uppercase block mb-2">01 // CAPABILITIES</span>
                 <h2 className="text-2xl md:text-4xl lg:text-5xl font-light tracking-tight text-white">Next-Gen Development & IT Solutions</h2>
               </div>
               <div className="flex flex-col border-t border-neutral-800">
@@ -4404,8 +5654,10 @@ export default function Home() {
           </section>
 
           <ImpactSection />
+          <FeaturedProducts />
           <CubeSection />
-          <ContactSection showCapabilities />
+          <InteractiveBentoFAQ />
+          <ContactSection showCapabilities hasBackground={false} />
         </div>
       </div>
     </>
