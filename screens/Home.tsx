@@ -12,7 +12,7 @@ import CubeSection from "@/components/cubesection";
 import WhatsAppButton from "@/components/whatsapp-button";
 import ImpactSection from "@/components/home/ImpactSection";
 import InteractiveBentoFAQ from "@/components/home/FAQ";
-import FeaturedProducts from "@/components/home/FeaturedProducts";
+import FeaturedProjectsClient from "@/components/home/FeaturedProjectsClient";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
@@ -36,7 +36,18 @@ const services = [
 // Array of words, starting with "INNOVELOUS AI"
 const HERO_WORDS = ["INNOVELOUS", "AI Products", "Web & Apps"];
 
-export default function Home() {
+interface Project {
+  id: number;
+  name: string;
+  tagline: string;
+  description: string;
+  tags: string[];
+  image_url?: string;
+  link?: string;
+  color?: string;
+}
+
+export default function Home({ projects }: { projects: Project[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const skewContentRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
@@ -301,13 +312,13 @@ export default function Home() {
               </div>
             </div>
           </section>
-
-          <ImpactSection />
-          <FeaturedProducts />
-          <CubeSection />
-          <InteractiveBentoFAQ />
-          <ContactSection showCapabilities hasBackground={false} />
         </div>
+
+        <ImpactSection />
+        <FeaturedProjectsClient projects={projects} />
+        <CubeSection />
+        <InteractiveBentoFAQ />
+        <ContactSection showCapabilities hasBackground={false} />
       </div>
     </>
   );

@@ -39,7 +39,7 @@ Directory structure:
     │   ├── home/
     │   │   ├── DraggableMarquee.tsx
     │   │   ├── FAQ.tsx
-    │   │   ├── FeaturedProducts.tsx
+    │   │   ├── FeaturedProjectsClient.tsx
     │   │   └── ImpactSection.tsx
     │   ├── solutions/
     │   │   ├── SolutionClientWrapper.tsx
@@ -1117,15 +1117,32 @@ export default function NotFound() {
 FILE: app/page.tsx
 ================================================
 import Home from '@/screens/Home'
-import React from 'react'
+import { supabase } from '@/lib/supabase'
 
-function page() {
-  return (
-    <Home />
-  )
+async function getFeaturedProjects() {
+  const { data } = await supabase
+    .from("projects_new")
+    .select("*")
+    .eq("is_featured", true)
+    .order("sort_order", { ascending: true });
+
+  return (data || []).map((p: any) => ({
+    id: p.id,
+    name: p.title,
+    tagline: p.category,
+    description: p.description,
+    tags: [p.category],
+    image_url: p.image_url,
+    link: p.link,
+    color: p.color,
+  }));
 }
 
-export default page
+export default async function Page() {
+  const projects = await getFeaturedProjects();
+  return <Home projects={projects} />
+}
+
 
 
 ================================================
@@ -4017,14 +4034,14 @@ export default function InteractiveBentoFAQ() {
 
 
 ================================================
-FILE: components/home/FeaturedProducts.tsx
+FILE: components/home/FeaturedProjectsClient.tsx
 ================================================
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { supabase } from "@/lib/supabase";
+import { useGSAP } from "@gsap/react";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -4041,205 +4058,350 @@ interface Project {
   color?: string;
 }
 
-export default function FeaturedProducts() {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const headerRef = useRef<HTMLDivElement>(null);
-  const cardsRef = useRef<HTMLDivElement>(null);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+export default function FeaturedProjectsClient({ projects }: { projects: Project[] }) {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const pinRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = useState(false);
 
   useEffect(() => {
-    async function fetchFeaturedProjects() {
-      try {
-        const { data, error: fetchError } = await supabase
-          .from("projects_new")
-          .select("*")
-          .eq("is_featured", true)
-          .order("sort_order", { ascending: true });
-
-        if (fetchError) throw fetchError;
-
-        if (data) {
-          const mapped: Project[] = data.map((p: any) => ({
-            id: p.id,
-            name: p.title,
-            tagline: p.category,
-            description: p.description,
-            tags: [p.category],
-            image_url: p.image_url,
-            link: p.link,
-            color: p.color,
-          }));
-          setProjects(mapped);
-        }
-      } catch (err: any) {
-        console.error("Failed to fetch featured projects:", err.message);
-        setError("Database connection failed. Please try again later.");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    fetchFeaturedProjects();
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
   }, []);
 
-  useEffect(() => {
+  useGSAP(() => {
+    if (isMobile || !pinRef.current || !trackRef.current || projects.length === 0) return;
+
+    ScrollTrigger.refresh();
+
     const ctx = gsap.context(() => {
+      const track = trackRef.current!;
+      const pin = pinRef.current!;
+      const cardWidth = track.querySelector<HTMLElement>(".project-card-wrapper")?.offsetWidth || window.innerWidth * 0.5;
+      const totalWidth = (projects.length + 1) * cardWidth;
+      const viewportWidth = window.innerWidth * 0.5;
+      const endX = -(totalWidth - viewportWidth);
+      const scrollDistance = totalWidth;
+
+      ScrollTrigger.create({
+        trigger: pin,
+        start: "top top",
+        end: () => `+=${scrollDistance}`,
+        pin: true,
+        pinSpacing: true,
+        invalidateOnRefresh: true,
+      });
+
+      gsap.to(track, {
+        x: endX,
+        ease: "none",
+        scrollTrigger: {
+          trigger: pin,
+          start: "top top",
+          end: () => `+=${scrollDistance}`,
+          scrub: 1.2,
+        },
+      });
+
       gsap.fromTo(
-        headerRef.current,
+        ".project-card-content",
         { opacity: 0, y: 30 },
         {
           opacity: 1,
           y: 0,
-          duration: 1.2,
+          duration: 0.8,
+          stagger: 0.12,
           ease: "power3.out",
           scrollTrigger: {
-            trigger: headerRef.current,
+            trigger: track,
+            start: "top 80%",
+            toggleActions: "play none none reverse",
+          },
+        }
+      );
+    }, sectionRef);
+
+    return () => ctx.revert();
+  }, [isMobile, projects]);
+
+  useGSAP(() => {
+    if (!isMobile || !sectionRef.current) return;
+    const ctx = gsap.context(() => {
+      gsap.fromTo(
+        ".project-card-content",
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          stagger: 0.1,
+          ease: "power3.out",
+          scrollTrigger: {
+            trigger: sectionRef.current,
             start: "top 85%",
             toggleActions: "play none none reverse",
           },
         }
       );
-
-      if (cardsRef.current) {
-        const cards = cardsRef.current.children;
-        gsap.fromTo(
-          cards,
-          { opacity: 0, y: 40 },
-          {
-            opacity: 1,
-            y: 0,
-            duration: 1.4,
-            stagger: 0.15,
-            ease: "power4.out",
-            scrollTrigger: {
-              trigger: cardsRef.current,
-              start: "top 80%",
-              toggleActions: "play none none reverse",
-            },
-          }
-        );
-      }
-    }, containerRef);
-
+    }, sectionRef);
     return () => ctx.revert();
-  }, [projects]);
+  }, [isMobile, projects]);
+
+  if (projects.length === 0) {
+    return null;
+  }
+
+  if (isMobile) {
+    return (
+      <section
+        ref={sectionRef}
+        className="relative w-full bg-zinc-950 py-24 md:py-36 text-neutral-100 overflow-hidden border-t border-neutral-900"
+      >
+        <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-purple-900/10 blur-[130px] rounded-full pointer-events-none" />
+        <div className="absolute bottom-1/3 left-1/4 w-[400px] h-[400px] bg-indigo-900/10 blur-[120px] rounded-full pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
+          <div className="flex flex-col gap-6 pb-12 border-b border-neutral-900">
+            <span className="text-xs font-mono tracking-[0.2em] text-neutral-500 uppercase">
+              Featured Work
+            </span>
+            <h2 className="text-3xl md:text-5xl font-light tracking-tight leading-[1.15] text-neutral-200 max-w-3xl">
+              Selected work & explorations
+            </h2>
+            <a
+              href="/projects"
+              className="group flex items-center gap-3 text-xs font-mono tracking-wider uppercase text-purple-400 hover:text-purple-300 transition-colors duration-300"
+            >
+              VIEW ALL PROJECTS →
+            </a>
+          </div>
+
+          <div className="flex flex-col gap-6 pt-12">
+            {projects.map((project) => (
+              <MobileCard key={project.id} project={project} />
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
-      ref={containerRef}
-      className="relative w-full bg-zinc-950 py-24 md:py-36 text-neutral-100 overflow-hidden border-t border-neutral-900"
+      ref={sectionRef}
+      className="relative w-full bg-zinc-950 text-neutral-100 border-t border-neutral-900"
     >
       <div className="absolute top-1/3 right-1/4 w-[600px] h-[600px] bg-purple-900/10 blur-[130px] rounded-full pointer-events-none" />
       <div className="absolute bottom-1/3 left-1/4 w-[400px] h-[400px] bg-indigo-900/10 blur-[120px] rounded-full pointer-events-none" />
 
-      <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
-        <div
-          ref={headerRef}
-          className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-16 items-start pb-16 md:pb-24 border-b border-neutral-900"
-        >
-          <div className="lg:col-span-4">
-            <span className="text-xs font-mono tracking-[0.2em] text-neutral-500 uppercase">
-              Featured Work
-            </span>
-          </div>
-          <div className="lg:col-span-8">
-            <h2 className="text-3xl md:text-5xl font-light tracking-tight leading-[1.15] text-neutral-200 max-w-3xl">
-              A curated selection of products we've engineered from concept
-              to production — each built for scale, speed, and real-world
-              impact.
-            </h2>
-          </div>
-        </div>
-
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <p className="font-mono text-xs uppercase tracking-widest text-neutral-500 animate-pulse">
-              Loading featured projects...
-            </p>
-          </div>
-        ) : error ? (
-          <div className="flex flex-col items-center justify-center py-20 border border-red-500/20 bg-red-500/[0.02] rounded-3xl mt-16">
-            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
-              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-              </svg>
-            </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-red-400 mb-2">Database Connection Failed</p>
-            <p className="text-neutral-400 text-sm font-light text-center max-w-md leading-relaxed">
-              {error}
-            </p>
-          </div>
-        ) : projects.length === 0 ? (
-          <div className="flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl mt-16">
-            <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">
-              No featured projects available yet.
-            </p>
-          </div>
-        ) : (
-          <div
-            ref={cardsRef}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 pt-16 md:pt-20"
-          >
-            {projects.map((product) => (
-              <div
-                key={product.id}
-                className="relative rounded-2xl border border-neutral-800/60 bg-neutral-900/30 backdrop-blur-sm p-8 md:p-10 flex flex-col justify-between space-y-8"
+      <div ref={pinRef} className="relative h-screen w-full overflow-hidden">
+        <div className="relative z-10 flex h-full w-full">
+          <div className="w-1/2 h-full flex flex-col justify-center px-12 xl:px-16 2xl:px-20 flex-shrink-0">
+            <div className="max-w-md">
+              <span className="text-xs font-mono tracking-[0.2em] text-neutral-500 uppercase">
+                Featured Work
+              </span>
+              <h2 className="text-4xl xl:text-5xl 2xl:text-6xl font-light tracking-tight leading-[1.15] text-neutral-200 mt-6">
+                Selected work & explorations
+              </h2>
+              <div className="mt-4 w-12 h-[1px] bg-neutral-700" />
+              <a
+                href="/projects"
+                className="group inline-flex items-center gap-3 mt-8 text-xs font-mono tracking-wider uppercase text-purple-400 hover:text-purple-300 transition-colors duration-300"
               >
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-mono text-neutral-600">
-                      {String(product.id).padStart(2, "0")}
-                    </span>
-                    <div className="w-8 h-[1px] bg-neutral-700" />
-                  </div>
+                VIEW ALL PROJECTS →
+              </a>
+            </div>
+          </div>
 
-                  <div className="space-y-2">
-                    <h3 className="text-2xl md:text-3xl font-light tracking-tight text-neutral-100">
-                      {product.name}
-                    </h3>
-                    <p className="text-sm font-mono text-purple-400/80 tracking-wide">
-                      {product.tagline}
-                    </p>
-                  </div>
-
-                  <p className="text-sm leading-relaxed text-neutral-400 font-light max-w-md">
-                    {product.description}
-                  </p>
+          <div className="w-1/2 h-full overflow-hidden flex-shrink-0">
+            <div
+              ref={trackRef}
+              className="flex h-full items-center will-change-transform"
+              style={{ width: `${(projects.length + 1) * 100}%` }}
+            >
+              {projects.map((project, i) => (
+                <div
+                  key={project.id}
+                  className="project-card-wrapper h-[80%] flex-shrink-0 px-4 first:pl-0 last:pr-0"
+                  style={{ width: `${100 / (projects.length + 1)}%` }}
+                >
+                  <DesktopCard project={project} index={i} />
                 </div>
+              ))}
 
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-wrap gap-2">
-                    {product.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-xs font-mono px-3 py-1 rounded-full border border-neutral-800 text-neutral-500"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+              <div
+                className="project-card-wrapper h-[80%] flex-shrink-0 px-4 flex items-center"
+                style={{ width: `${100 / (projects.length + 1)}%` }}
+              >
+                <div className="project-card-content relative w-full h-full rounded-2xl border border-neutral-800/60 bg-neutral-900/30 backdrop-blur-sm p-10 flex flex-col justify-center items-center text-center space-y-6">
+                  <div className="w-16 h-16 rounded-full bg-purple-500/10 flex items-center justify-center">
+                    <svg className="w-8 h-8 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
                   </div>
-
-                  {product.link && (
-                    <a
-                      href={product.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-xs font-mono tracking-wider uppercase px-5 py-2.5 rounded-full border border-neutral-700 text-neutral-300 cursor-pointer transition-colors duration-300 hover:border-purple-500/60 hover:text-purple-300"
-                    >
-                      View
-                    </a>
-                  )}
+                  <h3 className="text-2xl font-light tracking-tight text-neutral-200 max-w-sm">
+                    Discover our complete collection of digital experiences, brands, and platforms
+                  </h3>
+                  <a
+                    href="/projects"
+                    className="group inline-flex items-center gap-3 px-6 py-3 rounded-full border border-neutral-700 text-xs font-mono tracking-wider uppercase text-neutral-300 hover:border-purple-500/60 hover:text-purple-300 transition-all duration-300"
+                  >
+                    VIEW ALL PROJECTS
+                  </a>
                 </div>
               </div>
-            ))}
+            </div>
           </div>
-        )}
+        </div>
       </div>
     </section>
   );
 }
+
+function DesktopCard({ project, index }: { project: Project; index: number }) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleEnter = () => {
+    if (!cardRef.current) return;
+    gsap.to(cardRef.current, {
+      y: -6,
+      borderColor: project.color || "rgba(168, 85, 247, 0.4)",
+      duration: 0.4,
+      ease: "power2.out",
+    });
+  };
+
+  const handleLeave = () => {
+    if (!cardRef.current) return;
+    gsap.to(cardRef.current, {
+      y: 0,
+      borderColor: "rgba(255,255,255,0.1)",
+      duration: 0.4,
+      ease: "power2.out",
+    });
+  };
+
+  return (
+    <div
+      ref={cardRef}
+      onMouseEnter={handleEnter}
+      onMouseLeave={handleLeave}
+      className="project-card-content relative w-full h-full rounded-2xl border border-white/10 bg-white/[0.02] backdrop-blur-sm flex flex-col overflow-hidden group cursor-pointer transition-colors duration-300"
+    >
+      {project.image_url && (
+        <div className="relative w-full h-1/2 overflow-hidden">
+          <img
+            src={project.image_url}
+            alt={project.name}
+            className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-transparent to-transparent" />
+        </div>
+      )}
+
+      <div className="flex-1 flex flex-col justify-between p-6 xl:p-8">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span
+              className="text-[10px] font-mono tracking-[0.25em] uppercase px-3 py-1 rounded-full border inline-block"
+              style={{
+                color: project.color || "#a78bfa",
+                borderColor: project.color || "rgba(168, 85, 247, 0.3)",
+              }}
+            >
+              {project.tagline}
+            </span>
+            <span className="text-xs font-mono text-neutral-600">
+              {String(index + 1).padStart(2, "0")}
+            </span>
+          </div>
+          <h3 className="text-xl xl:text-2xl font-light tracking-tight text-neutral-100 leading-tight">
+            {project.name}
+          </h3>
+          <p className="text-sm leading-relaxed text-neutral-400 font-light line-clamp-2">
+            {project.description}
+          </p>
+        </div>
+
+        {project.link && (
+          <a
+            href={project.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group/link flex items-center gap-2 mt-4 text-xs font-mono tracking-wider uppercase text-neutral-400 hover:text-purple-400 transition-colors duration-300"
+          >
+            EXPLORE PROJECT →
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function MobileCard({ project }: { project: Project }) {
+  return (
+    <div className="project-card-content relative rounded-2xl border border-neutral-800/60 bg-neutral-900/30 backdrop-blur-sm p-8 flex flex-col justify-between space-y-8">
+      {project.image_url && (
+        <div className="relative w-full h-48 rounded-xl overflow-hidden">
+          <img
+            src={project.image_url}
+            alt={project.name}
+            className="w-full h-full object-cover"
+          />
+        </div>
+      )}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <span
+            className="text-[10px] font-mono tracking-[0.25em] uppercase px-3 py-1 rounded-full border"
+            style={{
+              color: project.color || "#a78bfa",
+              borderColor: project.color || "rgba(168, 85, 247, 0.3)",
+            }}
+          >
+            {project.tagline}
+          </span>
+        </div>
+        <div className="space-y-2">
+          <h3 className="text-2xl font-light tracking-tight text-neutral-100">
+            {project.name}
+          </h3>
+        </div>
+        <p className="text-sm leading-relaxed text-neutral-400 font-light">
+          {project.description}
+        </p>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="flex flex-wrap gap-2">
+          {project.tags.map((tag) => (
+            <span
+              key={tag}
+              className="text-xs font-mono px-3 py-1 rounded-full border border-neutral-800 text-neutral-500"
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        {project.link && (
+          <a
+            href={project.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs font-mono tracking-wider uppercase px-5 py-2.5 rounded-full border border-neutral-700 text-neutral-300 cursor-pointer transition-colors duration-300 hover:border-purple-500/60 hover:text-purple-300"
+          >
+            View
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
 
 
 ================================================
@@ -5363,7 +5525,7 @@ import CubeSection from "@/components/cubesection";
 import WhatsAppButton from "@/components/whatsapp-button";
 import ImpactSection from "@/components/home/ImpactSection";
 import InteractiveBentoFAQ from "@/components/home/FAQ";
-import FeaturedProducts from "@/components/home/FeaturedProducts";
+import FeaturedProjectsClient from "@/components/home/FeaturedProjectsClient";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
@@ -5387,7 +5549,18 @@ const services = [
 // Array of words, starting with "INNOVELOUS AI"
 const HERO_WORDS = ["INNOVELOUS", "AI Products", "Web & Apps"];
 
-export default function Home() {
+interface Project {
+  id: number;
+  name: string;
+  tagline: string;
+  description: string;
+  tags: string[];
+  image_url?: string;
+  link?: string;
+  color?: string;
+}
+
+export default function Home({ projects }: { projects: Project[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const skewContentRef = useRef<HTMLDivElement>(null);
   const ctaRef = useRef<HTMLButtonElement>(null);
@@ -5654,7 +5827,7 @@ export default function Home() {
           </section>
 
           <ImpactSection />
-          <FeaturedProducts />
+          <FeaturedProjectsClient projects={projects} />
           <CubeSection />
           <InteractiveBentoFAQ />
           <ContactSection showCapabilities hasBackground={false} />
