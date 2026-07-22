@@ -14,6 +14,7 @@ import WhatsAppButton from "@/components/whatsapp-button";
 import ImpactSection from "@/components/home/ImpactSection";
 import InteractiveBentoFAQ from "@/components/home/FAQ";
 import FeaturedProjectsClient from "@/components/home/FeaturedProjectsClient";
+import TransitionLink from "@/components/TransitionLink";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
@@ -191,7 +192,7 @@ const LiquidAboutBackground = () => {
 export default function Home({ projects }: { projects: Project[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const skewContentRef = useRef<HTMLDivElement>(null);
-  const ctaRef = useRef<HTMLButtonElement>(null);
+  const ctaRef = useRef<HTMLDivElement>(null);
   const serviceRef = useRef<HTMLDivElement>(null);
   const hasAnimatedRef = useRef(false);
 
@@ -358,14 +359,16 @@ export default function Home({ projects }: { projects: Project[] }) {
                 <p className="hero-sub text-neutral-400 text-sm md:text-base leading-relaxed tracking-wide">
                   We engineer custom software, AI integrations, and scalable web ecosystems that bridge complex technology with seamless human experience.
                 </p>
-                <button
-                  ref={ctaRef}
-                  data-cursor-pointer
-                  className="hero-cta group flex items-center gap-4 bg-neutral-900 border border-neutral-800 px-6 py-4 rounded-full w-fit hover:bg-white transition-colors duration-500"
-                >
-                  <span className="text-white group-hover:text-black text-xs uppercase tracking-widest font-mono font-bold transition-colors duration-500">Explore Our Projects</span>
-                  <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:bg-black transition-colors duration-500" />
-                </button>
+                <div ref={ctaRef} className="w-fit">
+                  <TransitionLink
+                    href="/projects"
+                    data-cursor-pointer
+                    className="hero-cta group flex items-center gap-4 bg-neutral-900 border border-neutral-800 px-6 py-4 rounded-full w-fit hover:bg-white transition-colors duration-500"
+                  >
+                    <span className="text-white group-hover:text-black text-xs uppercase tracking-widest font-mono font-bold transition-colors duration-500">Explore Our Projects</span>
+                    <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:bg-black transition-colors duration-500" />
+                  </TransitionLink>
+                </div>
               </div>
 
               <div className="flex gap-12 border-t border-neutral-900 pt-6 w-full md:w-auto justify-between md:justify-end">
