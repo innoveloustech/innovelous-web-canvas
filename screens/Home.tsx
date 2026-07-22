@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import * as THREE from "three";
 import Navbar from "@/components/navbar";
 import Cursor from "@/components/MouseFollower";
 import ContactSection from "@/components/ContactSection";
@@ -33,7 +34,6 @@ const services = [
   { title: "Design Systems & Prototyping", desc: "Building reusable component libraries and high-fidelity interactive prototypes. We establish unified frameworks that bridge the gap between design and development." },
 ];
 
-// Array of words, starting with "INNOVELOUS AI"
 const HERO_WORDS = ["INNOVELOUS", "AI Products", "Web & Apps"];
 
 interface Project {
@@ -47,6 +47,147 @@ interface Project {
   color?: string;
 }
 
+// ---------------------------------------------------------------
+// 3D LIQUID BEND BACKGROUND COMPONENT (No grid lines, unclipped)
+// ---------------------------------------------------------------
+const LiquidAboutBackground = () => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const velocityRef = useRef(0);
+  const smoothedVelocityRef = useRef(0);
+
+  useEffect(() => {
+    if (!canvasRef.current || !containerRef.current) return;
+    const container = containerRef.current;
+    const canvas = canvasRef.current;
+
+    const PADDING = 160; // 160px vertical padding so bend wave doesn't get clipped on scroll up/down
+    let totalWidth = container.clientWidth;
+    let totalHeight = container.clientHeight;
+    let planeHeight = Math.max(10, totalHeight - PADDING * 2);
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.OrthographicCamera(
+      totalWidth / -2,
+      totalWidth / 2,
+      totalHeight / 2,
+      totalHeight / -2,
+      0.1,
+      1000
+    );
+    camera.position.z = 10;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    renderer.setSize(totalWidth, totalHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const vertexShader = `
+      uniform float uVelocity;
+      varying vec2 vUv;
+      void main() {
+        vUv = uv;
+        vec3 pos = position;
+
+        // Smooth parabolic curve horizontally
+        float horizontalCurve = sin(uv.x * 3.14159265359);
+
+        // Exponential falloff so top edge warps smoothly
+        float topEdgeFactor = pow(uv.y, 2.8);
+
+        // Displace vertices based on scroll velocity
+        pos.y += horizontalCurve * uVelocity * topEdgeFactor;
+
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `;
+
+    const fragmentShader = `
+      varying vec2 vUv;
+      void main() {
+        // Solid dark color matching zinc-950 (#09090b) with NO background grid lines
+        gl_FragColor = vec4(0.035, 0.035, 0.043, 1.0);
+      }
+    `;
+
+    let geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 128, 128);
+    const material = new THREE.ShaderMaterial({
+      vertexShader,
+      fragmentShader,
+      uniforms: { uVelocity: { value: 0 } },
+      transparent: true
+    });
+
+    const plane = new THREE.Mesh(geometry, material);
+    scene.add(plane);
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (let entry of entries) {
+        totalWidth = entry.contentRect.width;
+        totalHeight = entry.contentRect.height;
+        planeHeight = Math.max(10, totalHeight - PADDING * 2);
+
+        camera.left = totalWidth / -2;
+        camera.right = totalWidth / 2;
+        camera.top = totalHeight / 2;
+        camera.bottom = totalHeight / -2;
+        camera.updateProjectionMatrix();
+
+        renderer.setSize(totalWidth, totalHeight);
+
+        plane.geometry.dispose();
+        plane.geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 128, 128);
+      }
+    });
+    resizeObserver.observe(container);
+
+    let animationId: number;
+    let lastTime = performance.now();
+    const MAX_BEND = 90;
+
+    const st = ScrollTrigger.create({
+      onUpdate: (self) => {
+        velocityRef.current = self.getVelocity() / 60.0;
+      }
+    });
+
+    const render = (time: number) => {
+      const dt = Math.min((time - lastTime) / 1000, 0.1);
+      lastTime = time;
+
+      // Inverted (-velocity): pulls DOWN on scroll down, pushes UP on scroll up
+      const targetVelocity = Math.tanh((-velocityRef.current * 16.0) / MAX_BEND) * MAX_BEND;
+      const lerpSpeed = 10.0;
+
+      smoothedVelocityRef.current += (targetVelocity - smoothedVelocityRef.current) * (1.0 - Math.exp(-lerpSpeed * dt));
+      material.uniforms.uVelocity.value = smoothedVelocityRef.current;
+
+      renderer.render(scene, camera);
+      animationId = requestAnimationFrame(render);
+    };
+
+    animationId = requestAnimationFrame(render);
+
+    return () => {
+      cancelAnimationFrame(animationId);
+      resizeObserver.disconnect();
+      st.kill();
+      renderer.dispose();
+      geometry.dispose();
+      material.dispose();
+    };
+  }, []);
+
+  return (
+    // Expanded top/bottom canvas boundary to allow upward liquid wave to animate freely
+    <div ref={containerRef} className="absolute -top-40 -bottom-40 left-0 right-0 z-0 pointer-events-none">
+      <canvas ref={canvasRef} className="w-full h-full block" />
+    </div>
+  );
+};
+
+// ---------------------------------------------------------------
+// MAIN HOME PAGE COMPONENT
+// ---------------------------------------------------------------
 export default function Home({ projects }: { projects: Project[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const skewContentRef = useRef<HTMLDivElement>(null);
@@ -240,7 +381,7 @@ export default function Home({ projects }: { projects: Project[] }) {
 
           <DraggableMarquee />
 
-          {/* SERVICES SECTION - Compacted Paddings for 100% Zoom Issue */}
+          {/* SERVICES SECTION */}
           <section ref={serviceRef} id="service" className="min-h-screen flex flex-col justify-center px-6 md:px-16 py-8 md:py-10 lg:py-10 relative z-10">
             <div className="max-w-7xl mx-auto w-full">
               <div className="mb-4 md:mb-5 lg:mb-5">
@@ -272,9 +413,12 @@ export default function Home({ projects }: { projects: Project[] }) {
             </div>
           </section>
 
-          {/* ABOUT US SECTION */}
-          <section id="about" className="min-h-screen bg-zinc-950 relative z-20 px-6 md:px-16 flex items-center rounded-t-3xl">
-            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 py-24">
+          {/* ABOUT US SECTION (Removed top border and rounded clipping) */}
+          <section id="about" className="min-h-screen relative z-20 px-6 md:px-16 flex items-center">
+
+            <LiquidAboutBackground />
+
+            <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 py-24 relative z-10">
               <div className="about-text-col flex flex-col justify-center">
                 <h2 className="about-title text-3xl md:text-5xl lg:text-6xl font-light tracking-tight text-white mb-8 leading-[1.1]">
                   Built for Growth

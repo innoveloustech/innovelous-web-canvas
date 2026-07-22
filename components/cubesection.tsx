@@ -33,7 +33,7 @@ function CubeFace({
         <planeGeometry args={[4, 4]} />
         <meshBasicMaterial color={textColor} />
       </mesh>
-      
+
       {/* 2. Inner Background */}
       <mesh position={[0, 0, 0.02]}>
         <planeGeometry args={[3.7, 3.7]} />
@@ -114,7 +114,7 @@ function TestimonialCube() {
 
   useFrame((state, delta) => {
     if (groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.25; 
+      groupRef.current.rotation.y += delta * 0.25;
     }
   });
 
@@ -126,10 +126,10 @@ function TestimonialCube() {
         <meshBasicMaterial color="#09090b" />
       </mesh>
 
-      <CubeFace position={[0, 0, 2]}   rotation={[0, 0, 0]}           data={testimonials[0]} />
-      <CubeFace position={[2, 0, 0]}   rotation={[0, Math.PI / 2, 0]} data={testimonials[1]} />
-      <CubeFace position={[0, 0, -2]}  rotation={[0, Math.PI, 0]}     data={testimonials[2]} />
-      <CubeFace position={[-2, 0, 0]}  rotation={[0, -Math.PI / 2, 0]}data={testimonials[3]} />
+      <CubeFace position={[0, 0, 2]} rotation={[0, 0, 0]} data={testimonials[0]} />
+      <CubeFace position={[2, 0, 0]} rotation={[0, Math.PI / 2, 0]} data={testimonials[1]} />
+      <CubeFace position={[0, 0, -2]} rotation={[0, Math.PI, 0]} data={testimonials[2]} />
+      <CubeFace position={[-2, 0, 0]} rotation={[0, -Math.PI / 2, 0]} data={testimonials[3]} />
     </group>
   );
 }
@@ -138,8 +138,8 @@ export default function CubeSection() {
   const [domElement, setDomElement] = useState<HTMLDivElement | null>(null);
 
   return (
-    <div className="h-screen w-full bg-zinc-950 flex items-center justify-center overflow-hidden relative rounded-b-3xl">
-      
+    <div className="h-screen w-full flex items-center justify-center overflow-hidden relative rounded-b-3xl">
+
       <div className="absolute top-10 left-10 z-10 pointer-events-none">
         <p className="text-zinc-500 text-xs font-bold tracking-[0.25em] uppercase mb-3">
           Client Feedback
@@ -149,19 +149,18 @@ export default function CubeSection() {
         </h2>
       </div>
 
-      <div 
-        ref={setDomElement} 
-        className="absolute w-[80vw] h-[80vw] max-w-[350px] max-h-[350px] md:max-w-[600px] md:max-h-[600px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 touch-none" 
+      <div
+        ref={setDomElement}
+        className="absolute w-[80vw] h-[80vw] max-w-[350px] max-h-[350px] md:max-w-[600px] md:max-h-[600px] top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-20 touch-none"
       />
 
       <Canvas
         camera={{ position: [0, 0, 9], fov: 45 }}
-        gl={{ antialias: true, alpha: false }}
+        gl={{ antialias: true, alpha: true }}
       >
-        <color attach="background" args={["#09090b"]} />
         <ambientLight intensity={1.2} />
         <TestimonialCube />
-        
+
         {domElement && (
           <OrbitControls
             domElement={domElement}

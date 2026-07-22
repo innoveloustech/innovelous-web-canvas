@@ -221,8 +221,45 @@ function PixelShaderScene() {
         });
     };
 
+    const handlePopState = () => {
+      if (!materialRef.current || isTransitioning.current) return;
+
+      isTransitioning.current = true;
+      document.body.style.pointerEvents = "none";
+
+      materialRef.current.fragmentShader = SHADERS[ACTIVE_SHADER];
+      materialRef.current.needsUpdate = true;
+
+      const uProgress = materialRef.current.uniforms.uProgress;
+
+      // On popstate, Next.js has already handled the route change instantly.
+      // We cannot prevent or delay it — the DOM has already swapped.
+      // Instead, we immediately cover the screen with the shader to mask the
+      // snap, then fade back out, giving the illusion of a smooth transition.
+      gsap.timeline()
+        .to(uProgress, {
+          value: 1.0,
+          duration: 0.4,
+          ease: "power2.inOut",
+        })
+        .to(uProgress, {
+          value: 0.0,
+          duration: 0.4,
+          ease: "power2.inOut",
+          delay: 0.15,
+          onComplete: () => {
+            isTransitioning.current = false;
+            document.body.style.pointerEvents = "";
+          },
+        });
+    };
+
     window.addEventListener("start-3d-transition", handleStart);
-    return () => window.removeEventListener("start-3d-transition", handleStart);
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("start-3d-transition", handleStart);
+      window.removeEventListener("popstate", handlePopState);
+    };
   }, [router]);
 
   return (

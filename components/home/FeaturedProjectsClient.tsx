@@ -38,9 +38,10 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
 
     const ctx = gsap.context(() => {
       const track = trackRef.current!;
-      
+
       const panelVW = window.innerWidth * 0.5;
-      const endX = -projects.length * panelVW;
+      // We extend the scroll by 2 extra panel widths so the final panels completely slide off left
+      const endX = -(projects.length + 2) * panelVW;
       const scrollDistance = Math.abs(endX);
 
       // Create a single master timeline to coordinate track scroll and card rise animations
@@ -58,11 +59,11 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
         },
       });
 
-      // 1. Move the horizontal scroll track linearly
+      // 1. Move the horizontal scroll track linearly completely off-screen to reveal the background
       tl.to(track, {
         x: endX,
         ease: "none",
-        duration: projects.length,
+        duration: projects.length + 2,
       }, 0);
 
       // 2. Next cards rise up from bottom as they enter view (synchronized in the master timeline)
@@ -149,6 +150,30 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
               VIEW ALL PROJECTS →
             </a>
           </div>
+
+          {/* Mobile Our Services */}
+          <div className="fp-card flex flex-col justify-between py-16 px-4 min-h-[60vh] text-center bg-transparent mt-12">
+            <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase mb-12 block">
+              Our Services
+            </span>
+            <h2 className="text-5xl sm:text-6xl font-medium tracking-tighter leading-[0.85] text-white mb-16">
+              A.I.<br />
+              DESIGN<br />
+              DEVELOPMENT<br />
+              BRANDING
+            </h2>
+            <div className="flex flex-col items-center gap-6 mt-auto">
+              <div className="text-[9px] font-mono tracking-widest text-neutral-400 uppercase flex items-center gap-2">
+                <span className="text-white text-[7px]">■</span> DESIGN WITH INTENT. BUILT TO WORK.
+              </div>
+              <a
+                href="/services"
+                className="text-[10px] font-mono tracking-widest uppercase text-neutral-400 hover:text-white transition-colors underline underline-offset-4"
+              >
+                VIEW SERVICES →
+              </a>
+            </div>
+          </div>
         </div>
       </section>
     );
@@ -158,18 +183,49 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
   return (
     <section
       ref={sectionRef}
-      className="relative w-full bg-zinc-950 text-white"
+      className="relative w-full text-white"
     >
       {/* Pinned full-screen container */}
       <div ref={pinRef} className="relative w-full h-screen overflow-hidden">
 
-        {/* FULL-WIDTH horizontally scrolling track */}
-        <div className="absolute top-0 left-0 h-full overflow-hidden"
+        {/* 1. BACKGROUND "OUR SERVICES" SCREEN (Revealed when track slides away) */}
+        <div className="absolute inset-0 w-full h-full flex flex-col justify-between py-24 px-14 xl:px-20 z-0 pointer-events-none bg-transparent">
+          <div className="w-full flex justify-center">
+            <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase">
+              Our Services
+            </span>
+          </div>
+
+          <div className="flex flex-col items-center justify-center flex-1 text-center">
+            <h2 className="text-6xl md:text-[8vw] lg:text-[9vw] font-medium tracking-tighter leading-[0.85] text-white">
+              A.I.<br />
+              DESIGN<br />
+              DEVELOPMENT<br />
+              BRANDING
+            </h2>
+          </div>
+
+          <div className="flex items-center justify-between w-full pointer-events-auto">
+            <div className="text-[10px] md:text-[11px] font-mono tracking-widest text-neutral-400 uppercase flex items-center gap-3">
+              <span className="text-white text-[8px]">■</span> DESIGN WITH INTENT. BUILT TO WORK.
+            </div>
+            <a
+              href="/services"
+              className="inline-flex items-center gap-2 text-[11px] font-mono tracking-widest uppercase text-neutral-400 hover:text-white transition-colors duration-300 group border-b border-neutral-800 pb-1 hover:border-white"
+            >
+              VIEW SERVICES
+              <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+            </a>
+          </div>
+        </div>
+
+        {/* 2. FULL-WIDTH horizontally scrolling track */}
+        <div className="absolute top-0 left-0 h-full z-10 pointer-events-none"
           style={{ width: `${(projects.length + 2) * 50}vw` }}
         >
           <div
             ref={trackRef}
-            className="flex h-full will-change-transform"
+            className="flex h-full will-change-transform pointer-events-auto"
             style={{ width: `${(projects.length + 2) * 50}vw` }}
           >
             {/* Panel 0: Title panel — w-50vw, full height */}
