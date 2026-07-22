@@ -49,10 +49,33 @@ export default function InteractiveBentoFAQ() {
     const stateRef = useRef<any>(null);
     const [activeId, setActiveId] = useState<string | null>(null);
 
+    const hoveredIdRef = useRef<string | null>(null);
+
+    const setCursorText = (text: string | null) => {
+        const cursor = (window as any).mouseFollower;
+        if (!cursor) return;
+        if (text) cursor.setText(text);
+        else cursor.removeText();
+    };
+
+    const handleMouseEnter = (id: string, isExpanded: boolean) => {
+        hoveredIdRef.current = id;
+        setCursorText(isExpanded ? "close" : "open");
+    };
+
+    const handleMouseLeave = () => {
+        hoveredIdRef.current = null;
+        setCursorText(null);
+    };
+
     const handleCardClick = (id: string) => {
-        // Snapshot layouts of the cards
+        const nextActiveId = activeId === id ? null : id;
         stateRef.current = Flip.getState(".bento-card");
-        setActiveId(activeId === id ? null : id);
+        setActiveId(nextActiveId);
+
+        if (hoveredIdRef.current === id) {
+            setCursorText(nextActiveId === id ? "close" : "open");
+        }
     };
 
     useGSAP(() => {
@@ -112,6 +135,8 @@ export default function InteractiveBentoFAQ() {
                   }
                 `}
                                 onClick={() => handleCardClick(card.id)}
+                                onMouseEnter={() => handleMouseEnter(card.id, isExpanded)}
+                                onMouseLeave={handleMouseLeave}
                             >
                                 {/* Low opacity background purple matrix pattern */}
                                 <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#a855f7_1px,transparent_1px),linear-gradient(to_bottom,#a855f7_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />

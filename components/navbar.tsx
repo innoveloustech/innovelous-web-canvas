@@ -231,9 +231,9 @@ export default function Navbar() {
             {navItems.map((item) => (
               <div key={item.label} className="nav-item-wrapper relative z-10" onMouseEnter={(e) => handleMouseEnter(e, item.label)} onMouseLeave={() => handleMouseLeave(item.label)}>
                 {item.href ? (
-                  <TransitionLink href={item.href as any} className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</TransitionLink>
+                  <TransitionLink href={item.href as any} data-cursor="-hidden" className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</TransitionLink>
                 ) : (
-                  <div className="nav-item px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white cursor-pointer transition-colors duration-200">{item.label}</div>
+                  <div data-cursor="-hidden" className="nav-item px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white cursor-pointer transition-colors duration-200">{item.label}</div>
                 )}
                 
                 {item.dropdown && (
@@ -241,7 +241,7 @@ export default function Navbar() {
                     <div className="absolute top-0 left-0 right-0 h-2 -mt-2 bg-transparent pointer-events-auto" />
                     <div className="py-2 px-1.5">
                       {item.dropdown.map((dropdownItem) => (
-                        <TransitionLink key={dropdownItem.label} href={dropdownItem.href as any} className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</TransitionLink>
+                        <TransitionLink key={dropdownItem.label} href={dropdownItem.href as any} data-cursor="-hidden" className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</TransitionLink>
                       ))}
                     </div>
                   </div>
@@ -251,7 +251,7 @@ export default function Navbar() {
           </div>
 
           {/* Desktop CTA Button */}
-          <button className="desktop-cta hidden md:flex items-center gap-2.5 relative rounded-full px-5 py-2.5 font-medium text-sm overflow-hidden cursor-pointer bg-white" onMouseEnter={handleCtaMouseEnter} onMouseLeave={handleCtaMouseLeave}>
+          <button data-cursor="-hidden" className="desktop-cta hidden md:flex items-center gap-2.5 relative rounded-full px-5 py-2.5 font-medium text-sm overflow-hidden cursor-pointer bg-white" onMouseEnter={handleCtaMouseEnter} onMouseLeave={handleCtaMouseLeave}>
             <span className="cta-bg-fill absolute inset-y-0 left-0 w-0 bg-purple-600 rounded-full pointer-events-none z-0" />
             <span className="cta-text relative z-10 text-black transition-none">Get in Touch</span>
             <div className="cta-icon-bg relative z-10 w-5 h-5 bg-black rounded-full flex items-center justify-center transition-none">
@@ -262,6 +262,7 @@ export default function Navbar() {
           {/* Mobile Toggle Trigger */}
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+            data-cursor="-hidden"
             className="md:hidden relative z-50 w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-white focus:outline-none transition-colors hover:bg-white/10"
           >
             {isMobileMenuOpen ? (
@@ -289,6 +290,7 @@ export default function Navbar() {
           </a>
           <button 
             onClick={() => setIsMobileMenuOpen(false)} 
+            data-cursor="-hidden"
             className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -301,6 +303,7 @@ export default function Navbar() {
             <TransitionLink 
               href="/" 
               onClick={() => setIsMobileMenuOpen(false)}
+              data-cursor="-hidden"
               className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
             >
               Home
@@ -309,6 +312,7 @@ export default function Navbar() {
             <div className="mobile-nav-item border-b border-white/5">
               <button 
                 onClick={toggleMobileSolutions}
+                data-cursor="-hidden"
                 className="w-full flex items-center justify-between text-4xl md:text-5xl font-black tracking-tighter text-white py-4 hover:text-purple-400 transition-colors"
               >
                 <span>Solutions</span>
@@ -325,6 +329,7 @@ export default function Navbar() {
                   <TransitionLink 
                     href="/solutions/hardware" 
                     onClick={() => setIsMobileMenuOpen(false)}
+                    data-cursor="-hidden"
                     className="flex items-center gap-3 text-xl font-light text-neutral-400 py-3 hover:text-white transition-colors"
                   >
                     <span className="w-8 h-[1px] bg-neutral-700" />
@@ -333,6 +338,7 @@ export default function Navbar() {
                   <TransitionLink 
                     href="/solutions/software" 
                     onClick={() => setIsMobileMenuOpen(false)}
+                    data-cursor="-hidden"
                     className="flex items-center gap-3 text-xl font-light text-neutral-400 py-3 hover:text-white transition-colors"
                   >
                     <span className="w-8 h-[1px] bg-neutral-700" />
@@ -345,6 +351,7 @@ export default function Navbar() {
             <TransitionLink
               href={"/projects" as any}
               onClick={() => setIsMobileMenuOpen(false)}
+              data-cursor="-hidden"
               className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
             >
               Projects
@@ -356,6 +363,7 @@ export default function Navbar() {
         <div className="mobile-footer p-6 border-t border-white/5 bg-black/40 flex-shrink-0">
           <button 
             onClick={() => setIsMobileMenuOpen(false)}
+            data-cursor="-hidden"
             className="mobile-cta-btn w-full bg-white text-black py-4 rounded-full font-semibold text-center shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:bg-purple-500 hover:text-white transition-colors duration-300"
           >
             Get in Touch
