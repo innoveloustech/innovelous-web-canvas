@@ -26,6 +26,7 @@ import { describe, it, expect, vi, beforeEach, afterEach, beforeAll } from 'vite
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { supabase } from '@/lib/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import ProjectsPage from '@/app/projects/page';
 import AdminDashboardPortal from '@/app/admin/page';
 
@@ -108,7 +109,7 @@ vi.mock('gsap/ScrollTrigger', () => ({
 }));
 
 vi.mock('@gsap/react', () => ({
-  useGSAP: (fn: any, config?: any) => {
+  useGSAP: (fn: () => void, config?: { dependencies?: unknown[] }) => {
     const deps = config?.dependencies || [];
     React.useEffect(fn, deps);
   },
@@ -118,7 +119,7 @@ vi.mock('@gsap/react', () => ({
 // Mock Next.js & UI components to isolate behavior tests
 // ----------------------------------------------------
 vi.mock('next/link', () => ({
-  default: ({ children, href }: any) => React.createElement('a', { href }, children),
+  default: ({ children, href }: { children: React.ReactNode; href: string }) => React.createElement('a', { href }, children),
 }));
 
 vi.mock('@/components/canvas-background', () => ({
@@ -148,7 +149,7 @@ vi.mock('@/lib/lenis-provider', () => ({
 // Mock dnd-kit modules to bypass drag and drop requirements
 // ----------------------------------------------------
 vi.mock('@dnd-kit/core', () => ({
-  DndContext: ({ children }: any) => React.createElement('div', { 'data-testid': 'dnd-context' }, children),
+  DndContext: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'dnd-context' }, children),
   closestCenter: vi.fn(),
   KeyboardSensor: vi.fn(),
   PointerSensor: vi.fn(),
@@ -157,7 +158,7 @@ vi.mock('@dnd-kit/core', () => ({
 }));
 
 vi.mock('@dnd-kit/sortable', () => ({
-  SortableContext: ({ children }: any) => React.createElement('div', { 'data-testid': 'sortable-context' }, children),
+  SortableContext: ({ children }: { children?: React.ReactNode }) => React.createElement('div', { 'data-testid': 'sortable-context' }, children),
   sortableKeyboardCoordinates: vi.fn(),
   useSortable: () => ({
     attributes: {},
@@ -178,6 +179,10 @@ vi.mock('@dnd-kit/utilities', () => ({
   },
 }));
 
+type MockQueryBuilder = ReturnType<typeof supabase.from>;
+type MockAuthSessionResponse = Awaited<ReturnType<typeof supabase.auth.getSession>>;
+type MockAuthTokenResponse = Awaited<ReturnType<typeof supabase.auth.signInWithPassword>>;
+
 // ----------------------------------------------------
 // ProjectsPage Component Tests
 // ------------------------------------
@@ -190,7 +195,12 @@ describe('ProjectsPage Component Tests', () => {
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnValue(new Promise(() => {})), // Never resolves
-    } as any);
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockReturnThis(),
+    } as unknown as MockQueryBuilder);
 
     render(React.createElement(ProjectsPage));
     expect(screen.getByText('Loading Projects...')).toBeInTheDocument();
@@ -205,7 +215,12 @@ describe('ProjectsPage Component Tests', () => {
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: mockProjects, error: null }),
-    } as any);
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockReturnThis(),
+    } as unknown as MockQueryBuilder);
 
     render(React.createElement(ProjectsPage));
 
@@ -221,7 +236,12 @@ describe('ProjectsPage Component Tests', () => {
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
-    } as any);
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockReturnThis(),
+    } as unknown as MockQueryBuilder);
 
     render(React.createElement(ProjectsPage));
 
@@ -236,7 +256,12 @@ describe('ProjectsPage Component Tests', () => {
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: null, error: { message: 'Database query failed' } }),
-    } as any);
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockReturnThis(),
+    } as unknown as MockQueryBuilder);
 
     render(React.createElement(ProjectsPage));
 
@@ -260,7 +285,7 @@ describe('AdminDashboardPortal Component Tests', () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValue({
       data: { session: null },
       error: null,
-    } as any);
+    } as unknown as MockAuthSessionResponse);
 
     render(React.createElement(AdminDashboardPortal));
 
@@ -275,12 +300,12 @@ describe('AdminDashboardPortal Component Tests', () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValue({
       data: { session: null },
       error: null,
-    } as any);
+    } as unknown as MockAuthSessionResponse);
 
     const signInMock = vi.mocked(supabase.auth.signInWithPassword).mockResolvedValue({
       data: { session: {} },
       error: null,
-    } as any);
+    } as unknown as MockAuthTokenResponse);
 
     render(React.createElement(AdminDashboardPortal));
 
@@ -299,14 +324,18 @@ describe('AdminDashboardPortal Component Tests', () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValue({
       data: { session: { user: { id: 'admin-id' } } },
       error: null,
-    } as any);
+    } as unknown as MockAuthSessionResponse);
 
     const insertMock = vi.fn().mockResolvedValue({ data: null, error: null });
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: [], error: null }),
       insert: insertMock,
-    } as any);
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockReturnThis(),
+    } as unknown as MockQueryBuilder);
 
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
 
@@ -348,7 +377,7 @@ describe('AdminDashboardPortal Component Tests', () => {
     vi.mocked(supabase.auth.getSession).mockResolvedValue({
       data: { session: { user: { id: 'admin-id' } } },
       error: null,
-    } as any);
+    } as unknown as MockAuthSessionResponse);
 
     const mockProjects = [
       { id: 1, title: 'React Web Canvas', category: 'Web Development', description: 'desc', link: '', image_url: '', color: '#111', is_featured: false, sort_order: 0 },
@@ -358,7 +387,12 @@ describe('AdminDashboardPortal Component Tests', () => {
     vi.mocked(supabase.from).mockReturnValue({
       select: vi.fn().mockReturnThis(),
       order: vi.fn().mockResolvedValue({ data: mockProjects, error: null }),
-    } as any);
+      insert: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
+      delete: vi.fn().mockReturnThis(),
+      eq: vi.fn().mockReturnThis(),
+      single: vi.fn().mockReturnThis(),
+    } as unknown as MockQueryBuilder);
 
     render(React.createElement(AdminDashboardPortal));
 
@@ -397,13 +431,13 @@ describe('AdminDashboardPortal Component Tests', () => {
 // Integration Test: Real DB CRUD & Cleanup
 // ----------------------------------------------------
 describe('Integration Test: Real DB CRUD & Cleanup', () => {
-  let realSupabase: any;
+  let realSupabase: SupabaseClient;
   let testProjectTitle: string;
   const hasPassword = !!(process.env.PASSWORD);
 
   beforeAll(async () => {
     // Dynamically fetch the actual unmocked client instance
-    const actualModule = await vi.importActual<any>('@/lib/supabase');
+    const actualModule = await vi.importActual<typeof import('@/lib/supabase')>('@/lib/supabase');
     realSupabase = actualModule.supabase;
   });
 
@@ -448,7 +482,7 @@ describe('Integration Test: Real DB CRUD & Cleanup', () => {
     expect(data).toBeNull();
     expect(error).not.toBeNull();
     // 42501 PostgreSQL error code for policy violations / permission errors
-    expect(error.code).toBe('42501');
+    expect(error!.code).toBe('42501');
   }, 20000); // 20 seconds timeout to prevent transient network timeout failures
 
   // Skip the authenticated integration test block dynamically if password is not configured

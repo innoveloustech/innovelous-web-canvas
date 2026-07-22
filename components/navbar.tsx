@@ -231,17 +231,17 @@ export default function Navbar() {
             {navItems.map((item) => (
               <div key={item.label} className="nav-item-wrapper relative z-10" onMouseEnter={(e) => handleMouseEnter(e, item.label)} onMouseLeave={() => handleMouseLeave(item.label)}>
                 {item.href ? (
-                  <TransitionLink href={item.href as any} data-cursor="-hidden" className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</TransitionLink>
+                  <TransitionLink href={item.href!} data-cursor="-hidden" className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</TransitionLink>
                 ) : (
                   <div data-cursor="-hidden" className="nav-item px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white cursor-pointer transition-colors duration-200">{item.label}</div>
                 )}
                 
                 {item.dropdown && (
-                  <div ref={(el) => (dropdownRefs.current[item.label] = el as any)} className="absolute top-full left-0 mt-2 w-72 bg-neutral-950 border border-neutral-800 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden opacity-0 z-50 pointer-events-auto" style={{ height: 0 }}>
+                  <div ref={(el) => { dropdownRefs.current[item.label] = el; }} className="absolute top-full left-0 mt-2 w-72 bg-neutral-950 border border-neutral-800 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden opacity-0 z-50 pointer-events-auto" style={{ height: 0 }}>
                     <div className="absolute top-0 left-0 right-0 h-2 -mt-2 bg-transparent pointer-events-auto" />
                     <div className="py-2 px-1.5">
                       {item.dropdown.map((dropdownItem) => (
-                        <TransitionLink key={dropdownItem.label} href={dropdownItem.href as any} data-cursor="-hidden" className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</TransitionLink>
+                        <TransitionLink key={dropdownItem.label} href={dropdownItem.href} data-cursor="-hidden" className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</TransitionLink>
                       ))}
                     </div>
                   </div>
@@ -349,7 +349,7 @@ export default function Navbar() {
             </div>
 
             <TransitionLink
-              href={"/projects" as any}
+              href="/projects"
               onClick={() => setIsMobileMenuOpen(false)}
               data-cursor="-hidden"
               className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"

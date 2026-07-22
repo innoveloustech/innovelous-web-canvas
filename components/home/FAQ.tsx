@@ -46,13 +46,13 @@ const bentoData: BentoItem[] = [
 
 export default function InteractiveBentoFAQ() {
     const containerRef = useRef<HTMLDivElement>(null);
-    const stateRef = useRef<any>(null);
+    const stateRef = useRef<gsap.FlipState | null>(null);
     const [activeId, setActiveId] = useState<string | null>(null);
 
     const hoveredIdRef = useRef<string | null>(null);
 
     const setCursorText = (text: string | null) => {
-        const cursor = (window as any).mouseFollower;
+        const cursor = window.mouseFollower;
         if (!cursor) return;
         if (text) cursor.setText(text);
         else cursor.removeText();

@@ -1,6 +1,18 @@
 import Home from '@/screens/Home'
 import { supabase } from '@/lib/supabase'
 
+interface ProjectRow {
+  id: number;
+  title: string;
+  category: string;
+  description: string;
+  link: string;
+  image_url: string;
+  color: string;
+  is_featured: boolean;
+  sort_order: number;
+}
+
 async function getFeaturedProjects() {
   const { data } = await supabase
     .from("projects_new")
@@ -8,7 +20,7 @@ async function getFeaturedProjects() {
     .eq("is_featured", true)
     .order("sort_order", { ascending: true });
 
-  return (data || []).map((p: any) => ({
+  return (data || []).map((p: ProjectRow) => ({
     id: p.id,
     name: p.title,
     tagline: p.category,

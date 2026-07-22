@@ -45,8 +45,8 @@ export default function ProjectsPage() {
 
         if (fetchError) throw fetchError;
         if (data) setProjects(data);
-      } catch (err: any) {
-        console.error("Database Sync Error:", err.message);
+      } catch (err: unknown) {
+        console.error("Database Sync Error:", err instanceof Error ? err.message : err);
         setError("Connection to the database registry failed.");
       } finally {
         setLoading(false);

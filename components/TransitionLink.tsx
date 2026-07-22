@@ -4,7 +4,7 @@ import Link, { LinkProps } from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
 
-interface TransitionLinkProps extends Omit<LinkProps<unknown>, "href"> {
+interface TransitionLinkProps extends Omit<LinkProps<React.ElementRef<"a">>, "href"> {
   children: React.ReactNode;
   href: string;
   className?: string;
@@ -23,18 +23,12 @@ export default function TransitionLink({
   const handleTransition = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
     
-    // Fire any custom onClick handlers (like closing your mobile menu)
     if (onClick) onClick(e);
 
-    // Abort if we are already on the target page
     if (pathname === href) return;
     
-    // Lock interactions during the transition
     document.body.style.pointerEvents = "none";
 
-    // Dispatch event to the TransitionCanvas.
-    // The canvas owns the full animation lifecycle and will call router.push
-    // at the right moment (after the glitch effect peaks), then animate back out.
     window.dispatchEvent(
       new CustomEvent("start-3d-transition", { 
         detail: { href } 
@@ -43,7 +37,7 @@ export default function TransitionLink({
   };
 
   return (
-    <Link {...props} href={href as any} onClick={handleTransition} className={className}>
+    <Link {...props} href={href} onClick={handleTransition} className={className}>
       {children}
     </Link>
   );

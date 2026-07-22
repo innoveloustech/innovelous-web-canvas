@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
+import type { Session } from "@supabase/supabase-js";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import {
@@ -120,7 +121,7 @@ function SortableProjectCard({
 }
 
 export default function AdminDashboardPortal() {
-  const [session, setSession] = useState<any>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [projects, setProjects] = useState<Project[]>([]);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
@@ -258,8 +259,8 @@ export default function AdminDashboardPortal() {
 
       await syncWorkspaceData();
       dismissModalContext();
-    } catch (err: any) {
-      alert(err.message || "An exception error occurred writing to cloud storage registries.");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "An exception error occurred writing to cloud storage registries.");
     } finally {
       setProcessing(false);
     }
@@ -273,8 +274,8 @@ export default function AdminDashboardPortal() {
       if (delErr) throw delErr;
       await syncWorkspaceData();
       dismissModalContext();
-    } catch (err: any) {
-      alert(err.message || "Drop row event caught exception handling logs.");
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : "Drop row event caught exception handling logs.");
     } finally {
       setProcessing(false);
     }
@@ -298,8 +299,8 @@ export default function AdminDashboardPortal() {
         supabase.from("projects_new").update({ sort_order: p.sort_order }).eq("id", p.id)
       );
       await Promise.all(updates);
-    } catch (err: any) {
-      console.error("Failed to update sort_order:", err.message);
+    } catch (err: unknown) {
+      console.error("Failed to update sort_order:", err instanceof Error ? err.message : err);
       await syncWorkspaceData(); // revert on failure
     }
   };
@@ -357,7 +358,7 @@ export default function AdminDashboardPortal() {
         </div>
         <div className="flex gap-3">
           <Link
-            href={"/projects" as any}
+            href="/projects"
             className="px-5 py-3 border border-white/10 hover:bg-white/5 text-neutral-400 hover:text-white text-xs uppercase tracking-wider rounded-xl transition-colors flex items-center gap-2"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

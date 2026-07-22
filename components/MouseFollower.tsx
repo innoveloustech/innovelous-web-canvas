@@ -5,6 +5,12 @@ import MouseFollower from "mouse-follower";
 import gsap from "gsap";
 import "mouse-follower/dist/mouse-follower.min.css";
 
+declare global {
+  interface Window {
+    mouseFollower?: InstanceType<typeof MouseFollower>;
+  }
+}
+
 export default function Cursor() {
   useEffect(() => {
     MouseFollower.registerGSAP(gsap);
@@ -18,7 +24,7 @@ export default function Cursor() {
     });
 
     // Save instance to global window context safely
-    (window as any).mouseFollower = cursor;
+    window.mouseFollower = cursor;
 
     return () => {
       cursor.destroy();

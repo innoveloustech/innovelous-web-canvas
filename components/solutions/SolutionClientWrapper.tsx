@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef } from "react";
-import dynamic from "next/dynamic";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import CanvasBackground from "@/components/canvas-background";
@@ -11,59 +10,11 @@ import SolutionScene from "@/components/solutions/SolutionScenes";
 import ContactSection from "@/components/ContactSection";
 import WhatsAppButton from "@/components/whatsapp-button";
 
-// Dynamically import Aceternity Globe client component wrapper to shield from SSR issues
-const DynamicGlobeViewport = dynamic(
-  async () => {
-    const { World } = await import("@/components/ui/globe");
-    return function GlobeViewport() {
-      const globeConfig = {
-        pointSize: 4,
-        globeColor: "#070708",
-        showAtmosphere: true,
-        atmosphereColor: "#a855f7",
-        atmosphereAltitude: 0.1,
-        emissive: "#060608",
-        emissiveIntensity: 0.1,
-        shininess: 0.9,
-        polygonColor: "rgba(168, 85, 247, 0.4)",
-        ambientLight: "#a855f7",
-        directionalLeftLight: "#ffffff",
-        directionalTopLight: "#ffffff",
-        pointLight: "#a855f7",
-        arcTime: 2000,
-        arcLength: 0.9,
-        rings: 1,
-        maxRings: 3,
-        initialPosition: { lat: 22.3193, lng: 114.1694 },
-        autoRotate: true,
-        autoRotateSpeed: 0.5,
-      };
-
-      const sampleArcs = [
-        { order: 1, startLat: 24.8607, startLng: 67.0011, endLat: 35.6762, endLng: 139.6503, arcAlt: 0.2, color: "#a855f7" },
-        { order: 2, startLat: 24.8607, startLng: 67.0011, endLat: 37.7749, endLng: -122.4194, arcAlt: 0.5, color: "#c084fc" },
-        { order: 3, startLat: 37.7749, startLng: -122.4194, endLat: 51.5074, endLng: -0.1278, arcAlt: 0.3, color: "#9333ea" }
-      ];
-
-      return (
-        <div className="w-full h-full relative flex items-center justify-center">
-          <div className="absolute w-[500px] h-[500px] rounded-full bg-sky-500/5 blur-[120px] pointer-events-none z-0" />
-          <div className="w-full h-full relative z-10">
-            <World data={sampleArcs} globeConfig={globeConfig} />
-          </div>
-        </div>
-      );
-    };
-  },
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full h-full flex items-center justify-center text-neutral-600 font-mono text-xs tracking-widest">
-        INITIALIZING_GITHUB_VECTOR_GLOBE...
-      </div>
-    ),
-  }
-);
+interface ThreeDConfig {
+  geometry: 'torus' | 'icosahedron' | 'grid' | 'particles' | 'ring' | 'cube';
+  color: string;
+  wireframe: boolean;
+}
 
 interface ClientLayoutProps {
   data: {
@@ -74,7 +25,7 @@ interface ClientLayoutProps {
     ctaText: string;
     stats: Array<{ value: string; label: string }>;
     features: string[];
-    threeDConfig: any;
+    threeDConfig: ThreeDConfig;
   };
 }
 
@@ -100,12 +51,6 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
         }, "-=0.6")
         .from(".solution-meta", { x: -30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.8")
         .from(".solution-desc", { y: 20, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.5")
-        .from(".solution-globe-wrapper", {
-          scale: 0.8,
-          opacity: 0,
-          duration: 1.5,
-          ease: "power4.out"
-        }, "-=0.8")
         .from(".stat-card", {
           y: 40,
           opacity: 0,
@@ -147,7 +92,7 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
             <section className="min-h-screen flex flex-col justify-end px-6 md:px-16 pb-20 md:pb-32 pt-32">
               <div className="max-w-7xl mx-auto w-full">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
-                  <div className="flex flex-col lg:col-span-7 justify-center">
+                  <div className="flex flex-col lg:col-span-12 justify-center">
                     <div className="solution-meta flex items-center gap-4 mb-6">
                       <span
                         className="text-xs font-mono tracking-[0.25em] uppercase px-3 py-1 border rounded-full"
@@ -182,10 +127,6 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
                     </div>
                   </div>
 
-                  {/* Aceternity GitHub Globe Canvas Layout */}
-                  <div className="solution-globe-wrapper hidden lg:block lg:col-span-5 h-[600px] w-full relative">
-                    <DynamicGlobeViewport />
-                  </div>
                 </div>
               </div>
             </section>
