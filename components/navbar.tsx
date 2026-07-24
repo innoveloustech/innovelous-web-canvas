@@ -5,6 +5,7 @@ import gsap from "gsap";
 import Image from "next/image";
 import Link from "next/link";
 import { useLenis } from "@/lib/lenis-provider";
+import { useSiteSettings } from "@/components/SiteSettingsProvider";
 import TransitionLink from "./TransitionLink";
 
 interface DropdownItem {
@@ -43,6 +44,7 @@ export default function Navbar() {
   const mobileSolutionsRef = useRef<HTMLDivElement>(null);
   
   const lenis = useLenis();
+  const settings = useSiteSettings();
 
   // Handle scroll effect
   useEffect(() => {
@@ -216,7 +218,7 @@ export default function Navbar() {
           {/* Logo */}
           <a href="/" className="logo flex items-center gap-3 group relative z-50" style={{ viewTransitionName: "nav-logo" }}>
             <div className="relative w-11 h-11" style={{ viewTransitionName: "nav-logo-image" }}>
-              <Image src="/logo.png" alt="Innovelous Logo" fill className="object-contain" />
+              <Image src={settings.logo_url} alt="Innovelous Logo" fill className="object-contain" />
             </div>
             <div className="flex flex-col" style={{ viewTransitionName: "nav-logo-text" }}>
               <span className="text-lg font-bold text-white leading-tight tracking-wide">Innovelous</span>
@@ -284,7 +286,7 @@ export default function Navbar() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 flex-shrink-0">
           <a href="/" className="flex items-center gap-3">
             <div className="relative w-9 h-9">
-              <Image src="/logo.png" alt="Innovelous Logo" fill className="object-contain" />
+              <Image src={settings.logo_url} alt="Innovelous Logo" fill className="object-contain" />
             </div>
             <span className="text-base font-bold text-white tracking-wide">Innovelous</span>
           </a>

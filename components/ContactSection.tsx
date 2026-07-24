@@ -7,56 +7,32 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import * as THREE from "three";
 import Link from "next/link";
+import { useSiteSettings } from "@/components/SiteSettingsProvider";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// ─── Contact data ────────────────────────────────────────────────────────────
-const contactInfo = [
-  {
-    index: "01",
-    category: "Email",
-    primary: "info@innovelous.com",
-    secondary: "",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
-  {
-    index: "02",
-    category: "Phone",
-    primary: "+92 333 2186309",
-    secondary: "",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-      </svg>
-    ),
-  },
-  {
-    index: "03",
-    category: "Office",
-    primary: "Pakistan",
-    secondary: "DHA Phase 2 (Extension), Karachi",
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
-          d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
-  },
-];
-
-const socialLinks = [
-  { label: "Facebook", href: "https://www.facebook.com/innoveloustech" },
-  { label: "GitHub", href: "https://github.com/innoveloustech" },
-  { label: "Instagram", href: "https://www.instagram.com/innoveloustech" },
-];
+const contactIcons = {
+  email: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+    </svg>
+  ),
+  phone: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+    </svg>
+  ),
+  office: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" className="w-5 h-5">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
+        d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+    </svg>
+  ),
+};
 
 const LINES = [
   { text: "Ready to Build?", ghost: false },
@@ -149,7 +125,15 @@ function CardParticles({ isHovered, mousePos }: { isHovered: boolean; mousePos: 
   );
 }
 
-function ContactCard({ item }: { item: typeof contactInfo[0] }) {
+interface ContactCardItem {
+  index: string;
+  category: string;
+  primary: string;
+  secondary: string;
+  icon: React.ReactNode;
+}
+
+function ContactCard({ item }: { item: ContactCardItem }) {
   const [isHovered, setIsHovered] = useState(false);
   const [copied, setCopied] = useState(false);
   const mousePos = useMemo(() => new THREE.Vector2(0, 0), []);
@@ -293,6 +277,20 @@ export default function ContactSection({ showCapabilities, hasBackground = true 
     gsap.from(".social-link", { ...fromConfig({ x: -20, stagger: 0.1, duration: 0.7 }), scrollTrigger: { trigger: ".social-row", start: "top 90%" } });
     gsap.from(".contact-tagline", { ...fromConfig({ y: 30 }), scrollTrigger: { trigger: ".contact-tagline", start: "top 93%" } });
   }, { scope: sectionRef });
+
+  const settings = useSiteSettings();
+
+  const socialLinks = [
+    { label: "Facebook", href: settings.facebook_url },
+    { label: "GitHub", href: settings.github_url },
+    { label: "Instagram", href: settings.instagram_url },
+  ];
+
+  const contactInfo = [
+    { index: "01", category: "Email", primary: settings.email, secondary: "", icon: contactIcons.email },
+    { index: "02", category: "Phone", primary: settings.phone, secondary: "", icon: contactIcons.phone },
+    { index: "03", category: "Office", primary: settings.office_location, secondary: settings.office_address, icon: contactIcons.office },
+  ];
 
   const onSocialEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const arrow = e.currentTarget.querySelector(".soc-arrow");

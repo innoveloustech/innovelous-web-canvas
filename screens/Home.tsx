@@ -15,6 +15,7 @@ import ImpactSection from "@/components/home/ImpactSection";
 import InteractiveBentoFAQ from "@/components/home/FAQ";
 import FeaturedProjectsClient from "@/components/home/FeaturedProjectsClient";
 import TransitionLink from "@/components/TransitionLink";
+import { useSiteSettings } from "@/components/SiteSettingsProvider";
 
 const CanvasBackground = dynamic(() => import("@/components/canvas-background"), { ssr: false });
 
@@ -196,6 +197,7 @@ export default function Home({ projects }: { projects: Project[] }) {
   const serviceRef = useRef<HTMLDivElement>(null);
   const hasAnimatedRef = useRef(false);
 
+  const settings = useSiteSettings();
   const [wordIndex, setWordIndex] = useState(0);
 
   useEffect(() => {
@@ -316,7 +318,7 @@ export default function Home({ projects }: { projects: Project[] }) {
 
   return (
     <>
-      <WhatsAppButton phoneNumber="+92 334 9251936" />
+      <WhatsAppButton phoneNumber={settings.whatsapp_url} />
       <Cursor />
       <div ref={containerRef} style={{ viewTransitionName: "page-content" }} className="text-white min-h-screen overflow-x-hidden relative bg-transparent">
         <CanvasBackground />
@@ -462,7 +464,7 @@ export default function Home({ projects }: { projects: Project[] }) {
         </div>
 
         <ImpactSection />
-        <FeaturedProjectsClient projects={projects} />
+        {settings.show_featured && <FeaturedProjectsClient projects={projects} />}
         <CubeSection />
         <InteractiveBentoFAQ />
         <ContactSection showCapabilities hasBackground={false} />

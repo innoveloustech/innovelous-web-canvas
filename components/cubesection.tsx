@@ -4,13 +4,7 @@ import React, { useRef, useState } from "react";
 import { Canvas, useThree, useFrame } from "@react-three/fiber";
 import { Text, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
-
-const testimonials = [
-  { text: "WE SAW RESULTS WITHIN THE FIRST WEEK. IT'S INTUITIVE, FAST, AND RELIABLE.", author: "Dr. Naureen Jamshed", role: "CEO,FOUNDER", isDark: true },
-  { text: "THIS PRODUCT COMPLETELY TRANSFORMED THE WAY OUR TEAM COLLABORATES. HIGHLY RECOMMEND!", author: "Chef Gulzar Hussain", role: "Executive Chef GTV", isDark: false },
-  { text: "INCREDIBLE SUPPORT AND A SEAMLESS EXPERIENCE FROM START TO FINISH. FIVE STARS!", author: "Dr Khalid Anjum", role: "Business Owner", isDark: true },
-  { text: "THE BEST INVESTMENT WE'VE MADE THIS YEAR. OUR PRODUCTIVITY HAS DOUBLED SINCE ONBOARDING.", author: "Syed Ashar", role: "CEO", isDark: false },
-];
+import { useTestimonials } from "@/components/SiteSettingsProvider";
 
 function CubeFace({
   position,
@@ -19,7 +13,7 @@ function CubeFace({
 }: {
   position: [number, number, number];
   rotation: [number, number, number];
-  data: (typeof testimonials)[0];
+  data: { text: string; author: string; role: string; isDark: boolean };
 }) {
   // #09090b is the hex code for Tailwind's zinc-950
   const bgColor = data.isDark ? "#09090b" : "#ffffff";
@@ -106,6 +100,7 @@ function CubeFace({
 }
 
 function TestimonialCube() {
+  const testimonials = useTestimonials();
   const groupRef = useRef<THREE.Group>(null);
   const { size } = useThree();
 
@@ -126,10 +121,15 @@ function TestimonialCube() {
         <meshBasicMaterial color="#09090b" />
       </mesh>
 
-      <CubeFace position={[0, 0, 2]} rotation={[0, 0, 0]} data={testimonials[0]} />
-      <CubeFace position={[2, 0, 0]} rotation={[0, Math.PI / 2, 0]} data={testimonials[1]} />
-      <CubeFace position={[0, 0, -2]} rotation={[0, Math.PI, 0]} data={testimonials[2]} />
-      <CubeFace position={[-2, 0, 0]} rotation={[0, -Math.PI / 2, 0]} data={testimonials[3]} />
+      {testimonials.map((t, i) => {
+        const positions: [number, number, number][] = [[0, 0, 2], [2, 0, 0], [0, 0, -2], [-2, 0, 0]];
+        const rotations: [number, number, number][] = [[0, 0, 0], [0, Math.PI / 2, 0], [0, Math.PI, 0], [0, -Math.PI / 2, 0]];
+        return (
+          <CubeFace key={t.id} position={positions[i] || [0, 0, 0]} rotation={rotations[i] || [0, 0, 0]}
+            data={{ text: t.text, author: t.author, role: t.role, isDark: t.is_dark }}
+          />
+        );
+      })}
     </group>
   );
 }

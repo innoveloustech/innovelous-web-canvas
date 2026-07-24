@@ -2,52 +2,24 @@ import { useRef, useState } from 'react';
 import gsap from 'gsap';
 import { Flip } from 'gsap/Flip';
 import { useGSAP } from '@gsap/react';
+import { useFaqs } from '@/components/SiteSettingsProvider';
+import { getFaqDefaultClass, getFaqExpandedClass } from '@/lib/site-settings';
 
 gsap.registerPlugin(Flip);
 
-interface BentoItem {
-    id: string;
-    q: string;
-    a: string;
-    defaultClass: string;
-    expandedClass: string;
-}
-
-const bentoData: BentoItem[] = [
-    {
-        id: "01",
-        q: "What is your typical development process for a project?",
-        a: "We start with deep discovery and strategy alignment, followed by interactive UI/UX prototyping. We then move into rapid, iterative MVP development, rigorous quality assurance, and seamless deployment with continuous post-launch optimization.",
-        defaultClass: "md:col-span-2 md:row-span-1",
-        expandedClass: "md:col-span-3 md:row-span-2"
-    },
-    {
-        id: "02",
-        q: "How long does it take to build and launch an MVP?",
-        a: "A typical high-performance MVP takes between 4 to 8 weeks. Thanks to our pre-built architectural modules and agile workflows, we bypass traditional development bottlenecks to ship fast.",
-        defaultClass: "md:col-span-1 md:row-span-1",
-        expandedClass: "md:col-span-3 md:row-span-2"
-    },
-    {
-        id: "03",
-        q: "How do you integrate AI automation into existing workflows?",
-        a: "We analyze your operations to find manual bottlenecks, then design custom AI pipelines—ranging from intelligent chatbots and LLM-powered content agents to advanced data processing automation.",
-        defaultClass: "md:col-span-1 md:row-span-2",
-        expandedClass: "md:col-span-3 md:row-span-2"
-    },
-    {
-        id: "04",
-        q: "Do you provide long-term maintenance and scaling support?",
-        a: "Yes, we partner with clients long-term through dedicated support agreements. This covers proactive security updates, performance monitoring, scaling infrastructure, and continuous feature updates.",
-        defaultClass: "md:col-span-2 md:row-span-1",
-        expandedClass: "md:col-span-3 md:row-span-2"
-    }
-];
-
 export default function InteractiveBentoFAQ() {
+    const faqItems = useFaqs();
     const containerRef = useRef<HTMLDivElement>(null);
     const stateRef = useRef<gsap.FlipState | null>(null);
     const [activeId, setActiveId] = useState<string | null>(null);
+
+    const bentoData = faqItems.map((item, i) => ({
+        id: String(item.id).padStart(2, "0"),
+        q: item.question,
+        a: item.answer,
+        defaultClass: getFaqDefaultClass(i),
+        expandedClass: getFaqExpandedClass(i),
+    }));
 
     const hoveredIdRef = useRef<string | null>(null);
 

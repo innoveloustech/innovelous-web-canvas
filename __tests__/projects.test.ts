@@ -34,17 +34,18 @@ import AdminDashboardPortal from '@/app/admin/page';
 // Mock `@/lib/supabase` at the top level
 // ----------------------------------------------------
 vi.mock('@/lib/supabase', () => {
+  const mockThenable = (val: unknown) => Promise.resolve(val);
   return {
     supabase: {
-      from: vi.fn(() => ({
-        select: vi.fn().mockReturnThis(),
-        insert: vi.fn().mockReturnThis(),
-        update: vi.fn().mockReturnThis(),
-        delete: vi.fn().mockReturnThis(),
-        eq: vi.fn().mockReturnThis(),
-        order: vi.fn().mockReturnThis(),
-        single: vi.fn().mockReturnThis(),
-      })),
+      from: vi.fn(() => {
+        const chain: Record<string, unknown> = {};
+        const methods = ['select', 'insert', 'update', 'delete', 'eq', 'order', 'ilike'];
+        for (const m of methods) {
+          chain[m] = vi.fn(() => chain);
+        }
+        chain.single = vi.fn(() => mockThenable({ data: null, error: null }));
+        return chain;
+      }),
       auth: {
         getSession: vi.fn().mockResolvedValue({ data: { session: null }, error: null }),
         onAuthStateChange: vi.fn(() => ({
@@ -53,15 +54,57 @@ vi.mock('@/lib/supabase', () => {
         signInWithPassword: vi.fn(),
         signOut: vi.fn(),
       },
+      functions: {
+        invoke: vi.fn().mockResolvedValue({ data: { success: true, message: 'ok' }, error: null }),
+      },
       storage: {
         from: vi.fn(() => ({
           upload: vi.fn(),
           getPublicUrl: vi.fn(() => ({
             data: { publicUrl: 'https://example.com/image.png' },
           })),
+          remove: vi.fn(),
         })),
       },
     },
+  };
+});
+
+// ----------------------------------------------------
+// Mock SiteSettingsProvider context hooks
+// ----------------------------------------------------
+vi.mock('@/components/SiteSettingsProvider', () => ({
+  useSiteSettings: () => ({
+    id: 1,
+    email: 'info@innovelous.com',
+    phone: '+92 333 2186309',
+    office_location: 'Pakistan',
+    office_address: 'DHA Phase 2 (Extension), Karachi',
+    facebook_url: 'https://www.facebook.com/innoveloustech',
+    github_url: 'https://github.com/innoveloustech',
+    instagram_url: 'https://www.instagram.com/innoveloustech',
+    whatsapp_url: 'https://wa.me/923349251936',
+    logo_url: '/logo.png',
+    favicon_url: '/favicon.ico',
+    og_image_url: '/og-image.jpg',
+    show_featured: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  }),
+  useTestimonials: () => [],
+  useFaqs: () => [],
+  default: ({ children }: { children: React.ReactNode }) => children,
+}));
+
+// ----------------------------------------------------
+// Mock @/lib/site-settings layout helpers
+// ----------------------------------------------------
+vi.mock('@/lib/site-settings', async () => {
+  const actual = await vi.importActual<typeof import('@/lib/site-settings')>('@/lib/site-settings');
+  return {
+    ...actual,
+    getFaqDefaultClass: (i: number) => ["md:col-span-2 md:row-span-1", "md:col-span-1 md:row-span-1", "md:col-span-1 md:row-span-2", "md:col-span-2 md:row-span-1"][i] ?? "",
+    getFaqExpandedClass: () => "md:col-span-3 md:row-span-2",
   };
 });
 
@@ -334,7 +377,7 @@ describe('AdminDashboardPortal Component Tests', () => {
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockReturnThis(),
+      single: vi.fn(() => Promise.resolve({ data: null, error: null })),
     } as unknown as MockQueryBuilder);
 
     const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
@@ -342,10 +385,17 @@ describe('AdminDashboardPortal Component Tests', () => {
     render(React.createElement(AdminDashboardPortal));
 
     await waitFor(() => {
+      expect(screen.getByText('Welcome back, Admin')).toBeInTheDocument();
+    });
+
+    // Navigate to Projects tab
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Projects'));
+
+    await waitFor(() => {
       expect(screen.getByRole('button', { name: /Create Object/i })).toBeInTheDocument();
     });
 
-    const user = userEvent.setup();
     await user.click(screen.getByRole('button', { name: /Create Object/i }));
 
     expect(screen.getByText('Initialize Data Object')).toBeInTheDocument();
@@ -391,10 +441,17 @@ describe('AdminDashboardPortal Component Tests', () => {
       update: vi.fn().mockReturnThis(),
       delete: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
-      single: vi.fn().mockReturnThis(),
+      single: vi.fn(() => Promise.resolve({ data: null, error: null })),
     } as unknown as MockQueryBuilder);
 
     render(React.createElement(AdminDashboardPortal));
+
+    // Wait for dashboard then navigate to Projects tab
+    await waitFor(() => {
+      expect(screen.getByText('Welcome back, Admin')).toBeInTheDocument();
+    });
+    const user = userEvent.setup();
+    await user.click(screen.getByText('Projects'));
 
     // 1. Wait for projects to load with real timers
     await waitFor(() => {
@@ -484,6 +541,119 @@ describe('Integration Test: Real DB CRUD & Cleanup', () => {
     // 42501 PostgreSQL error code for policy violations / permission errors
     expect(error!.code).toBe('42501');
   }, 20000); // 20 seconds timeout to prevent transient network timeout failures
+
+  // RLS test: Verify unauthenticated SELECT is allowed on site_settings
+  it('should allow unauthenticated SELECT on site_settings', async () => {
+    const { data: { session } } = await realSupabase.auth.getSession();
+    if (session) {
+      await realSupabase.auth.signOut();
+    }
+    const { data, error } = await realSupabase.from('site_settings').select('*').eq('id', 1).single();
+    expect(error).toBeNull();
+    expect(data).not.toBeNull();
+    expect(data!.id).toBe(1);
+  }, 15000);
+
+  // RLS test: Verify unauthenticated UPDATE silently affects 0 rows
+  it('should enforce RLS and silently block unauthenticated UPDATE on site_settings (0 rows affected)', async () => {
+    const { data: { session } } = await realSupabase.auth.getSession();
+    if (session) {
+      await realSupabase.auth.signOut();
+    }
+    // Record original value
+    const { data: before } = await realSupabase.from('site_settings').select('email').eq('id', 1).single();
+    const originalEmail = before!.email;
+    // Attempt unauthenticated update
+    const { error } = await realSupabase.from('site_settings').update({ email: 'hacker@evil.com' }).eq('id', 1);
+    expect(error).toBeNull(); // RLS silently blocks, no error thrown
+    // Verify value is unchanged
+    const { data: after } = await realSupabase.from('site_settings').select('email').eq('id', 1).single();
+    expect(after!.email).toBe(originalEmail);
+  }, 15000);
+
+  // RLS test: Verify unauthenticated SELECT is allowed on testimonials
+  it('should allow unauthenticated SELECT on testimonials', async () => {
+    const { data: { session } } = await realSupabase.auth.getSession();
+    if (session) {
+      await realSupabase.auth.signOut();
+    }
+    const { data, error } = await realSupabase.from('testimonials').select('*').order('sort_order', { ascending: true });
+    expect(error).toBeNull();
+    expect(data).not.toBeNull();
+    expect(data!.length).toBeGreaterThanOrEqual(4);
+  }, 15000);
+
+  // RLS test: Verify unauthenticated UPDATE silently affects 0 rows on testimonials
+  it('should enforce RLS and silently block unauthenticated UPDATE on testimonials (0 rows affected)', async () => {
+    const { data: { session } } = await realSupabase.auth.getSession();
+    if (session) {
+      await realSupabase.auth.signOut();
+    }
+    const { data: before } = await realSupabase.from('testimonials').select('text').eq('id', 1).single();
+    const originalText = before!.text;
+    const { error } = await realSupabase.from('testimonials').update({ text: 'HACKED' }).eq('id', 1);
+    expect(error).toBeNull();
+    const { data: after } = await realSupabase.from('testimonials').select('text').eq('id', 1).single();
+    expect(after!.text).toBe(originalText);
+  }, 15000);
+
+  // RLS test: Verify unauthenticated SELECT is allowed on faqs
+  it('should allow unauthenticated SELECT on faqs', async () => {
+    const { data: { session } } = await realSupabase.auth.getSession();
+    if (session) {
+      await realSupabase.auth.signOut();
+    }
+    const { data, error } = await realSupabase.from('faqs').select('*').order('sort_order', { ascending: true });
+    expect(error).toBeNull();
+    expect(data).not.toBeNull();
+    expect(data!.length).toBeGreaterThanOrEqual(4);
+  }, 15000);
+
+  // RLS test: Verify unauthenticated UPDATE silently affects 0 rows on faqs
+  it('should enforce RLS and silently block unauthenticated UPDATE on faqs (0 rows affected)', async () => {
+    const { data: { session } } = await realSupabase.auth.getSession();
+    if (session) {
+      await realSupabase.auth.signOut();
+    }
+    const { data: before } = await realSupabase.from('faqs').select('question').eq('id', 1).single();
+    const originalQuestion = before!.question;
+    const { error } = await realSupabase.from('faqs').update({ question: 'HACKED?' }).eq('id', 1);
+    expect(error).toBeNull();
+    const { data: after } = await realSupabase.from('faqs').select('question').eq('id', 1).single();
+    expect(after!.question).toBe(originalQuestion);
+  }, 15000);
+
+  // RLS test: Verify unauthenticated upload is rejected on storage bucket projects_new-images
+  it('should enforce RLS and reject unauthenticated upload to projects_new-images bucket', async () => {
+    const { data: { session } } = await realSupabase.auth.getSession();
+    if (session) {
+      await realSupabase.auth.signOut();
+    }
+    const { error } = await realSupabase.storage
+      .from('projects_new-images')
+      .upload(`unauthorized_test_${Date.now()}.png`, 'fake png content', {
+        contentType: 'image/png',
+        upsert: false,
+      });
+    expect(error).not.toBeNull();
+    expect(error!.message).toMatch(/row-level security|unauthorized|permission denied|forbidden|signature verification/i);
+  }, 20000);
+
+  // RLS test: Verify unauthenticated upload is rejected on storage bucket site-assets
+  it('should enforce RLS and reject unauthenticated upload to site-assets bucket', async () => {
+    const { data: { session } } = await realSupabase.auth.getSession();
+    if (session) {
+      await realSupabase.auth.signOut();
+    }
+    const { error } = await realSupabase.storage
+      .from('site-assets')
+      .upload(`unauthorized_test_${Date.now()}.png`, 'fake png content', {
+        contentType: 'image/png',
+        upsert: false,
+      });
+    expect(error).not.toBeNull();
+    expect(error!.message).toMatch(/row-level security|unauthorized|permission denied|forbidden|signature verification/i);
+  }, 20000);
 
   // Skip the authenticated integration test block dynamically if password is not configured
   it.skipIf(!hasPassword)('should safely execute INSERT and UPDATE actions against the database when authenticated, then purge data', async () => {

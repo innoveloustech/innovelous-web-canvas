@@ -1,17 +1,20 @@
 import React from 'react';
 
 interface WhatsAppButtonProps {
-  phoneNumber: string; // International format without '+' or '00' (e.g., '1234567890')
-  message?: string;    // Optional pre-filled text message
+  phoneNumber: string;
+  message?: string;
 }
 
 const WhatsAppButton: React.FC<WhatsAppButtonProps> = ({ phoneNumber, message }) => {
-  // Clean up the phone number (remove spaces, dashes, or plus signs just in case)
-  const cleanNumber = phoneNumber.replace(/[^\d]/g, '');
-  
-  // Encode the message for the URL
   const encodedMessage = message ? encodeURIComponent(message) : '';
-  const whatsappUrl = `https://wa.me/${cleanNumber}${encodedMessage ? `?text=${encodedMessage}` : ''}`;
+
+  let whatsappUrl: string;
+  if (phoneNumber.startsWith('https://wa.me/') || phoneNumber.startsWith('http://wa.me/')) {
+    whatsappUrl = phoneNumber + (encodedMessage ? `?text=${encodedMessage}` : '');
+  } else {
+    const cleanNumber = phoneNumber.replace(/[^\d]/g, '');
+    whatsappUrl = `https://wa.me/${cleanNumber}${encodedMessage ? `?text=${encodedMessage}` : ''}`;
+  }
 
   return (
     <a
