@@ -134,7 +134,18 @@ export default function AdminSidebar({
         </nav>
 
         {/* Logout */}
-        <div className="px-3 py-4 border-t border-white/5">
+        <div className="px-3 py-4 border-t border-white/5 space-y-1">
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-neutral-400 hover:text-white hover:bg-white/[0.03] border border-transparent hover:border-white/10 transition-all duration-200"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
+            </svg>
+            <span>View Website</span>
+          </a>
           <button
             onClick={() => supabase.auth.signOut()}
             className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-neutral-500 hover:text-red-400 hover:bg-red-500/5 border border-transparent hover:border-red-500/10 transition-all duration-200"
