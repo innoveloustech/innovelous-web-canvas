@@ -137,10 +137,12 @@ export default function ProjectsTab() {
   };
 
   useEffect(() => {
-    syncWorkspaceData();
-    supabase.from("site_settings").select("show_featured").eq("id", 1).single().then(({ data }) => {
+    const load = async () => {
+      await syncWorkspaceData();
+      const { data } = await supabase.from("site_settings").select("show_featured").eq("id", 1).single();
       if (data) setShowFeatured(data.show_featured);
-    });
+    };
+    void load();
   }, []);
 
   useGSAP(() => {

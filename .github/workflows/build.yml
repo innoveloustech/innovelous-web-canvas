@@ -55,7 +55,7 @@ jobs:
       - name: Start local Supabase (Docker)
         uses: supabase/setup-cli@v1
         with:
-          version: latest
+          version: 2.114.0
 
       - name: Start Supabase stack
         run: supabase start -x studio -x imgproxy -x logflare -x vector -x edge-runtime -x realtime -x mailpit -x supavisor -x postgres-meta

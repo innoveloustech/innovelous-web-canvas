@@ -3,6 +3,8 @@ export const metadata = {
   description: "Transparency regarding our data practices and user privacy.",
 };
 
+import Link from "next/link";
+
 export default function PrivacyPolicy() {
   return (
     <main className="min-h-screen bg-black text-white selection:bg-white/20 selection:text-white">
@@ -10,13 +12,13 @@ export default function PrivacyPolicy() {
         
         {/* Header */}
         <header className="border-b border-white/10 pb-8 mb-12">
-          <a 
+          <Link 
             href="/" 
             className="text-sm text-zinc-400 hover:text-white transition-colors duration-200 inline-flex items-center gap-2 mb-6 group"
           >
             <span className="group-hover:-translate-x-1 transition-transform duration-200">←</span> 
             Back to Home
-          </a>
+          </Link>
           <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
             Privacy Policy
           </h1>

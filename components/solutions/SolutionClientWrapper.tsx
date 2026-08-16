@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import Link from "next/link";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import CanvasBackground from "@/components/canvas-background";
@@ -194,9 +195,9 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
                     <a data-cursor="-exclusion" href="#contact" className="text-xs font-mono text-neutral-500 hover:text-white transition-colors flex items-center gap-2">
                       <span>↓</span> Contact Us
                     </a>
-                    <a data-cursor="-exclusion" href="/" className="text-xs font-mono text-neutral-500 hover:text-white transition-colors flex items-center gap-2">
+                    <Link data-cursor="-exclusion" href="/" className="text-xs font-mono text-neutral-500 hover:text-white transition-colors flex items-center gap-2">
                       Back to Home <span>↑</span>
-                    </a>
+                    </Link>
                   </div>
                 </div>
               </div>

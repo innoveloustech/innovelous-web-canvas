@@ -88,7 +88,7 @@ function CardParticles({ isHovered, mousePos }: { isHovered: boolean; mousePos: 
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const pointsRef = useRef<THREE.Points>(null);
 
-  const positions = useMemo(() => {
+  const [positions] = useState(() => {
     const pos = new Float32Array(CARD_COUNT * 3);
     for (let i = 0; i < CARD_COUNT; i++) {
       pos[i * 3] = (Math.random() - 0.5) * 16;
@@ -96,7 +96,7 @@ function CardParticles({ isHovered, mousePos }: { isHovered: boolean; mousePos: 
       pos[i * 3 + 2] = (Math.random() - 0.5) * 4;
     }
     return pos;
-  }, []);
+  });
 
   const uniforms = useMemo(() => ({
     uTime: { value: 0 },

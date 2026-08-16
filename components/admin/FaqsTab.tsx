@@ -12,8 +12,20 @@ export default function FaqsTab() {
   const [saved, setSaved] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  const fetchFaqs = async () => {
+    const { data } = await supabase
+      .from("faqs")
+      .select("*")
+      .order("sort_order", { ascending: true });
+    if (data) setFaqs(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    fetchFaqs();
+    const load = async () => {
+      await fetchFaqs();
+    };
+    void load();
   }, []);
 
   useGSAP(() => {
@@ -27,15 +39,6 @@ export default function FaqsTab() {
       });
     }
   }, { scope: wrapperRef });
-
-  const fetchFaqs = async () => {
-    const { data } = await supabase
-      .from("faqs")
-      .select("*")
-      .order("sort_order", { ascending: true });
-    if (data) setFaqs(data);
-    setLoading(false);
-  };
 
   const updateField = (id: number, field: string, value: string) => {
     setFaqs((prev) =>

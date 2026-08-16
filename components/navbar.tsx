@@ -63,7 +63,6 @@ export default function Navbar() {
       document.body.style.overflow = "";
       document.documentElement.style.overflow = "";
       lenis?.start();
-      setMobileSolutionsOpen(false);
     }
 
     return () => {
@@ -135,6 +134,11 @@ export default function Navbar() {
       gsap.to(mobileSolutionsRef.current, { height: "auto", opacity: 1, duration: 0.4, ease: "power3.out" });
     }
     setMobileSolutionsOpen(!mobileSolutionsOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setMobileSolutionsOpen(false);
+    setIsMobileMenuOpen(false);
   };
 
   // Desktop Sliding Background Pill logic
@@ -216,7 +220,7 @@ export default function Navbar() {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           {/* Logo */}
-          <a href="/" className="logo flex items-center gap-3 group relative z-50" style={{ viewTransitionName: "nav-logo" }}>
+          <Link href="/" className="logo flex items-center gap-3 group relative z-50" style={{ viewTransitionName: "nav-logo" }}>
             <div className="relative w-11 h-11" style={{ viewTransitionName: "nav-logo-image" }}>
               <Image src={settings.logo_url} alt="Innovelous Logo" fill className="object-contain" />
             </div>
@@ -224,7 +228,7 @@ export default function Navbar() {
               <span className="text-lg font-bold text-white leading-tight tracking-wide">Innovelous</span>
               <span className="text-xs text-purple-400 tracking-wider">Tech</span>
             </div>
-          </a>
+          </Link>
 
           {/* Navigation Bar - Desktop Middle Bar */}
           <div ref={menuContainerRef} onMouseLeave={handleMenuMouseLeave} className="hidden md:flex items-center relative bg-neutral-900/60 border border-neutral-800 backdrop-blur-md rounded-full p-1.5">
@@ -263,7 +267,10 @@ export default function Navbar() {
 
           {/* Mobile Toggle Trigger */}
           <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
+            onClick={() => {
+              if (isMobileMenuOpen) setMobileSolutionsOpen(false);
+              setIsMobileMenuOpen(!isMobileMenuOpen);
+            }} 
             data-cursor="-hidden"
             className="md:hidden relative z-50 w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-white focus:outline-none transition-colors hover:bg-white/10"
           >
@@ -284,14 +291,14 @@ export default function Navbar() {
       >
         {/* Mobile Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-white/5 flex-shrink-0">
-          <a href="/" className="flex items-center gap-3">
+          <Link href="/" className="flex items-center gap-3">
             <div className="relative w-9 h-9">
               <Image src={settings.logo_url} alt="Innovelous Logo" fill className="object-contain" />
             </div>
             <span className="text-base font-bold text-white tracking-wide">Innovelous</span>
-          </a>
+          </Link>
           <button 
-            onClick={() => setIsMobileMenuOpen(false)} 
+            onClick={closeMobileMenu} 
             data-cursor="-hidden"
             className="w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 text-white transition-colors hover:bg-white/10"
           >
@@ -304,7 +311,7 @@ export default function Navbar() {
           <nav className="flex flex-col gap-2">
             <TransitionLink 
               href="/" 
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
               data-cursor="-hidden"
               className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
             >
@@ -330,7 +337,7 @@ export default function Navbar() {
                 <div className="flex flex-col gap-2 pb-4 pl-2">
                   <TransitionLink 
                     href="/solutions/hardware" 
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                     data-cursor="-hidden"
                     className="flex items-center gap-3 text-xl font-light text-neutral-400 py-3 hover:text-white transition-colors"
                   >
@@ -339,7 +346,7 @@ export default function Navbar() {
                   </TransitionLink>
                   <TransitionLink 
                     href="/solutions/software" 
-                    onClick={() => setIsMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                     data-cursor="-hidden"
                     className="flex items-center gap-3 text-xl font-light text-neutral-400 py-3 hover:text-white transition-colors"
                   >
@@ -352,7 +359,7 @@ export default function Navbar() {
 
             <TransitionLink
               href="/projects"
-              onClick={() => setIsMobileMenuOpen(false)}
+              onClick={closeMobileMenu}
               data-cursor="-hidden"
               className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
             >
@@ -364,7 +371,7 @@ export default function Navbar() {
         {/* Mobile Footer / CTA - Fixed at bottom */}
         <div className="mobile-footer p-6 border-t border-white/5 bg-black/40 flex-shrink-0">
           <button 
-            onClick={() => setIsMobileMenuOpen(false)}
+            onClick={closeMobileMenu}
             data-cursor="-hidden"
             className="mobile-cta-btn w-full bg-white text-black py-4 rounded-full font-semibold text-center shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:bg-purple-500 hover:text-white transition-colors duration-300"
           >

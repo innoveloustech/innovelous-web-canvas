@@ -111,7 +111,7 @@ const LiquidAboutBackground = () => {
       }
     `;
 
-    let geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 128, 128);
+    const geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 128, 128);
     const material = new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader,
@@ -123,7 +123,7 @@ const LiquidAboutBackground = () => {
     scene.add(plane);
 
     const resizeObserver = new ResizeObserver((entries) => {
-      for (let entry of entries) {
+      for (const entry of entries) {
         totalWidth = entry.contentRect.width;
         totalHeight = entry.contentRect.height;
         planeHeight = Math.max(10, totalHeight - PADDING * 2);
@@ -450,7 +450,7 @@ export default function Home({ projects }: { projects: Project[] }) {
                   <span className="text-xl text-white font-light">99.99% Reliable</span>
                 </div>
                 <div className="mt-8 about-stat p-6 bg-neutral-900/30 border border-neutral-800 rounded-2xl">
-                  <p className="text-neutral-300 text-sm leading-relaxed italic">"We measure success not by lines of code, but by the seamless interactions we enable across millions of devices daily."</p>
+                  <p className="text-neutral-300 text-sm leading-relaxed italic">&quot;We measure success not by lines of code, but by the seamless interactions we enable across millions of devices daily.&quot;</p>
                   <div className="mt-4 flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-purple-600/20 flex items-center justify-center">
                       <div className="w-2 h-2 rounded-full bg-purple-500"></div>

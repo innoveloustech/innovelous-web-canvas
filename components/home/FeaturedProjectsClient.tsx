@@ -303,7 +303,6 @@ function DesktopCard({ project, index }: { project: Project; index: number }) {
         className="relative w-full flex-1 rounded-2xl overflow-hidden bg-neutral-900 mb-6"
       >
         {project.image_url ? (
-          // @ts-ignore — ref works fine on img
           <img
             ref={imgRef as React.RefObject<HTMLImageElement>}
             src={project.image_url}

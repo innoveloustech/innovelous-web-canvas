@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useRef, useMemo, useEffect } from "react";
+import { useRef, useMemo, useEffect, useState } from "react";
 import * as THREE from "three";
 
 const COUNT = 1500;
@@ -69,7 +69,7 @@ function ParticleField() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const positions = useMemo(() => {
+  const [positions] = useState(() => {
     const pos = new Float32Array(COUNT * 3);
     for (let i = 0; i < COUNT; i++) {
       // Pushed the boundaries wider so they cover the outer layout edges natively
@@ -78,7 +78,7 @@ function ParticleField() {
       pos[i * 3 + 2] = (Math.random() - 0.5) * 15;
     }
     return pos;
-  }, []);
+  });
 
   const uniforms = useMemo(
     () => ({

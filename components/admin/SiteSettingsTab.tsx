@@ -29,22 +29,6 @@ export default function SiteSettingsTab() {
 
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    fetchSettings();
-  }, []);
-
-  useGSAP(() => {
-    if (wrapperRef.current) {
-      gsap.from(wrapperRef.current.children, {
-        y: 20,
-        opacity: 0,
-        duration: 0.5,
-        stagger: 0.05,
-        ease: "power3.out",
-      });
-    }
-  }, { dependencies: [settings], scope: wrapperRef });
-
   const fetchSettings = async () => {
     const { data } = await supabase
       .from("site_settings")
@@ -67,6 +51,25 @@ export default function SiteSettingsTab() {
     }
     setLoading(false);
   };
+
+  useEffect(() => {
+    const load = async () => {
+      await fetchSettings();
+    };
+    void load();
+  }, []);
+
+  useGSAP(() => {
+    if (wrapperRef.current) {
+      gsap.from(wrapperRef.current.children, {
+        y: 20,
+        opacity: 0,
+        duration: 0.5,
+        stagger: 0.05,
+        ease: "power3.out",
+      });
+    }
+  }, { dependencies: [settings], scope: wrapperRef });
 
   const getStoragePath = (url: string): string | null => {
     const match = url.match(/\/object\/public\/site-assets\/(.+)$/);

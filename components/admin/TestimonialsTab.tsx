@@ -12,8 +12,20 @@ export default function TestimonialsTab() {
   const [saved, setSaved] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
+  const fetchTestimonials = async () => {
+    const { data } = await supabase
+      .from("testimonials")
+      .select("*")
+      .order("sort_order", { ascending: true });
+    if (data) setTestimonials(data);
+    setLoading(false);
+  };
+
   useEffect(() => {
-    fetchTestimonials();
+    const load = async () => {
+      await fetchTestimonials();
+    };
+    void load();
   }, []);
 
   useGSAP(() => {
@@ -27,15 +39,6 @@ export default function TestimonialsTab() {
       });
     }
   }, { scope: wrapperRef });
-
-  const fetchTestimonials = async () => {
-    const { data } = await supabase
-      .from("testimonials")
-      .select("*")
-      .order("sort_order", { ascending: true });
-    if (data) setTestimonials(data);
-    setLoading(false);
-  };
 
   const updateField = (id: number, field: string, value: string | boolean) => {
     setTestimonials((prev) =>
