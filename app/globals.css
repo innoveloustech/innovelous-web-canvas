@@ -1,0 +1,166 @@
+@import "tailwindcss";
+
+:root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+}
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --font-sans: var(--font-geist-sans);
+    --font-mono: var(--font-geist-mono);
+}
+
+/* Disable Text Selection XD */
+* {
+  user-select: none;           /* Standard */
+  -webkit-user-select: none;   /* Safari */
+  -moz-user-select: none;      /* Firefox */
+  -ms-user-select: none;       /* Internet Explorer/Edge */
+}
+
+body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: Arial, Helvetica, sans-serif;
+    overflow-x: hidden;
+}
+
+#overlay-section {
+    will-change: transform;
+    transform-origin: bottom center;
+}
+
+/* On touch/mobile, hide the custom follower entirely */
+@media (hover: none), (pointer: coarse) {
+  .mf-cursor {
+    display: none !important;
+  }
+}
+
+.mf-cursor.-text::before {
+  /* Looks for --cursor-color; if not found, defaults to purple */
+  background: var(--cursor-color, rgba(168, 85, 247, 0.75)) !important; 
+  opacity: 1 !important;
+}
+
+.mf-cursor.-text {
+  mix-blend-mode: normal !important;
+}
+
+.mf-cursor-text {
+  color: #ffffff !important;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.05em;
+  opacity: 1 !important;
+}
+
+/* When hovering over social links */
+.mf-cursor.-exclusion::before {
+  transform: scale(0.5) !important; /* Shrink to a sharp micro dot */
+  background: #fff !important;   /* solid white */
+  opacity: 1 !important;
+}
+
+.mf-cursor.-exclusion {
+  mix-blend-mode: difference !important; /* Inverts text colors underneath */
+}
+
+/* Add to your global CSS */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth iframe {
+  pointer-events: none;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   BROWSER VIEW TRANSITIONS API
+   next-view-transitions wraps navigation in document.startViewTransition()
+   which activates these rules.
+   ============================================================ */
+
+/* 
+  The root cross-fade: we set it to nearly instant (0.01s) because the 
+  3D WebGL shader (TransitionCanvas) is our primary visual transition. 
+  We don't want two competing transitions — the browser's default white flash 
+  and our custom one. This makes the browser-side invisible, leaving the stage 
+  entirely to the WebGL effect.
+*/
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.01s;
+  animation-timing-function: ease-in-out;
+}
+
+/* 
+  Named element: navbar
+  The navbar is a persisted layout element — giving it a view-transition-name 
+  lets the browser smoothly morph it between pages instead of a hard swap.
+  Set on the element itself via style prop in the Navbar component.
+*/
+::view-transition-old(navbar),
+::view-transition-new(navbar) {
+  animation: none; /* Navbar is persistent — no animation needed */
+}
+
+/* 
+  Named element: page-content
+  Main content area slides in smoothly.
+*/
+@keyframes slide-in-from-right {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes slide-out-to-left {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+}
+
+::view-transition-old(page-content) {
+  animation: 0.3s ease-in slide-out-to-left;
+}
+
+::view-transition-new(page-content) {
+  animation: 0.35s ease-out 0.05s slide-in-from-right both;
+}
