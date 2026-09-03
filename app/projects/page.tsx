@@ -1,5 +1,5 @@
 "use client";
-import React, { useRef, useState, useEffect } from "react";
+import React, { useRef, useState, useEffect, useMemo } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { supabase } from "@/lib/supabase";
@@ -8,11 +8,16 @@ import Cursor from "@/components/MouseFollower";
 import CanvasBackground from "@/components/canvas-background";
 import WhatsAppButton from "@/components/whatsapp-button";
 import { useLenis } from "@/lib/lenis-provider";
+import type { MainCategory, SubCategory } from "@/lib/types/categories";
 
 interface Project {
   id: number;
   title: string;
-  category: string;
+  category?: string;
+  main_category_id: number | null;
+  sub_category_id: number | null;
+  main_categories?: MainCategory | null;
+  sub_categories?: SubCategory | null;
   description: string;
   link: string;
   image_url: string;
@@ -23,6 +28,8 @@ interface Project {
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
+  const [selectedMainCategoryId, setSelectedMainCategoryId] = useState<number | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null); // NEW: Track server errors
@@ -38,13 +45,26 @@ export default function ProjectsPage() {
   useEffect(() => {
     async function streamLiveProjects() {
       try {
+        // Fetch projects with category joins
         const { data, error: fetchError } = await supabase
           .from("projects_new")
-          .select("*")
+          .select(`
+            *,
+            main_categories!projects_new_main_category_id_fkey (id, name, color, sort_order),
+            sub_categories!projects_new_sub_category_id_fkey (id, name, color, sort_order)
+          `)
           .order("sort_order", { ascending: true });
 
         if (fetchError) throw fetchError;
         if (data) setProjects(data);
+
+        // Fetch main categories for filter
+        const { data: categoriesData, error: catError } = await supabase
+          .from("main_categories")
+          .select("*")
+          .order("sort_order", { ascending: true });
+        
+        if (!catError && categoriesData) setMainCategories(categoriesData);
       } catch (err: unknown) {
         console.error("Database Sync Error:", err instanceof Error ? err.message : err);
         setError("Connection to the database registry failed.");
@@ -132,6 +152,12 @@ export default function ProjectsPage() {
     }
   };
 
+  // Filter projects by selected main category
+  const filteredProjects = useMemo((): Project[] => {
+    if (!selectedMainCategoryId) return projects;
+    return projects.filter((p: Project) => p.main_category_id === selectedMainCategoryId);
+  }, [projects, selectedMainCategoryId]);
+
   return (
     <>
       <WhatsAppButton phoneNumber="+92 334 9251936" />
@@ -150,6 +176,39 @@ export default function ProjectsPage() {
           </p>
         </div>
 
+        {/* Category Filter */}
+        {!loading && !error && mainCategories.length > 0 && (
+          <div className="max-w-7xl mx-auto mb-8">
+            <div className="flex items-center gap-4 flex-wrap">
+              <label className="text-xs font-mono text-neutral-500 uppercase tracking-widest">Filter by Category:</label>
+              <select 
+                value={selectedMainCategoryId || ""} 
+                onChange={(e) => setSelectedMainCategoryId(e.target.value ? parseInt(e.target.value) : null)}
+                className="px-4 py-2 bg-black/50 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 transition-colors backdrop-blur-sm"
+              >
+                <option value="">All Projects</option>
+                {mainCategories.map((cat) => (
+                  <option key={cat.id} value={cat.id}>{cat.name}</option>
+                ))}
+              </select>
+              {selectedMainCategoryId && (
+                <button 
+                  onClick={() => setSelectedMainCategoryId(null)}
+                  className="text-xs text-neutral-500 hover:text-white transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                  Clear filter
+                </button>
+              )}
+              <span className="text-xs font-mono text-neutral-600">
+                {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'}
+              </span>
+            </div>
+          </div>
+        )}
+
         {loading ? (
           <div className="max-w-7xl mx-auto flex items-center justify-center py-20">
             <p className="font-mono text-xs uppercase tracking-widest text-neutral-500 animate-pulse">Loading Projects...</p>
@@ -166,13 +225,15 @@ export default function ProjectsPage() {
               We encountered a server-side routing issue while fetching the project registry. Please refresh the page or try again in a few moments.
             </p>
           </div>
-        ) : projects.length === 0 ? (
+        ) : filteredProjects.length === 0 ? (
           <div className="max-w-7xl mx-auto flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl">
-            <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">No Projects Available To Show.</p>
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">
+              {selectedMainCategoryId ? 'No projects found in this category.' : 'No Projects Available To Show.'}
+            </p>
           </div>
         ) : (
           <div className="projects-grid max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-6">
-            {projects.map((project) => (
+            {filteredProjects.map((project) => (
               <div
                 key={project.id}
                 data-cursor-pointer
@@ -188,8 +249,8 @@ export default function ProjectsPage() {
                   </svg>
                 </div>
                 <div className="mt-16">
-                  <span className="text-[10px] font-mono tracking-[0.25em] uppercase px-3 py-1 border rounded-full mb-6 inline-block" style={{ color: project.color, borderColor: project.color }}>
-                    {project.category}
+                  <span className="text-[10px] font-mono tracking-[0.25em] uppercase px-3 py-1 border rounded-full mb-6 inline-block" style={{ color: project.main_categories?.color || project.color, borderColor: project.main_categories?.color || project.color }}>
+                    {project.main_categories?.name || project.category || 'Uncategorized'} → {project.sub_categories?.name || '—'}
                   </span>
                   <h3 className="text-3xl md:text-4xl font-light tracking-tight text-white mb-4 group-hover:text-purple-400 transition-colors duration-300">
                     {project.title}
@@ -256,9 +317,9 @@ export default function ProjectsPage() {
               <div className="p-8 md:p-12 flex flex-col justify-center bg-[#0f0f11]">
                 <span
                   className="text-[10px] font-mono tracking-[0.25em] uppercase mb-4 block"
-                  style={{ color: selectedProject.color }}
+                  style={{ color: selectedProject.main_categories?.color || selectedProject.color }}
                 >
-                  {selectedProject.category}
+                  {selectedProject.main_categories?.name || selectedProject.category || 'Uncategorized'} → {selectedProject.sub_categories?.name || '—'}
                 </span>
                 <h2 className="text-3xl md:text-5xl font-black tracking-tighter text-white mb-6">
                   {selectedProject.title}

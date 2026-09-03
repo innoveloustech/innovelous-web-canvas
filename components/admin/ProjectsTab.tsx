@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useGSAP } from "@gsap/react";
@@ -21,18 +21,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import type { MainCategory, SubCategory, ProjectWithCategories } from "@/lib/types/categories";
 
-interface Project {
-  id: number;
-  title: string;
-  category: string;
-  description: string;
-  link: string;
-  image_url: string;
-  color: string;
-  is_featured: boolean;
-  sort_order: number;
-}
+type Project = ProjectWithCategories;
 
 function SortableProjectCard({
   project,
@@ -64,8 +55,8 @@ function SortableProjectCard({
                 <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zM8 11h2v2H8v-2zm6 0h2v2h-2v-2zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
               </svg>
             </button>
-            <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 border rounded-full" style={{ color: project.color, borderColor: project.color }}>
-              {project.category}
+            <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 border rounded-full" style={{ color: project.main_categories?.color || project.color, borderColor: project.main_categories?.color || project.color }}>
+              {project.main_categories?.name || project.category} → {project.sub_categories?.name || '—'}
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -83,6 +74,9 @@ function SortableProjectCard({
         <p className="text-neutral-500 text-xs leading-relaxed line-clamp-3 font-light">{project.description}</p>
         <div className="mt-3 flex items-center gap-3 text-[10px] font-mono text-neutral-600">
           <span>Order: {project.sort_order}</span>
+          {project.category && !project.main_categories && (
+            <span className="text-amber-500" title="Old category format">Legacy: {project.category}</span>
+          )}
         </div>
       </div>
       <div className="flex gap-2 border-t border-white/5 pt-4 mt-6">
@@ -95,10 +89,13 @@ function SortableProjectCard({
 
 export default function ProjectsTab() {
   const [projects, setProjects] = useState<Project[]>([]);
+  const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
+  const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [modalMode, setModalMode] = useState<"CREATE" | "UPDATE" | "DELETE" | null>(null);
   const [title, setTitle] = useState("");
-  const [category, setCategory] = useState("Web Development");
+  const [mainCategoryId, setMainCategoryId] = useState<number | null>(null);
+  const [subCategoryId, setSubCategoryId] = useState<number | null>(null);
   const [description, setDescription] = useState("");
   const [link, setLink] = useState("");
   const [color, setColor] = useState("#a855f7");
@@ -130,15 +127,26 @@ export default function ProjectsTab() {
   const syncWorkspaceData = async () => {
     const { data, error } = await supabase
       .from("projects_new")
-      .select("*")
+      .select(`
+        *,
+        main_categories!projects_new_main_category_id_fkey (id, name, color, sort_order),
+        sub_categories!projects_new_sub_category_id_fkey (id, name, color, sort_order)
+      `)
       .order("sort_order", { ascending: true });
     if (data) setProjects(data);
     if (error) console.error("Database Sync error:", error.message);
   };
 
+  const fetchCategories = async () => {
+    const { data: mainCats } = await supabase.from("main_categories").select("*").order("sort_order", { ascending: true });
+    const { data: subCats } = await supabase.from("sub_categories").select("*").order("sort_order", { ascending: true });
+    if (mainCats) setMainCategories(mainCats);
+    if (subCats) setSubCategories(subCats);
+  };
+
   useEffect(() => {
     const load = async () => {
-      await syncWorkspaceData();
+      await Promise.all([syncWorkspaceData(), fetchCategories()]);
       const { data } = await supabase.from("site_settings").select("show_featured").eq("id", 1).single();
       if (data) setShowFeatured(data.show_featured);
     };
@@ -164,7 +172,8 @@ export default function ProjectsTab() {
 
   const clearFormFields = () => {
     setTitle("");
-    setCategory("Web Development");
+    setMainCategoryId(null);
+    setSubCategoryId(null);
     setDescription("");
     setLink("");
     setColor("#a855f7");
@@ -187,7 +196,8 @@ export default function ProjectsTab() {
     if (project) {
       setActiveProject(project);
       setTitle(project.title);
-      setCategory(project.category);
+      setMainCategoryId(project.main_category_id);
+      setSubCategoryId(project.sub_category_id);
       setDescription(project.description);
       setLink(project.link);
       setColor(project.color || "#a855f7");
@@ -201,6 +211,13 @@ export default function ProjectsTab() {
 
   const handleFormSubmission = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate category selection
+    if (!mainCategoryId || !subCategoryId) {
+      alert("Please select both a main category and sub-category");
+      return;
+    }
+    
     setProcessing(true);
     try {
       let resolvedImageUrl = activeProject?.image_url || "";
@@ -214,16 +231,26 @@ export default function ProjectsTab() {
         resolvedImageUrl = publicUrl;
       }
 
+      const projectData = {
+        title,
+        main_category_id: mainCategoryId,
+        sub_category_id: subCategoryId,
+        description,
+        link,
+        color,
+        image_url: resolvedImageUrl,
+        is_featured: isFeatured,
+        sort_order: sortOrder
+      };
+
       if (modalMode === "CREATE") {
         if (!mediaFile) throw new Error("An image asset file is required for initial project creations.");
-        const { error: insErr } = await supabase.from("projects_new").insert([
-          { title, category, description, link, color, image_url: resolvedImageUrl, is_featured: isFeatured, sort_order: sortOrder }
-        ]);
+        const { error: insErr } = await supabase.from("projects_new").insert([projectData]);
         if (insErr) throw insErr;
       } else if (modalMode === "UPDATE" && activeProject) {
         const { error: updErr } = await supabase
           .from("projects_new")
-          .update({ title, category, description, link, color, image_url: resolvedImageUrl, is_featured: isFeatured, sort_order: sortOrder })
+          .update(projectData)
           .eq("id", activeProject.id);
         if (updErr) throw updErr;
       }
@@ -278,10 +305,30 @@ export default function ProjectsTab() {
   const filteredProjects = useMemo(() => {
     if (!debouncedSearch.trim()) return projects;
     const q = debouncedSearch.toLowerCase();
-    return projects.filter(
-      (p) => p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q) || p.description.toLowerCase().includes(q)
-    );
+    return projects.filter((p) => {
+      const mainCatName = p.main_categories?.name?.toLowerCase() || '';
+      const subCatName = p.sub_categories?.name?.toLowerCase() || '';
+      const oldCategory = p.category?.toLowerCase() || '';
+      return p.title.toLowerCase().includes(q) || 
+             mainCatName.includes(q) || 
+             subCatName.includes(q) ||
+             oldCategory.includes(q) ||
+             p.description.toLowerCase().includes(q);
+    });
   }, [projects, debouncedSearch]);
+
+  // Filter sub-categories based on selected main category
+  const filteredSubCategories = useMemo(() => {
+    if (!mainCategoryId) return [];
+    return subCategories.filter(sub => sub.main_category_id === mainCategoryId);
+  }, [subCategories, mainCategoryId]);
+
+  // Reset sub-category when main category changes
+  const handleMainCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    setMainCategoryId(value ? parseInt(value) : null);
+    setSubCategoryId(null);
+  };
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -317,7 +364,7 @@ export default function ProjectsTab() {
           <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
-          <input type="text" placeholder="Search projects by title, category, or description..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+          <input type="text" placeholder="Search projects by title, categories, or description..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full p-4 pl-12 bg-black border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 transition-colors placeholder:text-neutral-600" />
           {searchQuery && (
             <button onClick={() => setSearchQuery("")} className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors">
@@ -379,20 +426,35 @@ export default function ProjectsTab() {
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Category Classification</label>
-                      <select value={category} onChange={e => setCategory(e.target.value)} className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none">
-                        <option value="Web Development">Web Development</option>
-                        <option value="Mobile Development">Mobile Development</option>
-                        <option value="UI/UX Design">UI/UX Design</option>
-                        <option value="AI Integration">AI Integration</option>
+                      <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Main Category</label>
+                      <select value={mainCategoryId || ""} onChange={handleMainCategoryChange} required className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none">
+                        <option value="">Select Main Category</option>
+                        {mainCategories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
                       </select>
                     </div>
                     <div>
-                      <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Brand Layout Glow Color</label>
-                      <div className="flex gap-2">
-                        <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-10 h-10 bg-transparent border-0 cursor-pointer p-0" />
-                        <input type="text" value={color} onChange={e => setColor(e.target.value)} className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white uppercase font-mono" />
-                      </div>
+                      <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Sub Category</label>
+                      <select 
+                        value={subCategoryId || ""} 
+                        onChange={(e) => setSubCategoryId(e.target.value ? parseInt(e.target.value) : null)} 
+                        required 
+                        disabled={!mainCategoryId}
+                        className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <option value="">Select Sub Category</option>
+                        {filteredSubCategories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Brand Layout Glow Color</label>
+                    <div className="flex gap-2">
+                      <input type="color" value={color} onChange={e => setColor(e.target.value)} className="w-10 h-10 bg-transparent border-0 cursor-pointer p-0" />
+                      <input type="text" value={color} onChange={e => setColor(e.target.value)} className="w-full p-3 bg-black border border-white/10 rounded-xl text-xs text-white uppercase font-mono" />
                     </div>
                   </div>
                   <div>
