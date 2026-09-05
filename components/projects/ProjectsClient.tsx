@@ -27,12 +27,10 @@ interface Project {
 }
 
 export default function ProjectsClient({ initialProjects, initialMainCategories }: { initialProjects: Project[]; initialMainCategories: MainCategory[] }) {
-  const [projects, setProjects] = useState<Project[]>(initialProjects || []);
-  const [mainCategories, setMainCategories] = useState<MainCategory[]>(initialMainCategories || []);
+  const projects = useMemo(() => initialProjects ?? [], [initialProjects]);
+  const mainCategories = useMemo(() => initialMainCategories ?? [], [initialMainCategories]);
   const [selectedMainCategoryId, setSelectedMainCategoryId] = useState<number | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   const lenis = useLenis();
 
@@ -40,11 +38,6 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
   const modalRef = useRef<HTMLDivElement>(null);
   const modalContentRef = useRef<HTMLDivElement>(null);
   const modalImageRef = useRef<HTMLImageElement>(null);
-
-  useEffect(() => {
-    // nothing to fetch; data is hydrated from server
-    setLoading(false);
-  }, []);
 
   useEffect(() => {
     if (selectedProject) {
@@ -62,7 +55,7 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
   }, [selectedProject, lenis]);
 
   useGSAP(() => {
-    if (!loading && projects.length > 0) {
+    if (projects.length > 0) {
       gsap.from(".project-card", {
         y: 50,
         opacity: 0,
@@ -71,7 +64,7 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
         ease: "power3.out",
       });
     }
-  }, { scope: containerRef, dependencies: [loading, projects] });
+  }, { scope: containerRef, dependencies: [projects] });
 
   useGSAP(() => {
     if (selectedProject && modalRef.current && modalContentRef.current) {
@@ -145,7 +138,7 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
         </div>
 
         {/* Category Filter */}
-        {!loading && !error && mainCategories.length > 0 && (
+        {mainCategories.length > 0 && (
           <div className="max-w-7xl mx-auto mb-8">
             <div className="flex items-center gap-4 flex-wrap">
               <label className="text-xs font-mono text-neutral-500 uppercase tracking-widest">Filter by Category:</label>
@@ -177,23 +170,7 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
           </div>
         )}
 
-        {loading ? (
-          <div className="max-w-7xl mx-auto flex items-center justify-center py-20">
-            <p className="font-mono text-xs uppercase tracking-widest text-neutral-500 animate-pulse">Loading Projects...</p>
-          </div>
-        ) : error ? (
-          <div className="max-w-7xl mx-auto flex flex-col items-center justify-center py-20 border border-red-500/20 bg-red-500/[0.02] rounded-3xl">
-            <div className="w-12 h-12 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
-              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-              </svg>
-            </div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-red-400 mb-2">Database Sync Exception</p>
-            <p className="text-neutral-400 text-sm font-light text-center max-w-md leading-relaxed">
-              We encountered a server-side routing issue while fetching the project registry. Please refresh the page or try again in a few moments.
-            </p>
-          </div>
-        ) : filteredProjects.length === 0 ? (
+        {filteredProjects.length === 0 ? (
           <div className="max-w-7xl mx-auto flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl">
             <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">
               {selectedMainCategoryId ? 'No projects found in this category.' : 'No Projects Available To Show.'}

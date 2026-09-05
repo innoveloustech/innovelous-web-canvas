@@ -157,7 +157,22 @@ export default function CategoriesTab() {
   };
 
   useEffect(() => {
-    void syncData();
+    let active = true;
+
+    const fetchData = async () => {
+      const { data: mainCats } = await supabase.from("main_categories").select("*").order("sort_order", { ascending: true });
+      const { data: subCats } = await supabase.from("sub_categories").select("*").order("sort_order", { ascending: true });
+
+      if (!active) return;
+      if (mainCats) setMainCategories(mainCats);
+      if (subCats) setSubCategories(subCats);
+    };
+
+    void fetchData();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   useGSAP(() => {

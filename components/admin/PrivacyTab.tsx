@@ -29,7 +29,34 @@ export default function PrivacyTab() {
   };
 
   useEffect(() => {
-    void fetchPage();
+    let active = true;
+
+    const loadPage = async () => {
+      const { data, error } = await supabase
+        .from("site_pages")
+        .select("*")
+        .eq("slug", "privacy")
+        .maybeSingle();
+
+      if (!active) return;
+
+      if (error) {
+        console.error(error);
+      } else if (data) {
+        setTitle(data.title || "Privacy Policy");
+        setContent(data.content || "");
+      } else {
+        await supabase.from("site_pages").upsert({ slug: "privacy", title: "Privacy Policy", content: "" });
+      }
+
+      setLoading(false);
+    };
+
+    void loadPage();
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const editorRef = useRef<HTMLDivElement | null>(null);

@@ -7,9 +7,17 @@ type Props = {
   onChange: (html: string) => void;
 };
 
+type QuillInstance = {
+  root: { innerHTML: string };
+  clipboard: { dangerouslyPasteHTML: (html: string) => void };
+  on: (event: string, handler: () => void) => void;
+  getSelection: () => { index: number; length: number } | null;
+  setSelection: (index: number, length: number) => void;
+};
+
 export default function QuillEditor({ value, onChange }: Props) {
   const editorRef = useRef<HTMLDivElement | null>(null);
-  const quillRef = useRef<any>(null);
+  const quillRef = useRef<QuillInstance | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -17,7 +25,7 @@ export default function QuillEditor({ value, onChange }: Props) {
       const Quill = (await import("quill")).default;
       if (!mounted) return;
       if (editorRef.current && !quillRef.current) {
-        quillRef.current = new Quill(editorRef.current, {
+        const quill = new Quill(editorRef.current, {
           theme: "snow",
           modules: {
             toolbar: [
@@ -31,9 +39,10 @@ export default function QuillEditor({ value, onChange }: Props) {
           },
         });
 
-        quillRef.current.clipboard.dangerouslyPasteHTML(value || "");
-        quillRef.current.on("text-change", () => {
-          onChange(quillRef.current.root.innerHTML);
+        quillRef.current = quill;
+        quill.clipboard.dangerouslyPasteHTML(value || "");
+        quill.on("text-change", () => {
+          onChange(quill.root.innerHTML);
         });
       }
     })();
