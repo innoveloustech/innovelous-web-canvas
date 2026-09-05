@@ -22,8 +22,10 @@
     "mouse-follower": "^1.1.2",
     "next": "16.2.6",
     "next-view-transitions": "^0.3.5",
+    "quill": "^2.0.3",
     "react": "19.2.4",
     "react-dom": "19.2.4",
+    "react-quill": "^2.0.0",
     "swiper": "^12.1.4",
     "three": "^0.184.0"
   },

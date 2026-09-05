@@ -9,6 +9,7 @@ import CategoriesTab from "@/components/admin/CategoriesTab";
 import SiteSettingsTab from "@/components/admin/SiteSettingsTab";
 import TestimonialsTab from "@/components/admin/TestimonialsTab";
 import FaqsTab from "@/components/admin/FaqsTab";
+import PrivacyTab from "@/components/admin/PrivacyTab";
 
 export default function AdminPortal() {
   const [session, setSession] = useState<Session | null>(null);
@@ -57,6 +58,7 @@ export default function AdminPortal() {
           {activeTab === "projects" && <ProjectsTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "settings" && <SiteSettingsTab />}
+          {activeTab === "privacy" && <PrivacyTab />}
           {activeTab === "testimonials" && <TestimonialsTab />}
           {activeTab === "faq" && <FaqsTab />}
         </div>

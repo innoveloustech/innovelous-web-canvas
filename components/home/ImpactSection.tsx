@@ -92,11 +92,8 @@ export default function ImpactSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full bg-zinc-950 py-24 md:py-36 text-neutral-100 overflow-hidden border-t border-neutral-900"
+      className="relative w-full bg-transparent py-24 md:py-36 text-neutral-100 overflow-hidden"
     >
-      {/* Subtle, soft background ambient glow to pull it away from flat black */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-neutral-900/20 blur-[120px] rounded-full pointer-events-none" />
-
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
 
         {/* UPPER EDITORIAL HEADER */}

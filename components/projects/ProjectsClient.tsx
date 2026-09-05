@@ -1,13 +1,51 @@
-import { getProjects } from "@/lib/projects";
-import ProjectsClient from "@/components/projects/ProjectsClient";
+"use client";
+import React, { useRef, useState, useEffect, useMemo } from "react";
+import { useGSAP } from "@gsap/react";
+import gsap from "gsap";
+import Navbar from "@/components/navbar";
+import Cursor from "@/components/MouseFollower";
+import CanvasBackground from "@/components/canvas-background";
+import ContactSection from "@/components/ContactSection";
+import WhatsAppButton from "@/components/whatsapp-button";
+import { useLenis } from "@/lib/lenis-provider";
+import type { MainCategory, SubCategory } from "@/lib/types/categories";
 
-export const revalidate = 60;
+interface Project {
+  id: number;
+  title: string;
+  category?: string;
+  main_category_id: number | null;
+  sub_category_id: number | null;
+  main_categories?: MainCategory | null;
+  sub_categories?: SubCategory | null;
+  description: string;
+  link: string;
+  image_url: string;
+  color: string;
+  is_featured: boolean;
+  sort_order: number;
+}
 
-export default async function ProjectsPage() {
-  const { projects, mainCategories } = await getProjects();
-  return <ProjectsClient initialProjects={projects} initialMainCategories={mainCategories} />;
+export default function ProjectsClient({ initialProjects, initialMainCategories }: { initialProjects: Project[]; initialMainCategories: MainCategory[] }) {
+  const [projects, setProjects] = useState<Project[]>(initialProjects || []);
+  const [mainCategories, setMainCategories] = useState<MainCategory[]>(initialMainCategories || []);
+  const [selectedMainCategoryId, setSelectedMainCategoryId] = useState<number | null>(null);
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // FIX: Stop Lenis and lock body scroll when modal is open
+  const lenis = useLenis();
+
+  const containerRef = useRef<HTMLDivElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const modalContentRef = useRef<HTMLDivElement>(null);
+  const modalImageRef = useRef<HTMLImageElement>(null);
+
+  useEffect(() => {
+    // nothing to fetch; data is hydrated from server
+    setLoading(false);
+  }, []);
+
   useEffect(() => {
     if (selectedProject) {
       lenis?.stop();
@@ -17,7 +55,6 @@ export default async function ProjectsPage() {
       document.body.style.overflow = "";
     }
 
-    // Cleanup to ensure smooth scroll is always restored if component unmounts
     return () => {
       lenis?.start();
       document.body.style.overflow = "";
@@ -84,7 +121,6 @@ export default async function ProjectsPage() {
     }
   };
 
-  // Filter projects by selected main category
   const filteredProjects = useMemo((): Project[] => {
     if (!selectedMainCategoryId) return projects;
     return projects.filter((p: Project) => p.main_category_id === selectedMainCategoryId);
@@ -113,8 +149,8 @@ export default async function ProjectsPage() {
           <div className="max-w-7xl mx-auto mb-8">
             <div className="flex items-center gap-4 flex-wrap">
               <label className="text-xs font-mono text-neutral-500 uppercase tracking-widest">Filter by Category:</label>
-              <select 
-                value={selectedMainCategoryId || ""} 
+              <select
+                value={selectedMainCategoryId || ""}
                 onChange={(e) => setSelectedMainCategoryId(e.target.value ? parseInt(e.target.value) : null)}
                 className="px-4 py-2 bg-black/50 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 transition-colors backdrop-blur-sm"
               >
@@ -124,7 +160,7 @@ export default async function ProjectsPage() {
                 ))}
               </select>
               {selectedMainCategoryId && (
-                <button 
+                <button
                   onClick={() => setSelectedMainCategoryId(null)}
                   className="text-xs text-neutral-500 hover:text-white transition-colors flex items-center gap-1"
                 >
@@ -227,7 +263,6 @@ export default async function ProjectsPage() {
         >
           <div
             ref={modalContentRef}
-            // Added overflow-hidden here to strictly contain the inner scroll
             className="relative w-full max-w-5xl bg-[#0f0f11] border border-white/10 rounded-3xl shadow-2xl max-h-[90vh] flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
@@ -241,7 +276,6 @@ export default async function ProjectsPage() {
               </svg>
             </button>
 
-            {/* Added overscroll-contain to prevent scroll chaining to the background */}
             <div className="grid grid-cols-1 lg:grid-cols-2 overflow-y-auto overscroll-contain">
               <div
                 className="relative h-64 lg:h-auto lg:sticky lg:top-0 min-h-[300px] lg:min-h-[500px] bg-neutral-900 overflow-hidden cursor-pointer group"

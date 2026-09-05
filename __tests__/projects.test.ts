@@ -273,6 +273,7 @@ describe('ProjectsPage Component Tests', () => {
 
     expect(screen.getByText('Project One')).toBeInTheDocument();
     expect(screen.getByText('Project Two')).toBeInTheDocument();
+    expect(screen.getByText('Always On — 24 / 7 / 365')).toBeInTheDocument();
   });
 
   it('should render empty state when no projects are returned', async () => {

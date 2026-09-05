@@ -463,8 +463,8 @@ export default function Home({ projects }: { projects: Project[] }) {
           </section>
         </div>
 
-        <ImpactSection />
         {settings.show_featured && <FeaturedProjectsClient projects={projects} />}
+        <ImpactSection />
         <CubeSection />
         <InteractiveBentoFAQ />
         <ContactSection showCapabilities hasBackground={false} />
