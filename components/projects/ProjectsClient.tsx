@@ -31,6 +31,22 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
   const mainCategories = useMemo(() => initialMainCategories ?? [], [initialMainCategories]);
   const [selectedMainCategoryId, setSelectedMainCategoryId] = useState<number | null>(null);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedCategory = useMemo(() => {
+    return mainCategories.find((c) => c.id === selectedMainCategoryId) || null;
+  }, [mainCategories, selectedMainCategoryId]);
 
   const lenis = useLenis();
 
@@ -139,32 +155,136 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
 
         {/* Category Filter */}
         {mainCategories.length > 0 && (
-          <div className="max-w-7xl mx-auto mb-8">
+          <div className="max-w-7xl mx-auto mb-10">
             <div className="flex items-center gap-4 flex-wrap">
-              <label className="text-xs font-mono text-neutral-500 uppercase tracking-widest">Filter by Category:</label>
-              <select
-                value={selectedMainCategoryId || ""}
-                onChange={(e) => setSelectedMainCategoryId(e.target.value ? parseInt(e.target.value) : null)}
-                className="px-4 py-2 bg-black/50 border border-white/10 rounded-xl text-sm text-white focus:outline-none focus:border-purple-500 transition-colors backdrop-blur-sm"
-              >
-                <option value="">All Projects</option>
-                {mainCategories.map((cat) => (
-                  <option key={cat.id} value={cat.id}>{cat.name}</option>
-                ))}
-              </select>
+              <span className="text-xs font-mono text-neutral-500 uppercase tracking-widest flex items-center gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-purple-500"></span>
+                Filter:
+              </span>
+
+              {/* Custom Dropdown */}
+              <div ref={dropdownRef} className="relative z-30 min-w-[220px]">
+                <button
+                  type="button"
+                  onClick={() => setIsDropdownOpen((prev) => !prev)}
+                  className={`w-full flex items-center justify-between gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-300 border bg-black/60 backdrop-blur-md ${
+                    isDropdownOpen
+                      ? "border-purple-500/70 text-white shadow-[0_0_20px_rgba(168,85,247,0.15)] ring-1 ring-purple-500/30"
+                      : "border-white/10 text-neutral-200 hover:border-white/20 hover:bg-white/[0.03]"
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5 truncate">
+                    {selectedCategory ? (
+                      <>
+                        <span
+                          className="w-2 h-2 rounded-full flex-shrink-0"
+                          style={{ backgroundColor: selectedCategory.color || "#a855f7" }}
+                        />
+                        <span className="truncate">{selectedCategory.name}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="w-2 h-2 rounded-full bg-neutral-400 flex-shrink-0" />
+                        <span className="text-neutral-300">All Projects</span>
+                      </>
+                    )}
+                  </div>
+                  <svg
+                    className={`w-4 h-4 text-neutral-400 transition-transform duration-300 flex-shrink-0 ${
+                      isDropdownOpen ? "rotate-180 text-purple-400" : ""
+                    }`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+
+                {/* Dropdown Menu */}
+                {isDropdownOpen && (
+                  <div
+                    data-lenis-prevent
+                    className="absolute left-0 top-full mt-2 w-full min-w-[240px] bg-[#0d0d10]/95 backdrop-blur-xl border border-white/10 rounded-2xl p-1.5 shadow-[0_10px_30px_rgba(0,0,0,0.8)] z-50 animate-in fade-in zoom-in-95 duration-150"
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedMainCategoryId(null);
+                        setIsDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider transition-all text-left ${
+                        selectedMainCategoryId === null
+                          ? "bg-purple-600/20 text-purple-300 border border-purple-500/30"
+                          : "text-neutral-400 hover:text-white hover:bg-white/[0.04]"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${selectedMainCategoryId === null ? "bg-purple-400" : "bg-neutral-500"}`} />
+                        <span>All Projects</span>
+                      </div>
+                      <span className="text-[10px] text-neutral-500 font-mono">
+                        {projects.length}
+                      </span>
+                    </button>
+
+                    <div className="my-1.5 border-t border-white/5" />
+
+                    {/* Show max 3 items at a time (~128px height) with smooth custom scrollbar */}
+                    <div
+                      data-lenis-prevent
+                      className="max-h-[128px] overflow-y-auto overscroll-contain custom-scrollbar space-y-0.5 pr-1.5"
+                    >
+                      {mainCategories.map((cat) => {
+                        const count = projects.filter((p) => p.main_category_id === cat.id).length;
+                        const isSelected = selectedMainCategoryId === cat.id;
+
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => {
+                              setSelectedMainCategoryId(cat.id);
+                              setIsDropdownOpen(false);
+                            }}
+                            className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs font-mono uppercase tracking-wider transition-all text-left ${
+                              isSelected
+                                ? "bg-purple-600/20 text-purple-300 border border-purple-500/30 font-semibold"
+                                : "text-neutral-400 hover:text-white hover:bg-white/[0.04]"
+                            }`}
+                          >
+                            <div className="flex items-center gap-2.5 truncate">
+                              <span
+                                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                                style={{ backgroundColor: cat.color || "#a855f7" }}
+                              />
+                              <span className="truncate">{cat.name}</span>
+                            </div>
+                            <span className="text-[10px] text-neutral-500 font-mono ml-2">
+                              {count}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               {selectedMainCategoryId && (
                 <button
                   onClick={() => setSelectedMainCategoryId(null)}
-                  className="text-xs text-neutral-500 hover:text-white transition-colors flex items-center gap-1"
+                  className="px-3 py-1.5 rounded-xl border border-white/10 hover:border-red-500/30 text-xs text-neutral-400 hover:text-red-400 hover:bg-red-500/5 transition-all flex items-center gap-1.5"
                 >
                   <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
-                  Clear filter
+                  Reset
                 </button>
               )}
-              <span className="text-xs font-mono text-neutral-600">
-                {filteredProjects.length} {filteredProjects.length === 1 ? 'project' : 'projects'}
+
+              <span className="text-xs font-mono text-neutral-600 ml-auto">
+                Showing {filteredProjects.length} of {projects.length}
               </span>
             </div>
           </div>
