@@ -28,17 +28,22 @@ export default function BlogsClient({ initialBlogs }: { initialBlogs: Blog[] }) 
 
   useGSAP(
     () => {
-      if (filteredBlogs.length > 0) {
-        gsap.from(".blog-card", {
-          y: 40,
-          opacity: 0,
-          duration: 0.7,
-          stagger: 0.08,
-          ease: "power3.out",
-        });
+      if (blogs.length > 0) {
+        gsap.fromTo(
+          ".blog-card",
+          { y: 30, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 0.6,
+            stagger: 0.08,
+            ease: "power3.out",
+            overwrite: "auto",
+          }
+        );
       }
     },
-    { scope: containerRef, dependencies: [filteredBlogs] }
+    { scope: containerRef, dependencies: [blogs] }
   );
 
   return (

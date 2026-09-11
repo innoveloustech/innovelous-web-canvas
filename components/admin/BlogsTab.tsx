@@ -4,6 +4,23 @@ import Link from "next/link";
 import { supabase } from "@/lib/supabase";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import QuillEditor from "@/components/admin/QuillEditor";
 import { useLenis } from "@/lib/lenis-provider";
 import type { Blog } from "@/lib/types/blog";
@@ -17,6 +34,110 @@ function slugify(text: string): string {
     .replace(/&/g, "-and-") // Replace & with 'and'
     .replace(/[^\w-]+/g, "") // Remove all non-word chars
     .replace(/--+/g, "-"); // Replace multiple - with single -
+}
+
+function SortableBlogCard({
+  blog,
+  onEdit,
+  onDelete,
+}: {
+  blog: Blog;
+  onEdit: (b: Blog) => void;
+  onDelete: (b: Blog) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: blog.id,
+  });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 50 : 1,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="group border border-white/10 bg-white/[0.01] rounded-2xl p-6 flex flex-col justify-between hover:bg-white/[0.03] transition-colors min-h-[290px]"
+    >
+      <div>
+        <div className="flex justify-between items-start gap-4 mb-4">
+          <div className="flex items-center gap-2">
+            <button
+              {...attributes}
+              {...listeners}
+              className="cursor-grab active:cursor-grabbing p-1 text-neutral-500 hover:text-white transition-colors"
+              title="Drag to reorder"
+            >
+              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 6h2v2H8V6zm6 0h2v2h-2V6zM8 11h2v2H8v-2zm6 0h2v2h-2v-2zm-6 5h2v2H8v-2zm6 0h2v2h-2v-2z" />
+              </svg>
+            </button>
+            <span
+              className={`text-[9px] font-mono tracking-widest uppercase px-2.5 py-0.5 border rounded-full ${
+                blog.published_at
+                  ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
+                  : "border-amber-500/40 text-amber-400 bg-amber-500/10"
+              }`}
+            >
+              {blog.published_at ? "Published" : "Draft"}
+            </span>
+          </div>
+          {blog.cover_image && (
+            <div className="w-14 h-14 rounded-lg border border-white/10 overflow-hidden bg-black flex-shrink-0">
+              <img src={blog.cover_image} alt={blog.title} className="w-full h-full object-cover" />
+            </div>
+          )}
+        </div>
+
+        <h3 className="text-lg font-medium tracking-tight mb-2 group-hover:text-purple-400 transition-colors">
+          {blog.title}
+        </h3>
+        <p className="text-neutral-500 text-xs leading-relaxed line-clamp-2 font-light mb-3">
+          {blog.excerpt || "No excerpt specified."}
+        </p>
+
+        <div className="space-y-1">
+          <div className="text-[10px] font-mono text-purple-400/80 truncate">
+            /blogs/{blog.slug}
+          </div>
+          <div className="flex items-center gap-3 text-[10px] font-mono text-neutral-500">
+            <span>Order: {blog.sort_order ?? 0}</span>
+            {blog.published_at && (
+              <span>• {new Date(blog.published_at).toLocaleDateString()}</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="flex gap-2 border-t border-white/5 pt-4 mt-6">
+        <Link
+          href={`/blogs/${blog.slug}`}
+          target="_blank"
+          className="px-3 py-2 text-center text-xs border border-white/10 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
+          title="Preview Post"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+        </Link>
+        <button
+          onClick={() => onEdit(blog)}
+          className="flex-1 py-2 text-center text-xs border border-white/10 rounded-lg text-neutral-300 hover:bg-white/5 transition-colors"
+        >
+          Edit Post
+        </button>
+        <button
+          onClick={() => onDelete(blog)}
+          className="px-3 py-2 text-center text-xs border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
+        >
+          Delete
+        </button>
+      </div>
+    </div>
+  );
 }
 
 export default function BlogsTab() {
@@ -38,6 +159,7 @@ export default function BlogsTab() {
   const [coverFile, setCoverFile] = useState<File | null>(null);
   const [isPublished, setIsPublished] = useState(false);
   const [publishedAt, setPublishedAt] = useState<string>("");
+  const [sortOrder, setSortOrder] = useState<number>(0);
 
   const [processing, setProcessing] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -47,6 +169,11 @@ export default function BlogsTab() {
   const modalWrapperRef = useRef<HTMLDivElement>(null);
   const modalBoxRef = useRef<HTMLDivElement>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   useEffect(() => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
@@ -75,6 +202,7 @@ export default function BlogsTab() {
     const { data, error } = await supabase
       .from("blogs")
       .select("*")
+      .order("sort_order", { ascending: true })
       .order("created_at", { ascending: false });
     if (data) setBlogs(data);
     if (error) console.error("Database sync error for blogs:", error.message);
@@ -125,6 +253,7 @@ export default function BlogsTab() {
     setCoverFile(null);
     setIsPublished(false);
     setPublishedAt("");
+    setSortOrder(0);
   };
 
   const openFormModal = (mode: "CREATE" | "UPDATE" | "DELETE", blog?: Blog) => {
@@ -140,6 +269,7 @@ export default function BlogsTab() {
       setCoverImageUrl(blog.cover_image || "");
       setIsPublished(!!blog.published_at);
       setPublishedAt(blog.published_at ? new Date(blog.published_at).toISOString().slice(0, 16) : "");
+      setSortOrder(blog.sort_order ?? 0);
     } else {
       clearFormFields();
     }
@@ -230,6 +360,7 @@ export default function BlogsTab() {
         cover_image: resolvedCoverUrl || null,
         published_at: finalPublishedAt,
         updated_at: new Date().toISOString(),
+        sort_order: sortOrder,
       };
 
       if (modalMode === "CREATE") {
@@ -304,6 +435,27 @@ export default function BlogsTab() {
       alert(err instanceof Error ? err.message : "Failed to delete blog post.");
     } finally {
       setProcessing(false);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = blogs.findIndex((b) => b.id === active.id);
+    const newIndex = blogs.findIndex((b) => b.id === over.id);
+    if (oldIndex === -1 || newIndex === -1) return;
+    const reordered = arrayMove(blogs, oldIndex, newIndex);
+    const updated = reordered.map((b, i) => ({ ...b, sort_order: i }));
+    setBlogs(updated);
+    try {
+      await Promise.all(
+        updated.map((b) =>
+          supabase.from("blogs").update({ sort_order: b.sort_order }).eq("id", b.id)
+        )
+      );
+    } catch (err) {
+      console.error("Failed to update blog sort_order:", err);
+      await syncBlogsData();
     }
   };
 
@@ -382,79 +534,21 @@ export default function BlogsTab() {
         </div>
       </div>
 
-      {/* Blog Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredBlogs.map((blog) => (
-          <div
-            key={blog.id}
-            className="group border border-white/10 bg-white/[0.01] rounded-2xl p-6 flex flex-col justify-between hover:bg-white/[0.03] transition-colors min-h-[280px]"
-          >
-            <div>
-              <div className="flex justify-between items-start gap-4 mb-4">
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[9px] font-mono tracking-widest uppercase px-2.5 py-0.5 border rounded-full ${
-                      blog.published_at
-                        ? "border-emerald-500/40 text-emerald-400 bg-emerald-500/10"
-                        : "border-amber-500/40 text-amber-400 bg-amber-500/10"
-                    }`}
-                  >
-                    {blog.published_at ? "Published" : "Draft"}
-                  </span>
-                </div>
-                {blog.cover_image && (
-                  <div className="w-14 h-14 rounded-lg border border-white/10 overflow-hidden bg-black flex-shrink-0">
-                    <img src={blog.cover_image} alt={blog.title} className="w-full h-full object-cover" />
-                  </div>
-                )}
-              </div>
-
-              <h3 className="text-lg font-medium tracking-tight mb-2 group-hover:text-purple-400 transition-colors">
-                {blog.title}
-              </h3>
-              <p className="text-neutral-500 text-xs leading-relaxed line-clamp-2 font-light mb-3">
-                {blog.excerpt || "No excerpt specified."}
-              </p>
-
-              <div className="space-y-1">
-                <div className="text-[10px] font-mono text-purple-400/80 truncate">
-                  /blogs/{blog.slug}
-                </div>
-                {blog.published_at && (
-                  <div className="text-[10px] font-mono text-neutral-500">
-                    Published: {new Date(blog.published_at).toLocaleDateString()}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex gap-2 border-t border-white/5 pt-4 mt-6">
-              <Link
-                href={`/blogs/${blog.slug}`}
-                target="_blank"
-                className="px-3 py-2 text-center text-xs border border-white/10 rounded-lg text-neutral-400 hover:text-white hover:bg-white/5 transition-colors"
-                title="Preview Post"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                </svg>
-              </Link>
-              <button
-                onClick={() => openFormModal("UPDATE", blog)}
-                className="flex-1 py-2 text-center text-xs border border-white/10 rounded-lg text-neutral-300 hover:bg-white/5 transition-colors"
-              >
-                Edit Post
-              </button>
-              <button
-                onClick={() => openFormModal("DELETE", blog)}
-                className="px-3 py-2 text-center text-xs border border-red-500/20 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors"
-              >
-                Delete
-              </button>
-            </div>
+      {/* Blog Cards Grid — Drag & Drop */}
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <SortableContext items={filteredBlogs.map((b) => b.id)} strategy={verticalListSortingStrategy}>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredBlogs.map((blog) => (
+              <SortableBlogCard
+                key={blog.id}
+                blog={blog}
+                onEdit={(b) => openFormModal("UPDATE", b)}
+                onDelete={(b) => openFormModal("DELETE", b)}
+              />
+            ))}
           </div>
-        ))}
-      </div>
+        </SortableContext>
+      </DndContext>
 
       {filteredBlogs.length === 0 && (
         <div className="flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl">

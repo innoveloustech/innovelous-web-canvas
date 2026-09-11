@@ -21,6 +21,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useLenis } from "@/lib/lenis-provider";
 import type { MainCategory, SubCategory, ProjectWithCategories } from "@/lib/types/categories";
 
 type Project = ProjectWithCategories;
@@ -93,6 +94,8 @@ export default function ProjectsTab() {
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [modalMode, setModalMode] = useState<"CREATE" | "UPDATE" | "DELETE" | null>(null);
+
+  const lenis = useLenis();
   const [title, setTitle] = useState("");
   const [mainCategoryId, setMainCategoryId] = useState<number | null>(null);
   const [subCategoryId, setSubCategoryId] = useState<number | null>(null);
@@ -118,6 +121,21 @@ export default function ProjectsTab() {
     searchTimerRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 300);
     return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
   }, [searchQuery]);
+
+  useEffect(() => {
+    if (modalMode || showFeaturedModal) {
+      lenis?.stop();
+      document.body.style.overflow = "hidden";
+    } else {
+      lenis?.start();
+      document.body.style.overflow = "";
+    }
+
+    return () => {
+      lenis?.start();
+      document.body.style.overflow = "";
+    };
+  }, [modalMode, showFeaturedModal, lenis]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
@@ -418,9 +436,24 @@ export default function ProjectsTab() {
 
       {/* Modal */}
       {modalMode && (
-        <div ref={modalWrapperRef} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={dismissModalContext}>
-          <div ref={modalBoxRef} className="w-full max-w-xl bg-[#0f0f11] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative" onClick={e => e.stopPropagation()}>
-            <button onClick={dismissModalContext} className="absolute top-6 right-6 w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">&times;</button>
+        <div
+          ref={modalWrapperRef}
+          data-lenis-prevent
+          className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto overscroll-contain no-scrollbar"
+          onClick={dismissModalContext}
+        >
+          <div
+            ref={modalBoxRef}
+            data-lenis-prevent
+            className="w-full max-w-xl max-h-[90vh] overflow-y-auto overscroll-contain bg-[#0f0f11] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative my-8 no-scrollbar"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              onClick={dismissModalContext}
+              className="absolute top-6 right-6 w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white transition-colors z-10"
+            >
+              &times;
+            </button>
 
             {modalMode === "DELETE" ? (
               <div>

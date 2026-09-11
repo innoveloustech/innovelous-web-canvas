@@ -7,6 +7,7 @@ export async function getPublishedBlogs(): Promise<Blog[]> {
     .select("*")
     .not("published_at", "is", null)
     .lte("published_at", new Date().toISOString())
+    .order("sort_order", { ascending: true })
     .order("published_at", { ascending: false });
 
   if (error) {

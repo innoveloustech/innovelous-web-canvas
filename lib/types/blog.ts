@@ -8,6 +8,7 @@ export interface Blog {
   meta_description: string | null;
   cover_image: string | null;
   published_at: string | null;
+  sort_order: number;
   created_at: string;
   updated_at: string;
 }
@@ -21,4 +22,5 @@ export interface BlogFormData {
   meta_description: string;
   cover_image: string;
   published_at: string | null;
+  sort_order: number;
 }
