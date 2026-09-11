@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
     ],
   },
   { label: "Projects", href: "/projects" },
+  { label: "Blogs", href: "/blogs" },
 ];
 
 export default function Navbar() {
@@ -364,6 +365,15 @@ export default function Navbar() {
               className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
             >
               Projects
+            </TransitionLink>
+
+            <TransitionLink
+              href="/blogs"
+              onClick={closeMobileMenu}
+              data-cursor="-hidden"
+              className="mobile-nav-item text-4xl md:text-5xl font-black tracking-tighter text-white py-4 border-b border-white/5 hover:text-purple-400 transition-colors"
+            >
+              Blogs
             </TransitionLink>
           </nav>
         </div>

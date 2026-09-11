@@ -164,3 +164,13 @@ html.lenis body {
 ::view-transition-new(page-content) {
   animation: 0.35s ease-out 0.05s slide-in-from-right both;
 }
+
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

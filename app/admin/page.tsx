@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import type { Session } from "@supabase/supabase-js";
 import AdminSidebar, { type TabId } from "@/components/admin/AdminSidebar";
 import DashboardTab from "@/components/admin/DashboardTab";
+import BlogsTab from "@/components/admin/BlogsTab";
 import ProjectsTab from "@/components/admin/ProjectsTab";
 import CategoriesTab from "@/components/admin/CategoriesTab";
 import SiteSettingsTab from "@/components/admin/SiteSettingsTab";
@@ -55,6 +56,7 @@ export default function AdminPortal() {
       <main className="flex-1 pt-16 md:pt-0 overflow-y-auto">
         <div className="p-6 md:p-10">
           {activeTab === "dashboard" && <DashboardTab />}
+          {activeTab === "blogs" && <BlogsTab />}
           {activeTab === "projects" && <ProjectsTab />}
           {activeTab === "categories" && <CategoriesTab />}
           {activeTab === "settings" && <SiteSettingsTab />}

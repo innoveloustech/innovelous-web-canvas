@@ -8,6 +8,6 @@ export default function robots(): MetadataRoute.Robots {
       userAgent: "*",
       allow: "/",
     },
-    sitemap: "https://innovelous-web-canvas.pages.dev/sitemap.xml"
+    sitemap: "https://innovelous.com/sitemap.xml"
   };
 }

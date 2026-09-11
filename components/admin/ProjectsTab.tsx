@@ -248,6 +248,14 @@ export default function ProjectsTab() {
         const { error: insErr } = await supabase.from("projects_new").insert([projectData]);
         if (insErr) throw insErr;
       } else if (modalMode === "UPDATE" && activeProject) {
+        // If a new media file was uploaded, delete the old image from storage
+        if (mediaFile && activeProject.image_url && activeProject.image_url.includes("/projects_new-images/")) {
+          const oldPath = activeProject.image_url.split("/projects_new-images/")[1]?.split("?")[0];
+          if (oldPath) {
+            await supabase.storage.from("projects_new-images").remove([decodeURIComponent(oldPath)]);
+          }
+        }
+
         const { error: updErr } = await supabase
           .from("projects_new")
           .update(projectData)
@@ -268,6 +276,19 @@ export default function ProjectsTab() {
     if (!activeProject) return;
     setProcessing(true);
     try {
+      // Clean up project image from storage bucket
+      if (activeProject.image_url && activeProject.image_url.includes("/projects_new-images/")) {
+        const path = activeProject.image_url.split("/projects_new-images/")[1]?.split("?")[0];
+        if (path) {
+          const { error: storageDelErr } = await supabase.storage
+            .from("projects_new-images")
+            .remove([decodeURIComponent(path)]);
+          if (storageDelErr) {
+            console.warn("Could not delete project image from storage:", storageDelErr.message);
+          }
+        }
+      }
+
       const { error: delErr } = await supabase.from("projects_new").delete().eq("id", activeProject.id);
       if (delErr) throw delErr;
       await syncWorkspaceData();
