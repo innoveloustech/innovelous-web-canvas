@@ -1,14 +1,10 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import type { SiteSettings } from "@/lib/site-settings";
+import React, { useState, useEffect } from "react";
+import { useAdminSettings } from "@/lib/hooks/admin/useAdminContent";
+import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
 
 export default function SiteSettingsTab() {
-  const [settings, setSettings] = useState<SiteSettings | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
+  const { data: loadedSettings, isLoading, error, saveSettings, uploadSettingsFile, removeSettingsFile, isSaving } = useAdminSettings();
   const [saved, setSaved] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -27,74 +23,25 @@ export default function SiteSettingsTab() {
   const [faviconFile, setFaviconFile] = useState<File | null>(null);
   const [ogImageFile, setOgImageFile] = useState<File | null>(null);
 
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  const fetchSettings = async () => {
-    const { data } = await supabase
-      .from("site_settings")
-      .select("*")
-      .eq("id", 1)
-      .single();
-    if (data) {
-      setSettings(data);
-      setEmail(data.email);
-      setPhone(data.phone);
-      setOfficeLocation(data.office_location);
-      setOfficeAddress(data.office_address);
-      setFacebookUrl(data.facebook_url);
-      setGithubUrl(data.github_url);
-      setInstagramUrl(data.instagram_url);
-      setWhatsappUrl(data.whatsapp_url);
-      setLogoUrl(data.logo_url);
-      setFaviconUrl(data.favicon_url);
-      setOgImageUrl(data.og_image_url);
-    }
-    setLoading(false);
-  };
-
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    const load = async () => {
-      await fetchSettings();
-    };
-    void load();
-  }, []);
-
-  useGSAP(() => {
-    if (wrapperRef.current) {
-      gsap.from(wrapperRef.current.children, {
-        y: 20,
-        opacity: 0,
-        duration: 0.5,
-        stagger: 0.05,
-        ease: "power3.out",
-      });
-    }
-  }, { dependencies: [settings], scope: wrapperRef });
-
-  const getStoragePath = (url: string): string | null => {
-    const match = url.match(/\/object\/public\/site-assets\/(.+)$/);
-    return match ? match[1] : null;
-  };
-
-  const deleteOldFile = async (url: string) => {
-    const path = getStoragePath(url);
-    if (path) {
-      await supabase.storage.from("site-assets").remove([path]);
-    }
-  };
-
-  const uploadFile = async (file: File, prefix: string): Promise<string> => {
-    const ext = file.name.split(".").pop();
-    const name = `${prefix}-${Date.now()}.${ext}`;
-    const { error } = await supabase.storage.from("site-assets").upload(name, file);
-    if (error) throw error;
-    const { data: { publicUrl } } = supabase.storage.from("site-assets").getPublicUrl(name);
-    return publicUrl;
-  };
+    if (!loadedSettings) return;
+    setEmail(loadedSettings.email ?? "");
+    setPhone(loadedSettings.phone ?? "");
+    setOfficeLocation(loadedSettings.office_location ?? "");
+    setOfficeAddress(loadedSettings.office_address ?? "");
+    setFacebookUrl(loadedSettings.facebook_url ?? "");
+    setGithubUrl(loadedSettings.github_url ?? "");
+    setInstagramUrl(loadedSettings.instagram_url ?? "");
+    setWhatsappUrl(loadedSettings.whatsapp_url ?? "");
+    setLogoUrl(loadedSettings.logo_url ?? "");
+    setFaviconUrl(loadedSettings.favicon_url ?? "");
+    setOgImageUrl(loadedSettings.og_image_url ?? "");
+  }, [loadedSettings]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setSaved(false);
 
     const oldLogo = logoUrl;
@@ -106,57 +53,35 @@ export default function SiteSettingsTab() {
       let resolvedFavicon = faviconUrl;
       let resolvedOgImage = ogImageUrl;
 
-      if (logoFile) resolvedLogo = await uploadFile(logoFile, "logo");
-      if (faviconFile) resolvedFavicon = await uploadFile(faviconFile, "favicon");
-      if (ogImageFile) resolvedOgImage = await uploadFile(ogImageFile, "og-image");
+      if (logoFile) resolvedLogo = await uploadSettingsFile(logoFile, "logo");
+      if (faviconFile) resolvedFavicon = await uploadSettingsFile(faviconFile, "favicon");
+      if (ogImageFile) resolvedOgImage = await uploadSettingsFile(ogImageFile, "og-image");
 
-      const { error } = await supabase
-        .from("site_settings")
-        .update({
-          email,
-          phone,
-          office_location: officeLocation,
-          office_address: officeAddress,
-          facebook_url: facebookUrl,
-          github_url: githubUrl,
-          instagram_url: instagramUrl,
-          whatsapp_url: whatsappUrl,
-          logo_url: resolvedLogo,
-          favicon_url: resolvedFavicon,
-          og_image_url: resolvedOgImage,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", 1);
+      await saveSettings({
+        email, phone, office_location: officeLocation, office_address: officeAddress,
+        facebook_url: facebookUrl, github_url: githubUrl, instagram_url: instagramUrl,
+        whatsapp_url: whatsappUrl, logo_url: resolvedLogo, favicon_url: resolvedFavicon, og_image_url: resolvedOgImage,
+      });
 
-      if (error) throw error;
-
-      if (logoFile && oldLogo !== resolvedLogo) await deleteOldFile(oldLogo);
-      if (faviconFile && oldFavicon !== resolvedFavicon) await deleteOldFile(oldFavicon);
-      if (ogImageFile && oldOgImage !== resolvedOgImage) await deleteOldFile(oldOgImage);
+      if (logoFile && oldLogo !== resolvedLogo) await removeSettingsFile(oldLogo);
+      if (faviconFile && oldFavicon !== resolvedFavicon) await removeSettingsFile(oldFavicon);
+      if (ogImageFile && oldOgImage !== resolvedOgImage) await removeSettingsFile(oldOgImage);
 
       setSaved(true);
       setLogoFile(null);
       setFaviconFile(null);
       setOgImageFile(null);
-      await fetchSettings();
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to save settings.");
-    } finally {
-      setSaving(false);
+      alert(adminErrorMessage(err, "Failed to save settings."));
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">Loading settings...</p>
-      </div>
-    );
-  }
+  if (isLoading) return <AdminLoading label="Loading settings..." />;
+  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load settings")} />;
 
   return (
-    <div ref={wrapperRef} className="max-w-3xl mx-auto">
+    <div className="max-w-3xl mx-auto">
       <div className="mb-10">
         <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">Site Settings</h1>
         <p className="text-neutral-500 text-sm font-light">
@@ -336,12 +261,12 @@ export default function SiteSettingsTab() {
         <div className="flex items-center gap-4">
           <button
             type="submit"
-            disabled={saving}
+            disabled={isSaving}
             className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-neutral-800 text-white text-xs uppercase tracking-wider font-semibold rounded-xl transition-colors flex items-center gap-2"
           >
-            {saving ? (
+            {isSaving ? (
               <>
-                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                 </svg>

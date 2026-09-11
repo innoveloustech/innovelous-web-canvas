@@ -1,8 +1,5 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
+import React, { useState, useEffect } from "react";
 import {
   DndContext,
   closestCenter,
@@ -20,7 +17,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import type { MainCategory, SubCategory, CategoryDependencyCheck } from "@/lib/types/categories";
+import type { MainCategory, SubCategory } from "@/lib/types/admin";
+import { useAdminCategories } from "@/lib/hooks/admin/useAdminCategories";
+import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
 
 // Sortable Main Category Card
 function SortableMainCategoryCard({
@@ -125,6 +124,7 @@ function SortableSubCategoryCard({
 }
 
 export default function CategoriesTab() {
+  const { isLoading, error, mainCategories: loadedMainCategories, subCategories: loadedSubCategories, refreshCategories, checkCategoryDependencies, saveMainCategory, saveSubCategory, deleteCategory, reorderCategories } = useAdminCategories();
   const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [expandedMainCategories, setExpandedMainCategories] = useState<Set<number>>(new Set());
@@ -141,58 +141,23 @@ export default function CategoriesTab() {
   const [processing, setProcessing] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
 
-  const modalWrapperRef = useRef<HTMLDivElement>(null);
-  const modalBoxRef = useRef<HTMLDivElement>(null);
-
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const syncData = async () => {
-    const { data: mainCats } = await supabase.from("main_categories").select("*").order("sort_order", { ascending: true });
-    const { data: subCats } = await supabase.from("sub_categories").select("*").order("sort_order", { ascending: true });
-    if (mainCats) setMainCategories(mainCats);
-    if (subCats) setSubCategories(subCats);
-  };
-
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    let active = true;
-
-    const fetchData = async () => {
-      const { data: mainCats } = await supabase.from("main_categories").select("*").order("sort_order", { ascending: true });
-      const { data: subCats } = await supabase.from("sub_categories").select("*").order("sort_order", { ascending: true });
-
-      if (!active) return;
-      if (mainCats) setMainCategories(mainCats);
-      if (subCats) setSubCategories(subCats);
-    };
-
-    void fetchData();
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  useGSAP(() => {
-    if (modalMode && modalWrapperRef.current && modalBoxRef.current) {
-      gsap.fromTo(modalWrapperRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" });
-      gsap.fromTo(modalBoxRef.current, { scale: 0.95, y: 15 }, { scale: 1, y: 0, duration: 0.3, ease: "back.out(1.1)" });
-    }
-  }, { dependencies: [modalMode] });
+    setMainCategories(loadedMainCategories);
+    setSubCategories(loadedSubCategories);
+  }, [loadedMainCategories, loadedSubCategories]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const dismissModal = () => {
-    if (modalWrapperRef.current && modalBoxRef.current) {
-      const tl = gsap.timeline({ onComplete: () => { setModalMode(null); setActiveMainCategory(null); setActiveSubCategory(null); clearForm(); } });
-      tl.to(modalBoxRef.current, { scale: 0.95, y: 10, opacity: 0, duration: 0.2, ease: "power2.in" })
-        .to(modalWrapperRef.current, { opacity: 0, duration: 0.15 }, "-=0.1");
-    } else {
-      setModalMode(null);
-      setActiveMainCategory(null);
-      setActiveSubCategory(null);
-      clearForm();
-    }
+    setModalMode(null);
+    setActiveMainCategory(null);
+    setActiveSubCategory(null);
+    clearForm();
   };
 
   const clearForm = () => {
@@ -208,30 +173,6 @@ export default function CategoriesTab() {
     if (trimmed.length === 0) return { valid: false, error: "Name cannot be empty" };
     if (trimmed.length > 50) return { valid: false, error: "Name must be 50 characters or less" };
     return { valid: true };
-  };
-
-  const checkMainCategoryDependencies = async (categoryId: number): Promise<CategoryDependencyCheck> => {
-    // Check for sub-categories
-    const { data: subCats } = await supabase.from("sub_categories").select("id").eq("main_category_id", categoryId);
-    if (subCats && subCats.length > 0) {
-      return { canDelete: false, reason: "This main category has sub-categories", dependentCount: subCats.length, dependentType: "subcategories" };
-    }
-    
-    // Check for projects
-    const { data: projects } = await supabase.from("projects_new").select("id").eq("main_category_id", categoryId);
-    if (projects && projects.length > 0) {
-      return { canDelete: false, reason: "This main category has projects assigned to it", dependentCount: projects.length, dependentType: "projects" };
-    }
-    
-    return { canDelete: true };
-  };
-
-  const checkSubCategoryDependencies = async (categoryId: number): Promise<CategoryDependencyCheck> => {
-    const { data: projects } = await supabase.from("projects_new").select("id").eq("sub_category_id", categoryId);
-    if (projects && projects.length > 0) {
-      return { canDelete: false, reason: "This sub-category has projects assigned to it", dependentCount: projects.length, dependentType: "projects" };
-    }
-    return { canDelete: true };
   };
 
   const openModal = (mode: typeof modalMode, mainCat?: MainCategory, subCat?: SubCategory) => {
@@ -272,13 +213,11 @@ export default function CategoriesTab() {
     setProcessing(true);
     try {
       if (modalMode === "CREATE_MAIN") {
-        const { error } = await supabase.from("main_categories").insert([{ name: name.trim(), color, sort_order: sortOrder }]);
-        if (error) throw error;
+        await saveMainCategory(undefined, { name: name.trim(), color, sort_order: sortOrder });
       } else if (modalMode === "UPDATE_MAIN" && activeMainCategory) {
-        const { error } = await supabase.from("main_categories").update({ name: name.trim(), color, sort_order: sortOrder }).eq("id", activeMainCategory.id);
-        if (error) throw error;
+        await saveMainCategory(activeMainCategory.id, { name: name.trim(), color, sort_order: sortOrder });
       }
-      await syncData();
+      refreshCategories();
       dismissModal();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Failed to save main category");
@@ -302,13 +241,11 @@ export default function CategoriesTab() {
     setProcessing(true);
     try {
       if (modalMode === "CREATE_SUB") {
-        const { error } = await supabase.from("sub_categories").insert([{ main_category_id: selectedMainCategoryId, name: name.trim(), color, sort_order: sortOrder }]);
-        if (error) throw error;
+        await saveSubCategory(undefined, { main_category_id: selectedMainCategoryId, name: name.trim(), color, sort_order: sortOrder });
       } else if (modalMode === "UPDATE_SUB" && activeSubCategory) {
-        const { error } = await supabase.from("sub_categories").update({ main_category_id: selectedMainCategoryId, name: name.trim(), color, sort_order: sortOrder }).eq("id", activeSubCategory.id);
-        if (error) throw error;
+        await saveSubCategory(activeSubCategory.id, { main_category_id: selectedMainCategoryId, name: name.trim(), color, sort_order: sortOrder });
       }
-      await syncData();
+      refreshCategories();
       dismissModal();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Failed to save sub-category");
@@ -323,16 +260,15 @@ export default function CategoriesTab() {
     setDeleteError(null);
     
     try {
-      const dependencyCheck = await checkMainCategoryDependencies(activeMainCategory.id);
+      const dependencyCheck = await checkCategoryDependencies("main", activeMainCategory.id);
       if (!dependencyCheck.canDelete) {
         setDeleteError(`${dependencyCheck.reason}. Please delete or reassign ${dependencyCheck.dependentCount} ${dependencyCheck.dependentType} first.`);
         setProcessing(false);
         return;
       }
       
-      const { error } = await supabase.from("main_categories").delete().eq("id", activeMainCategory.id);
-      if (error) throw error;
-      await syncData();
+      await deleteCategory("main", activeMainCategory.id);
+      refreshCategories();
       dismissModal();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Failed to delete main category");
@@ -347,16 +283,15 @@ export default function CategoriesTab() {
     setDeleteError(null);
     
     try {
-      const dependencyCheck = await checkSubCategoryDependencies(activeSubCategory.id);
+      const dependencyCheck = await checkCategoryDependencies("sub", activeSubCategory.id);
       if (!dependencyCheck.canDelete) {
         setDeleteError(`${dependencyCheck.reason}. Please reassign ${dependencyCheck.dependentCount} ${dependencyCheck.dependentType} first.`);
         setProcessing(false);
         return;
       }
       
-      const { error } = await supabase.from("sub_categories").delete().eq("id", activeSubCategory.id);
-      if (error) throw error;
-      await syncData();
+      await deleteCategory("sub", activeSubCategory.id);
+      refreshCategories();
       dismissModal();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Failed to delete sub-category");
@@ -378,11 +313,10 @@ export default function CategoriesTab() {
     setMainCategories(updated);
 
     try {
-      const updates = updated.map((c) => supabase.from("main_categories").update({ sort_order: c.sort_order }).eq("id", c.id));
-      await Promise.all(updates);
+      await reorderCategories("main", updated);
     } catch (err) {
       console.error("Failed to update sort_order:", err);
-      await syncData();
+      setMainCategories(loadedMainCategories);
     }
   };
 
@@ -411,13 +345,15 @@ export default function CategoriesTab() {
     setSubCategories(newSubCategories);
 
     try {
-      const updates = updated.map((c) => supabase.from("sub_categories").update({ sort_order: c.sort_order }).eq("id", c.id));
-      await Promise.all(updates);
+      await reorderCategories("sub", updated);
     } catch (err) {
       console.error("Failed to update sort_order:", err);
-      await syncData();
+      setSubCategories(loadedSubCategories);
     }
   };
+
+  if (isLoading) return <AdminLoading label="Loading categories..." />;
+  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load categories")} />;
 
   const toggleMainCategory = (id: number) => {
     const newExpanded = new Set(expandedMainCategories);
@@ -569,8 +505,8 @@ export default function CategoriesTab() {
 
       {/* Modal */}
       {modalMode && (
-        <div ref={modalWrapperRef} className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md" onClick={dismissModal}>
-          <div ref={modalBoxRef} className="w-full max-w-xl bg-[#0f0f11] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80" onClick={dismissModal}>
+          <div className="w-full max-w-xl bg-[#0f0f11] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
             <button onClick={dismissModal} className="absolute top-6 right-6 w-8 h-8 rounded-full border border-white/10 flex items-center justify-center text-neutral-400 hover:text-white transition-colors">&times;</button>
 
             {(modalMode === "DELETE_MAIN" || modalMode === "DELETE_SUB") ? (

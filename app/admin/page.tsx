@@ -11,6 +11,7 @@ import SiteSettingsTab from "@/components/admin/SiteSettingsTab";
 import TestimonialsTab from "@/components/admin/TestimonialsTab";
 import FaqsTab from "@/components/admin/FaqsTab";
 import PrivacyTab from "@/components/admin/PrivacyTab";
+import AdminQueryProvider from "@/components/admin/AdminQueryProvider";
 
 export default function AdminPortal() {
   const [session, setSession] = useState<Session | null>(null);
@@ -51,20 +52,22 @@ export default function AdminPortal() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white font-sans flex">
-      <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
-      <main className="flex-1 pt-16 md:pt-0 overflow-y-auto">
-        <div className="p-6 md:p-10">
-          {activeTab === "dashboard" && <DashboardTab />}
-          {activeTab === "blogs" && <BlogsTab />}
-          {activeTab === "projects" && <ProjectsTab />}
-          {activeTab === "categories" && <CategoriesTab />}
-          {activeTab === "settings" && <SiteSettingsTab />}
-          {activeTab === "privacy" && <PrivacyTab />}
-          {activeTab === "testimonials" && <TestimonialsTab />}
-          {activeTab === "faq" && <FaqsTab />}
-        </div>
-      </main>
-    </div>
+    <AdminQueryProvider>
+      <div id="admin-dashboard" className="min-h-screen bg-[#0a0a0a] text-white font-sans flex">
+        <AdminSidebar activeTab={activeTab} onTabChange={setActiveTab} />
+        <main className="flex-1 pt-16 md:pt-0 overflow-y-auto">
+          <div className="p-6 md:p-10">
+            {activeTab === "dashboard" && <DashboardTab />}
+            {activeTab === "blogs" && <BlogsTab />}
+            {activeTab === "projects" && <ProjectsTab />}
+            {activeTab === "categories" && <CategoriesTab />}
+            {activeTab === "settings" && <SiteSettingsTab />}
+            {activeTab === "privacy" && <PrivacyTab />}
+            {activeTab === "testimonials" && <TestimonialsTab />}
+            {activeTab === "faq" && <FaqsTab />}
+          </div>
+        </main>
+      </div>
+    </AdminQueryProvider>
   );
 }

@@ -1,9 +1,6 @@
 "use client";
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import {
   DndContext,
   closestCenter,
@@ -21,8 +18,9 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { useLenis } from "@/lib/lenis-provider";
-import type { MainCategory, SubCategory, ProjectWithCategories } from "@/lib/types/categories";
+import type { MainCategory, SubCategory, ProjectWithCategories } from "@/lib/types/admin";
+import { useAdminProjects } from "@/lib/hooks/admin/useAdminProjects";
+import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
 
 type Project = ProjectWithCategories;
 
@@ -89,13 +87,13 @@ function SortableProjectCard({
 }
 
 export default function ProjectsTab() {
+  const { data: loadedProjects, isLoading, error, mainCategories: loadedMainCategories, subCategories: loadedSubCategories, showFeatured: loadedShowFeatured, refreshAdminProjects, uploadProjectImage, removeProjectImage, saveProject, deleteProject, reorderProjects, updateFeaturedVisibility } = useAdminProjects();
   const [projects, setProjects] = useState<Project[]>([]);
   const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
   const [modalMode, setModalMode] = useState<"CREATE" | "UPDATE" | "DELETE" | null>(null);
 
-  const lenis = useLenis();
   const [title, setTitle] = useState("");
   const [mainCategoryId, setMainCategoryId] = useState<number | null>(null);
   const [subCategoryId, setSubCategoryId] = useState<number | null>(null);
@@ -107,85 +105,28 @@ export default function ProjectsTab() {
   const [mediaFile, setMediaFile] = useState<File | null>(null);
   const [processing, setProcessing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [showFeatured, setShowFeatured] = useState(true);
   const [togglingFeatured, setTogglingFeatured] = useState(false);
   const [showFeaturedModal, setShowFeaturedModal] = useState(false);
-
-  const modalWrapperRef = useRef<HTMLDivElement>(null);
-  const modalBoxRef = useRef<HTMLDivElement>(null);
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 300);
-    return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
-  }, [searchQuery]);
-
-  useEffect(() => {
-    if (modalMode || showFeaturedModal) {
-      lenis?.stop();
-      document.body.style.overflow = "hidden";
-    } else {
-      lenis?.start();
-      document.body.style.overflow = "";
-    }
-
-    return () => {
-      lenis?.start();
-      document.body.style.overflow = "";
-    };
-  }, [modalMode, showFeaturedModal, lenis]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const syncWorkspaceData = async () => {
-    const { data, error } = await supabase
-      .from("projects_new")
-      .select(`
-        *,
-        main_categories!projects_new_main_category_id_fkey (id, name, color, sort_order),
-        sub_categories!projects_new_sub_category_id_fkey (id, name, color, sort_order)
-      `)
-      .order("sort_order", { ascending: true });
-    if (data) setProjects(data);
-    if (error) console.error("Database Sync error:", error.message);
-  };
-
-  const fetchCategories = async () => {
-    const { data: mainCats } = await supabase.from("main_categories").select("*").order("sort_order", { ascending: true });
-    const { data: subCats } = await supabase.from("sub_categories").select("*").order("sort_order", { ascending: true });
-    if (mainCats) setMainCategories(mainCats);
-    if (subCats) setSubCategories(subCats);
-  };
-
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    const load = async () => {
-      await Promise.all([syncWorkspaceData(), fetchCategories()]);
-      const { data } = await supabase.from("site_settings").select("show_featured").eq("id", 1).single();
-      if (data) setShowFeatured(data.show_featured);
-    };
-    void load();
-  }, []);
-
-  useGSAP(() => {
-    if (modalMode && modalWrapperRef.current && modalBoxRef.current) {
-      gsap.fromTo(modalWrapperRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" });
-      gsap.fromTo(modalBoxRef.current, { scale: 0.95, y: 15 }, { scale: 1, y: 0, duration: 0.3, ease: "back.out(1.1)" });
-    }
-  }, { dependencies: [modalMode] });
+    setProjects((loadedProjects ?? []) as Project[]);
+    setMainCategories(loadedMainCategories);
+    setSubCategories(loadedSubCategories);
+    setShowFeatured(loadedShowFeatured);
+  }, [loadedProjects, loadedMainCategories, loadedSubCategories, loadedShowFeatured]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const dismissModalContext = () => {
-    if (modalWrapperRef.current && modalBoxRef.current) {
-      const tl = gsap.timeline({ onComplete: () => { setModalMode(null); setActiveProject(null); clearFormFields(); } });
-      tl.to(modalBoxRef.current, { scale: 0.95, y: 10, opacity: 0, duration: 0.2, ease: "power2.in" })
-        .to(modalWrapperRef.current, { opacity: 0, duration: 0.15 }, "-=0.1");
-    } else {
-      setModalMode(null);
-    }
+    setModalMode(null);
+    setActiveProject(null);
+    clearFormFields();
   };
 
   const clearFormFields = () => {
@@ -204,9 +145,12 @@ export default function ProjectsTab() {
     setTogglingFeatured(true);
     setShowFeaturedModal(false);
     const newVal = !showFeatured;
-    const { error } = await supabase.from("site_settings").update({ show_featured: newVal }).eq("id", 1);
-    if (!error) setShowFeatured(newVal);
-    else alert("Failed to toggle featured section.");
+    try {
+      await updateFeaturedVisibility(newVal);
+      setShowFeatured(newVal);
+    } catch (err) {
+      alert(adminErrorMessage(err, "Failed to toggle featured section."));
+    }
     setTogglingFeatured(false);
   };
 
@@ -243,10 +187,7 @@ export default function ProjectsTab() {
         const ext = mediaFile.name.split(".").pop();
         const prodName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
         const finalPath = `portfolio-assets/${prodName}`;
-        const { error: uploadError } = await supabase.storage.from("projects_new-images").upload(finalPath, mediaFile);
-        if (uploadError) throw uploadError;
-        const { data: { publicUrl } } = supabase.storage.from("projects_new-images").getPublicUrl(finalPath);
-        resolvedImageUrl = publicUrl;
+        resolvedImageUrl = await uploadProjectImage(mediaFile, finalPath);
       }
 
       const projectData = {
@@ -263,25 +204,20 @@ export default function ProjectsTab() {
 
       if (modalMode === "CREATE") {
         if (!mediaFile) throw new Error("An image asset file is required for initial project creations.");
-        const { error: insErr } = await supabase.from("projects_new").insert([projectData]);
-        if (insErr) throw insErr;
+        await saveProject(undefined, projectData);
       } else if (modalMode === "UPDATE" && activeProject) {
         // If a new media file was uploaded, delete the old image from storage
         if (mediaFile && activeProject.image_url && activeProject.image_url.includes("/projects_new-images/")) {
           const oldPath = activeProject.image_url.split("/projects_new-images/")[1]?.split("?")[0];
           if (oldPath) {
-            await supabase.storage.from("projects_new-images").remove([decodeURIComponent(oldPath)]);
+            await removeProjectImage(decodeURIComponent(oldPath));
           }
         }
 
-        const { error: updErr } = await supabase
-          .from("projects_new")
-          .update(projectData)
-          .eq("id", activeProject.id);
-        if (updErr) throw updErr;
+        await saveProject(activeProject.id, projectData);
       }
 
-      await syncWorkspaceData();
+      refreshAdminProjects();
       dismissModalContext();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "An exception error occurred writing to cloud storage registries.");
@@ -298,18 +234,11 @@ export default function ProjectsTab() {
       if (activeProject.image_url && activeProject.image_url.includes("/projects_new-images/")) {
         const path = activeProject.image_url.split("/projects_new-images/")[1]?.split("?")[0];
         if (path) {
-          const { error: storageDelErr } = await supabase.storage
-            .from("projects_new-images")
-            .remove([decodeURIComponent(path)]);
-          if (storageDelErr) {
-            console.warn("Could not delete project image from storage:", storageDelErr.message);
-          }
+          await removeProjectImage(decodeURIComponent(path));
         }
       }
 
-      const { error: delErr } = await supabase.from("projects_new").delete().eq("id", activeProject.id);
-      if (delErr) throw delErr;
-      await syncWorkspaceData();
+      await deleteProject(activeProject.id);
       dismissModalContext();
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Drop row event caught exception handling logs.");
@@ -331,19 +260,16 @@ export default function ProjectsTab() {
     setProjects(updated);
 
     try {
-      const updates = updated.map((p) =>
-        supabase.from("projects_new").update({ sort_order: p.sort_order }).eq("id", p.id)
-      );
-      await Promise.all(updates);
+      await reorderProjects(updated);
     } catch (err: unknown) {
       console.error("Failed to update sort_order:", err instanceof Error ? err.message : err);
-      await syncWorkspaceData();
+      setProjects((loadedProjects ?? []) as Project[]);
     }
   };
 
   const filteredProjects = useMemo(() => {
-    if (!debouncedSearch.trim()) return projects;
-    const q = debouncedSearch.toLowerCase();
+    if (!searchQuery.trim()) return projects;
+    const q = searchQuery.toLowerCase();
     return projects.filter((p) => {
       const mainCatName = p.main_categories?.name?.toLowerCase() || '';
       const subCatName = p.sub_categories?.name?.toLowerCase() || '';
@@ -354,13 +280,16 @@ export default function ProjectsTab() {
              oldCategory.includes(q) ||
              p.description.toLowerCase().includes(q);
     });
-  }, [projects, debouncedSearch]);
+  }, [projects, searchQuery]);
 
   // Filter sub-categories based on selected main category
   const filteredSubCategories = useMemo(() => {
     if (!mainCategoryId) return [];
     return subCategories.filter(sub => sub.main_category_id === mainCategoryId);
   }, [subCategories, mainCategoryId]);
+
+  if (isLoading) return <AdminLoading label="Loading projects..." />;
+  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load projects")} />;
 
   // Reset sub-category when main category changes
   const handleMainCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -429,7 +358,7 @@ export default function ProjectsTab() {
       {filteredProjects.length === 0 && (
         <div className="flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl">
           <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">
-            {debouncedSearch ? "No projects match your search." : "No Projects Available. Create one to get started."}
+            {searchQuery ? "No projects match your search." : "No Projects Available. Create one to get started."}
           </p>
         </div>
       )}
@@ -437,13 +366,11 @@ export default function ProjectsTab() {
       {/* Modal */}
       {modalMode && (
         <div
-          ref={modalWrapperRef}
           data-lenis-prevent
           className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md overflow-y-auto overscroll-contain no-scrollbar"
           onClick={dismissModalContext}
         >
           <div
-            ref={modalBoxRef}
             data-lenis-prevent
             className="w-full max-w-xl max-h-[90vh] overflow-y-auto overscroll-contain bg-[#0f0f11] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative my-8 no-scrollbar"
             onClick={e => e.stopPropagation()}

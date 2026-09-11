@@ -1,44 +1,19 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import { supabase } from "@/lib/supabase";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
-import type { FaqItem } from "@/lib/site-settings";
+import React, { useState } from "react";
+import type { FaqItem } from "@/lib/types/admin";
+import { useAdminFaqs } from "@/lib/hooks/admin/useAdminContent";
+import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+
+const EMPTY_FAQS: FaqItem[] = [];
 
 export default function FaqsTab() {
+  const { data, isLoading, error, saveFaqs, isSaving } = useAdminFaqs();
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
-
-  const fetchFaqs = async () => {
-    const { data } = await supabase
-      .from("faqs")
-      .select("*")
-      .order("sort_order", { ascending: true });
-    if (data) setFaqs(data);
-    setLoading(false);
-  };
-
-  useEffect(() => {
-    const load = async () => {
-      await fetchFaqs();
-    };
-    void load();
-  }, []);
-
-  useGSAP(() => {
-    if (wrapperRef.current) {
-      gsap.from(wrapperRef.current.children, {
-        y: 20,
-        opacity: 0,
-        duration: 0.5,
-        stagger: 0.05,
-        ease: "power3.out",
-      });
-    }
-  }, { scope: wrapperRef });
+  // Query data hydrates the editable draft; subsequent changes stay local until save.
+  /* eslint-disable react-hooks/set-state-in-effect */
+  React.useEffect(() => setFaqs(data ?? EMPTY_FAQS), [data]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const updateField = (id: number, field: string, value: string) => {
     setFaqs((prev) =>
@@ -47,35 +22,21 @@ export default function FaqsTab() {
   };
 
   const handleSave = async () => {
-    setSaving(true);
     setSaved(false);
     try {
-      for (const f of faqs) {
-        const { error } = await supabase
-          .from("faqs")
-          .update({ question: f.question, answer: f.answer })
-          .eq("id", f.id);
-        if (error) throw error;
-      }
+      await saveFaqs(faqs);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to save FAQs.");
-    } finally {
-      setSaving(false);
+      alert(adminErrorMessage(err, "Failed to save FAQs."));
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">Loading FAQs...</p>
-      </div>
-    );
-  }
+  if (isLoading) return <AdminLoading label="Loading FAQs..." />;
+  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load FAQs")} />;
 
   return (
-    <div ref={wrapperRef} className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto">
       <div className="mb-10">
         <h1 className="text-2xl md:text-3xl font-black tracking-tight text-white mb-2">FAQ Editor</h1>
         <p className="text-neutral-500 text-sm font-light">
@@ -116,12 +77,12 @@ export default function FaqsTab() {
       <div className="flex items-center gap-4 mt-8">
         <button
           onClick={handleSave}
-          disabled={saving}
+          disabled={isSaving}
           className="px-6 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-neutral-800 text-white text-xs uppercase tracking-wider font-semibold rounded-xl transition-colors flex items-center gap-2"
         >
-          {saving ? (
+          {isSaving ? (
             <>
-              <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>

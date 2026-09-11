@@ -1,9 +1,6 @@
 "use client";
-import React, { useState, useEffect, useRef, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
-import { useGSAP } from "@gsap/react";
-import gsap from "gsap";
 import {
   DndContext,
   closestCenter,
@@ -22,8 +19,11 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import QuillEditor from "@/components/admin/QuillEditor";
-import { useLenis } from "@/lib/lenis-provider";
-import type { Blog } from "@/lib/types/blog";
+import type { Blog } from "@/lib/types/admin";
+import { useAdminBlogs } from "@/lib/hooks/admin/useAdminBlogs";
+import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+
+const EMPTY_BLOGS: Blog[] = [];
 
 function slugify(text: string): string {
   return text
@@ -141,11 +141,10 @@ function SortableBlogCard({
 }
 
 export default function BlogsTab() {
+  const { data: loadedBlogs, isLoading, error, saveBlog, deleteBlog, reorderBlogs, uploadBlogCover, removeBlogFiles } = useAdminBlogs();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [activeBlog, setActiveBlog] = useState<Blog | null>(null);
   const [modalMode, setModalMode] = useState<"CREATE" | "UPDATE" | "DELETE" | null>(null);
-
-  const lenis = useLenis();
 
   // Form states
   const [title, setTitle] = useState("");
@@ -164,81 +163,22 @@ export default function BlogsTab() {
   const [processing, setProcessing] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-
-  const modalWrapperRef = useRef<HTMLDivElement>(null);
-  const modalBoxRef = useRef<HTMLDivElement>(null);
-  const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    searchTimerRef.current = setTimeout(() => setDebouncedSearch(searchQuery), 300);
-    return () => {
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    };
-  }, [searchQuery]);
-
-  useEffect(() => {
-    if (modalMode) {
-      lenis?.stop();
-      document.body.style.overflow = "hidden";
-    } else {
-      lenis?.start();
-      document.body.style.overflow = "";
-    }
-
-    return () => {
-      lenis?.start();
-      document.body.style.overflow = "";
-    };
-  }, [modalMode, lenis]);
-
-  const syncBlogsData = async () => {
-    const { data, error } = await supabase
-      .from("blogs")
-      .select("*")
-      .order("sort_order", { ascending: true })
-      .order("created_at", { ascending: false });
-    if (data) setBlogs(data);
-    if (error) console.error("Database sync error for blogs:", error.message);
-  };
-
-  useEffect(() => {
-    void syncBlogsData();
-  }, []);
-
-  useGSAP(
-    () => {
-      if (modalMode && modalWrapperRef.current && modalBoxRef.current) {
-        gsap.fromTo(modalWrapperRef.current, { opacity: 0 }, { opacity: 1, duration: 0.25, ease: "power2.out" });
-        gsap.fromTo(modalBoxRef.current, { scale: 0.95, y: 15 }, { scale: 1, y: 0, duration: 0.3, ease: "back.out(1.1)" });
-      }
-    },
-    { dependencies: [modalMode] }
-  );
+    setBlogs(loadedBlogs ?? EMPTY_BLOGS);
+  }, [loadedBlogs]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   const dismissModalContext = () => {
-    if (modalWrapperRef.current && modalBoxRef.current) {
-      const tl = gsap.timeline({
-        onComplete: () => {
-          setModalMode(null);
-          setActiveBlog(null);
-          clearFormFields();
-        },
-      });
-      tl.to(modalBoxRef.current, { scale: 0.95, y: 10, opacity: 0, duration: 0.2, ease: "power2.in" }).to(
-        modalWrapperRef.current,
-        { opacity: 0, duration: 0.15 },
-        "-=0.1"
-      );
-    } else {
-      setModalMode(null);
-    }
+    setModalMode(null);
+    setActiveBlog(null);
+    clearFormFields();
   };
 
   const clearFormFields = () => {
@@ -294,20 +234,7 @@ export default function BlogsTab() {
     try {
       const ext = file.name.split(".").pop()?.toLowerCase() || "jpg";
       const fileName = `cover-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
-      const filePath = `blogs/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage.from("site-assets").upload(filePath, file, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-
-      if (uploadError) throw uploadError;
-
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("site-assets").getPublicUrl(filePath);
-
-      setCoverImageUrl(publicUrl);
+      setCoverImageUrl(await uploadBlogCover(file, fileName));
       setCoverFile(null);
     } catch (err: unknown) {
       alert(err instanceof Error ? err.message : "Failed to upload cover image.");
@@ -330,19 +257,7 @@ export default function BlogsTab() {
       if (coverFile) {
         const ext = coverFile.name.split(".").pop()?.toLowerCase() || "jpg";
         const fileName = `cover-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${ext}`;
-        const filePath = `blogs/${fileName}`;
-
-        const { error: uploadError } = await supabase.storage.from("site-assets").upload(filePath, coverFile, {
-          cacheControl: "3600",
-          upsert: false,
-        });
-
-        if (uploadError) throw uploadError;
-
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from("site-assets").getPublicUrl(filePath);
-        resolvedCoverUrl = publicUrl;
+        resolvedCoverUrl = await uploadBlogCover(coverFile, fileName);
       }
 
       let finalPublishedAt: string | null = null;
@@ -363,18 +278,10 @@ export default function BlogsTab() {
         sort_order: sortOrder,
       };
 
-      if (modalMode === "CREATE") {
-        const { error: insErr } = await supabase.from("blogs").insert([blogData]);
-        if (insErr) throw insErr;
-      } else if (modalMode === "UPDATE" && activeBlog) {
-        const { error: updErr } = await supabase.from("blogs").update(blogData).eq("id", activeBlog.id);
-        if (updErr) throw updErr;
-      }
-
-      await syncBlogsData();
+      await saveBlog({ id: modalMode === "UPDATE" ? activeBlog?.id : undefined, values: blogData });
       dismissModalContext();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "An error occurred while saving the blog post.");
+      alert(adminErrorMessage(err, "An error occurred while saving the blog post."));
     } finally {
       setProcessing(false);
     }
@@ -417,22 +324,14 @@ export default function BlogsTab() {
       // 1. Delete associated storage files (cover + inline content images)
       const storagePaths = extractStoragePathsFromBlog(activeBlog);
       if (storagePaths.length > 0) {
-        const { error: storageDelErr } = await supabase.storage
-          .from("site-assets")
-          .remove(storagePaths);
-        if (storageDelErr) {
-          console.warn("Could not remove some files from storage:", storageDelErr.message);
-        }
+        await removeBlogFiles(storagePaths);
       }
 
       // 2. Delete blog row from database
-      const { error: delErr } = await supabase.from("blogs").delete().eq("id", activeBlog.id);
-      if (delErr) throw delErr;
-
-      await syncBlogsData();
+      await deleteBlog(activeBlog.id);
       dismissModalContext();
     } catch (err: unknown) {
-      alert(err instanceof Error ? err.message : "Failed to delete blog post.");
+      alert(adminErrorMessage(err, "Failed to delete blog post."));
     } finally {
       setProcessing(false);
     }
@@ -448,20 +347,16 @@ export default function BlogsTab() {
     const updated = reordered.map((b, i) => ({ ...b, sort_order: i }));
     setBlogs(updated);
     try {
-      await Promise.all(
-        updated.map((b) =>
-          supabase.from("blogs").update({ sort_order: b.sort_order }).eq("id", b.id)
-        )
-      );
+      await reorderBlogs(updated);
     } catch (err) {
       console.error("Failed to update blog sort_order:", err);
-      await syncBlogsData();
+      setBlogs(loadedBlogs ?? EMPTY_BLOGS);
     }
   };
 
   const filteredBlogs = useMemo(() => {
-    if (!debouncedSearch.trim()) return blogs;
-    const q = debouncedSearch.toLowerCase();
+    if (!searchQuery.trim()) return blogs;
+    const q = searchQuery.toLowerCase();
     return blogs.filter((b) => {
       return (
         b.title?.toLowerCase().includes(q) ||
@@ -470,7 +365,10 @@ export default function BlogsTab() {
         b.meta_title?.toLowerCase().includes(q)
       );
     });
-  }, [blogs, debouncedSearch]);
+  }, [blogs, searchQuery]);
+
+  if (isLoading) return <AdminLoading label="Loading blogs..." />;
+  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load blogs")} />;
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -553,7 +451,7 @@ export default function BlogsTab() {
       {filteredBlogs.length === 0 && (
         <div className="flex items-center justify-center py-20 border border-dashed border-white/5 rounded-3xl">
           <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">
-            {debouncedSearch ? "No blog posts match your search." : "No Blog Posts Found. Click 'Create Blog Post' to begin."}
+            {searchQuery ? "No blog posts match your search." : "No Blog Posts Found. Click 'Create Blog Post' to begin."}
           </p>
         </div>
       )}
@@ -561,13 +459,11 @@ export default function BlogsTab() {
       {/* Modal */}
       {modalMode && (
         <div
-          ref={modalWrapperRef}
           data-lenis-prevent
           className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md overflow-y-auto overscroll-contain no-scrollbar"
           onClick={dismissModalContext}
         >
           <div
-            ref={modalBoxRef}
             data-lenis-prevent
             className="w-full max-w-4xl max-h-[90vh] overflow-y-auto overscroll-contain bg-[#0f0f11] border border-white/10 rounded-3xl p-6 md:p-8 shadow-2xl relative my-8 no-scrollbar"
             onClick={(e) => e.stopPropagation()}

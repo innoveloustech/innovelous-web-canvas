@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+#admin-dashboard *,
+#admin-dashboard *::before,
+#admin-dashboard *::after {
+  animation: none !important;
+  transition: none !important;
+}
+
 :root {
     --background: #0a0a0a;
     --foreground: #ededed;
@@ -198,5 +205,4 @@ html.lenis body {
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: rgba(168, 85, 247, 0.7);
 }
-
 
