@@ -40,7 +40,7 @@ const LINES = [
 ];
 
 // ─── Declarative R3F Hover Interactive Particles ──────────────────────────────
-const CARD_COUNT = 350;
+const CARD_COUNT = 100;
 
 const cardVertexShader = `
   uniform float uTime;
@@ -186,7 +186,7 @@ function ContactCard({ item }: { item: ContactCardItem }) {
       onMouseLeave={onCardLeave}
     >
       <div className="absolute inset-0 z-0 opacity-60 transition-opacity duration-300 hover:opacity-100 pointer-events-none">
-        <Canvas camera={{ position: [0, 0, 5], fov: 60 }} gl={{ antialias: false, powerPreference: "high-performance" }}>
+        <Canvas dpr={[1, 1.5]} camera={{ position: [0, 0, 5], fov: 60 }} gl={{ antialias: false, powerPreference: "high-performance" }}>
           <CardParticles isHovered={isHovered} mousePos={mousePos} />
         </Canvas>
       </div>

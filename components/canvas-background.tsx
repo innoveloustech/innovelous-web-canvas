@@ -4,8 +4,8 @@ import { Canvas, useFrame } from "@react-three/fiber";
 import { useRef, useMemo, useEffect, useState } from "react";
 import * as THREE from "three";
 
-const COUNT = 1500;
-// More particles, but smaller size = premium star-dust effect
+const COUNT = 600;
+// Optimized particle density for high FPS and buttery smooth scrolling
 
 const vertexShader = `
   uniform float uTime;
@@ -138,6 +138,7 @@ export default function CanvasBackground() {
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none bg-black">
       <Canvas
+        dpr={[1, 1.5]}
         camera={{ position: [0, 0, 20], fov: 55 }}
         gl={{
           antialias: false,

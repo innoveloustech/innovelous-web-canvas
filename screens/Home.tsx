@@ -112,7 +112,7 @@ const LiquidAboutBackground = () => {
       }
     `;
 
-    const geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 128, 128);
+    const geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 64, 64);
     const material = new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader,
@@ -138,7 +138,7 @@ const LiquidAboutBackground = () => {
         renderer.setSize(totalWidth, totalHeight);
 
         plane.geometry.dispose();
-        plane.geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 128, 128);
+        plane.geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 64, 64);
       }
     });
     resizeObserver.observe(container);
