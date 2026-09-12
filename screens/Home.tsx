@@ -14,6 +14,7 @@ import WhatsAppButton from "@/components/whatsapp-button";
 import ImpactSection from "@/components/home/ImpactSection";
 import InteractiveBentoFAQ from "@/components/home/FAQ";
 import FeaturedProjectsClient from "@/components/home/FeaturedProjectsClient";
+import CapabilitiesFallback from "@/components/home/CapabilitiesFallback";
 import TransitionLink from "@/components/TransitionLink";
 import { useSiteSettings } from "@/components/SiteSettingsProvider";
 
@@ -463,7 +464,11 @@ export default function Home({ projects }: { projects: Project[] }) {
           </section>
         </div>
 
-        {settings.show_featured && <FeaturedProjectsClient projects={projects} />}
+        {settings.show_featured && projects.length > 0 ? (
+          <FeaturedProjectsClient projects={projects} />
+        ) : (
+          <CapabilitiesFallback />
+        )}
         <ImpactSection />
         <CubeSection />
         <InteractiveBentoFAQ />
