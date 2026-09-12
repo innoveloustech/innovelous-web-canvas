@@ -396,10 +396,8 @@ export default function Home({ projects }: { projects: Project[] }) {
               <div className="flex flex-col border-t border-neutral-800">
                 {services.map((s, i) => (
                   <div
-                    data-cursor-text="Click"
                     key={i}
-                    data-cursor-pointer
-                    className="service-row group flex flex-col md:flex-row md:items-center justify-between py-2 md:py-3 lg:py-2.5 border-b border-neutral-800 cursor-pointer transition-all duration-300"
+                    className="service-row group flex flex-col md:flex-row md:items-center justify-between py-2 md:py-3 lg:py-2.5 border-b border-neutral-800 transition-all duration-300"
                   >
                     <div className="flex items-center gap-4 md:gap-6 mb-1 md:mb-0">
                       <span className="text-xs font-mono text-neutral-600">0{i + 1}</span>
