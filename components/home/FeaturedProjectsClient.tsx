@@ -5,6 +5,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
+import TransitionLink from "@/components/TransitionLink";
+
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
@@ -40,8 +42,8 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
       const track = trackRef.current!;
 
       const panelVW = window.innerWidth * 0.5;
-      // We extend the scroll by 2 extra panel widths so the final panels completely slide off left
-      const endX = -(projects.length + 2) * panelVW;
+      const totalPanels = projects.length + 2;
+      const endX = -totalPanels * panelVW;
       const scrollDistance = Math.abs(endX);
 
       // Create a single master timeline to coordinate track scroll and card rise animations
@@ -60,11 +62,15 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
       });
 
       // 1. Move the horizontal scroll track linearly completely off-screen to reveal the background
-      tl.to(track, {
-        x: endX,
-        ease: "none",
-        duration: projects.length + 2,
-      }, 0);
+      tl.to(
+        track,
+        {
+          x: endX,
+          ease: "none",
+          duration: totalPanels,
+        },
+        0
+      );
 
       // 2. Next cards rise up from bottom as they enter view (synchronized in the master timeline)
       // k=0 is Title Panel (starts fully visible)
@@ -78,7 +84,7 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
         // It rises to the top quickly (over 0.7s) to ensure it reaches full height soon after entering
         tl.fromTo(
           panel,
-          { y: 200 },
+          { y: 160 },
           {
             y: 0,
             ease: "power2.out",
@@ -139,16 +145,16 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
           ))}
 
           {/* End card */}
-          <div className="fp-card rounded-2xl bg-neutral-900/30 border border-neutral-800 p-10 flex flex-col justify-center items-center text-center space-y-5 min-h-[260px]">
+          <div className="fp-card rounded-2xl bg-zinc-900 border border-neutral-800 p-10 flex flex-col justify-center items-center text-center space-y-5 min-h-[260px]">
             <p className="text-xl font-light text-neutral-300 leading-snug max-w-[220px]">
               Discover our complete collection of digital experiences, brands, and platforms.
             </p>
-            <a
+            <TransitionLink
               href="/projects"
               className="text-xs font-mono tracking-widest uppercase underline underline-offset-4 text-neutral-400 hover:text-white transition-colors"
             >
               VIEW ALL PROJECTS →
-            </a>
+            </TransitionLink>
           </div>
 
           {/* Mobile Our Services */}
@@ -166,12 +172,12 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
               <div className="text-[9px] font-mono tracking-widest text-neutral-400 uppercase flex items-center gap-2">
                 <span className="text-white text-[7px]">■</span> DESIGN WITH INTENT. BUILT TO WORK.
               </div>
-              <a
+              <TransitionLink
                 href="/services"
                 className="text-[10px] font-mono tracking-widest uppercase text-neutral-400 hover:text-white transition-colors underline underline-offset-4"
               >
                 VIEW SERVICES →
-              </a>
+              </TransitionLink>
             </div>
           </div>
         </div>
@@ -180,6 +186,8 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
   }
 
   // ─── DESKTOP ──────────────────────────────────────────────────────────────
+  const totalPanels = projects.length + 2;
+
   return (
     <section
       ref={sectionRef}
@@ -209,27 +217,28 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
             <div className="text-[10px] md:text-[11px] font-mono tracking-widest text-neutral-400 uppercase flex items-center gap-3">
               <span className="text-white text-[8px]">■</span> DESIGN WITH INTENT. BUILT TO WORK.
             </div>
-            <a
+            <TransitionLink
               href="/services"
               className="inline-flex items-center gap-2 text-[11px] font-mono tracking-widest uppercase text-neutral-400 hover:text-white transition-colors duration-300 group border-b border-neutral-800 pb-1 hover:border-white"
             >
               VIEW SERVICES
               <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-            </a>
+            </TransitionLink>
           </div>
         </div>
 
-        {/* 2. FULL-WIDTH horizontally scrolling track */}
-        <div className="absolute top-0 left-0 h-full z-10 pointer-events-none"
-          style={{ width: `${(projects.length + 2) * 50}vw` }}
+        {/* 2. FULL-WIDTH horizontally scrolling track - Solid seamless 50vw panels */}
+        <div
+          className="absolute top-0 left-0 h-full z-10 pointer-events-none"
+          style={{ width: `${totalPanels * 50}vw` }}
         >
           <div
             ref={trackRef}
-            className="flex h-full will-change-transform pointer-events-auto"
-            style={{ width: `${(projects.length + 2) * 50}vw` }}
+            className="flex h-full will-change-transform pointer-events-auto bg-zinc-950"
+            style={{ width: `${totalPanels * 50}vw` }}
           >
-            {/* Panel 0: Title panel — w-50vw, full height */}
-            <div className="fp-card flex-shrink-0 w-[50vw] h-full flex flex-col justify-between px-14 xl:px-20 py-24 bg-zinc-950 border-r border-neutral-900/30">
+            {/* Panel 0: Title panel — w-50vw, full height, zinc-950 */}
+            <div className="fp-card flex-shrink-0 w-[50vw] h-full flex flex-col justify-between px-14 xl:px-20 py-24 bg-zinc-950 border-r border-neutral-900/60">
               <div>
                 <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase block mb-5">
                   Selected Work
@@ -238,38 +247,38 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
                   Featured projects &amp; explorations
                 </h2>
               </div>
-              <a
+              <TransitionLink
                 href="/projects"
                 className="inline-flex items-center gap-2 text-[11px] font-mono tracking-widest uppercase text-neutral-400 hover:text-white transition-colors duration-300 group w-fit border-b border-neutral-800 pb-1 hover:border-white"
               >
                 VIEW ALL PROJECTS
                 <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-              </a>
+              </TransitionLink>
             </div>
 
-            {/* Project cards — each 50vw, full height */}
+            {/* Project cards — each 50vw, full height, solid zinc-950 with border divider */}
             {projects.map((project, i) => (
               <div
                 key={project.id}
-                className="fp-card flex-shrink-0 w-[50vw] h-full flex flex-col justify-between py-24 px-8 bg-zinc-950"
+                className="fp-card flex-shrink-0 w-[50vw] h-full flex flex-col justify-between py-24 px-8 bg-zinc-950 border-r border-neutral-900/60"
               >
                 <DesktopCard project={project} index={i} />
               </div>
             ))}
 
-            {/* End discovery panel — w-50vw, full height */}
-            <div className="fp-card flex-shrink-0 w-[50vw] h-full flex flex-col justify-center items-start px-14 xl:px-20 bg-zinc-950 border-l border-neutral-900/30">
+            {/* End discovery panel — w-50vw, full height, solid zinc-950 */}
+            <div className="fp-card flex-shrink-0 w-[50vw] h-full flex flex-col justify-center items-start px-14 xl:px-20 bg-zinc-950 border-l border-neutral-900/60">
               <div className="w-10 h-px bg-neutral-800 mb-8" />
               <p className="text-3xl xl:text-4xl font-light text-neutral-300 leading-snug max-w-sm mb-8">
                 Discover our complete collection of digital experiences, brands, and platforms.
               </p>
-              <a
+              <TransitionLink
                 href="/projects"
                 className="inline-flex items-center gap-2 text-[11px] font-mono tracking-widest uppercase text-neutral-400 hover:text-white transition-colors duration-300 group border-b border-neutral-800 pb-1 hover:border-white"
               >
                 VIEW ALL PROJECTS
                 <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-              </a>
+              </TransitionLink>
             </div>
           </div>
         </div>
