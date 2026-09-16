@@ -11,6 +11,12 @@ import SolutionScene from "@/components/solutions/SolutionScenes";
 import ContactSection from "@/components/ContactSection";
 import WhatsAppButton from "@/components/whatsapp-button";
 
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
+
 interface ThreeDConfig {
   geometry: 'torus' | 'icosahedron' | 'grid' | 'particles' | 'ring' | 'cube';
   color: string;
@@ -32,6 +38,7 @@ interface ClientLayoutProps {
 
 export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const scaleCardRef = useRef<HTMLDivElement>(null);
   const hasAnimatedRef = useRef(false);
 
   useGSAP(
@@ -39,16 +46,15 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
       if (hasAnimatedRef.current) return;
       hasAnimatedRef.current = true;
 
+      // 1. Hero Initial Entrance
       const tl = gsap.timeline();
-      
       tl.from(".solution-nav", { y: -50, opacity: 0, duration: 1, ease: "power3.out" })
         .from(".solution-hero-title .line", {
-          y: 100,
+          y: 60,
           opacity: 0,
-          rotateX: -90,
-          stagger: 0.1,
-          duration: 1.2,
-          ease: "back.out(1.7)",
+          stagger: 0.08,
+          duration: 0.9,
+          ease: "power3.out",
         }, "-=0.6")
         .from(".solution-meta", { x: -30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.8")
         .from(".solution-desc", { y: 20, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.5")
@@ -58,21 +64,69 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
           stagger: 0.15,
           duration: 0.8,
           ease: "power3.out",
-        }, "-=0.6")
-        .from(".feature-row", {
-          x: -20,
-          opacity: 0,
-          stagger: 0.1,
-          duration: 0.7,
-          ease: "power3.out",
-          }, "-=0.4")
-        .from(".solution-cta-btn", {
-          y: 30,
-          opacity: 0,
-          scale: 0.9,
-          duration: 0.8,
-          ease: "elastic.out(1, 0.5)",
-        }, "-=0.3");
+        }, "-=0.6");
+
+      // 2. Hero Scroll Parallax
+      gsap.to(".solution-hero-content", {
+        y: -70,
+        opacity: 0.15,
+        ease: "none",
+        scrollTrigger: {
+          trigger: ".solution-hero-section",
+          start: "top top",
+          end: "bottom top",
+          scrub: 1.2,
+        },
+      });
+
+      // 3. Features Stagger Entrance on Scroll
+      gsap.from(".feature-row", {
+        scrollTrigger: {
+          trigger: ".details-grid-section",
+          start: "top 78%",
+          toggleActions: "play none none reverse",
+        },
+        x: -30,
+        opacity: 0,
+        stagger: 0.1,
+        duration: 0.8,
+        ease: "power3.out",
+      });
+
+      // 4. Scale Card Entrance
+      gsap.from(".scale-card-box", {
+        scrollTrigger: {
+          trigger: ".details-grid-section",
+          start: "top 72%",
+          toggleActions: "play none none reverse",
+        },
+        y: 40,
+        opacity: 0,
+        duration: 1,
+        ease: "power3.out",
+      });
+
+      // 5. 3D Tilt on Scale Card Box
+      const scaleCard = scaleCardRef.current;
+      if (scaleCard) {
+        const move = (e: MouseEvent) => {
+          const rect = scaleCard.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width - 0.5;
+          const y = (e.clientY - rect.top) / rect.height - 0.5;
+          gsap.to(scaleCard, {
+            rotateY: x * 8,
+            rotateX: -y * 8,
+            duration: 0.3,
+            ease: "power2.out",
+            transformPerspective: 900,
+          });
+        };
+        const leave = () => {
+          gsap.to(scaleCard, { rotateX: 0, rotateY: 0, duration: 0.5, ease: "power3.out" });
+        };
+        scaleCard.addEventListener("mousemove", move);
+        scaleCard.addEventListener("mouseleave", leave);
+      }
     },
     { scope: containerRef, dependencies: [] }
   );
@@ -90,8 +144,8 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
 
           <main className="relative z-10">
             {/* HERO SECTION */}
-            <section className="min-h-screen flex flex-col justify-end px-6 md:px-16 pb-20 md:pb-32 pt-32">
-              <div className="max-w-7xl mx-auto w-full">
+            <section className="solution-hero-section min-h-screen flex flex-col justify-end px-6 md:px-16 pb-20 md:pb-32 pt-32">
+              <div className="solution-hero-content max-w-7xl mx-auto w-full">
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center w-full">
                   <div className="flex flex-col lg:col-span-12 justify-center">
                     <div className="solution-meta flex items-center gap-4 mb-6">
@@ -133,7 +187,7 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
             </section>
 
             {/* DETAILS GRID */}
-            <section className="min-h-screen bg-[#050505] relative px-6 md:px-16 py-32 rounded-t-3xl border-t border-neutral-900 z-20">
+            <section className="details-grid-section min-h-screen bg-[#050505] relative px-6 md:px-16 py-32 rounded-t-3xl border-t border-neutral-900 z-20">
               <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
                 <div className="flex flex-col gap-0 opacity-100">
                   <span
@@ -168,7 +222,7 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
                 </div>
 
                 <div className="relative flex flex-col justify-center">
-                  <div className="p-8 md:p-12 rounded-3xl border border-neutral-800 bg-[#0c0c0c] backdrop-blur-sm">
+                  <div ref={scaleCardRef} className="scale-card-box p-8 md:p-12 rounded-3xl border border-neutral-800 bg-[#0c0c0c] backdrop-blur-sm transition-all duration-300 hover:border-purple-500/30">
                     <h3 className="text-3xl md:text-4xl font-light mb-4 tracking-tight">
                       Ready to Scale?
                     </h3>

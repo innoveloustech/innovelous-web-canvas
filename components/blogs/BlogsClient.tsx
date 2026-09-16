@@ -28,14 +28,15 @@ export default function BlogsClient({ initialBlogs }: { initialBlogs: Blog[] }) 
 
   useGSAP(
     () => {
-      if (blogs.length > 0) {
+      if (filteredBlogs.length > 0) {
         gsap.fromTo(
           ".blog-card",
-          { y: 30, opacity: 0 },
+          { y: 35, opacity: 0, scale: 0.97 },
           {
             y: 0,
             opacity: 1,
-            duration: 0.6,
+            scale: 1,
+            duration: 0.55,
             stagger: 0.08,
             ease: "power3.out",
             overwrite: "auto",
@@ -43,8 +44,30 @@ export default function BlogsClient({ initialBlogs }: { initialBlogs: Blog[] }) 
         );
       }
     },
-    { scope: containerRef, dependencies: [blogs] }
+    { scope: containerRef, dependencies: [filteredBlogs] }
   );
+
+  const handleBlogMouseMove = (e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    gsap.to(e.currentTarget, {
+      rotateY: x * 6,
+      rotateX: -y * 6,
+      transformPerspective: 800,
+      duration: 0.25,
+      ease: "power2.out",
+    });
+  };
+
+  const handleBlogMouseLeave = (e: React.MouseEvent<HTMLElement>) => {
+    gsap.to(e.currentTarget, {
+      rotateY: 0,
+      rotateX: 0,
+      duration: 0.4,
+      ease: "power2.out",
+    });
+  };
 
   return (
     <>
@@ -120,6 +143,8 @@ export default function BlogsClient({ initialBlogs }: { initialBlogs: Blog[] }) 
             {filteredBlogs.map((blog) => (
               <article
                 key={blog.id}
+                onMouseMove={handleBlogMouseMove}
+                onMouseLeave={handleBlogMouseLeave}
                 className="blog-card group flex flex-col justify-between bg-white/[0.02] border border-white/10 rounded-3xl overflow-hidden hover:border-purple-500/40 hover:bg-white/[0.04] transition-all duration-300"
               >
                 <div>

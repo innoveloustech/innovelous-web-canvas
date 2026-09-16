@@ -185,6 +185,42 @@ export default function Navbar() {
     }
   };
 
+  // Magnetic effect for CTA button
+  const handleCtaMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    const btn = e.currentTarget;
+    const rect = btn.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) * 0.35;
+    const y = (e.clientY - rect.top - rect.height / 2) * 0.35;
+    gsap.to(btn, { x, y, duration: 0.3, ease: "power2.out" });
+  };
+
+  const handleCtaClick = () => {
+    const contactSection = document.getElementById("contact");
+    if (contactSection) {
+      if (lenis) {
+        lenis.scrollTo(contactSection, { offset: -50, duration: 1.5 });
+      } else {
+        contactSection.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  };
+
+  // Track global scroll progress for top progress bar
+  const progressBarRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const updateProgress = () => {
+      if (!progressBarRef.current) return;
+      const totalScroll = document.documentElement.scrollHeight - window.innerHeight;
+      const currentScroll = window.scrollY;
+      const progress = totalScroll > 0 ? (currentScroll / totalScroll) * 100 : 0;
+      progressBarRef.current.style.width = `${progress}%`;
+    };
+
+    window.addEventListener("scroll", updateProgress, { passive: true });
+    updateProgress();
+    return () => window.removeEventListener("scroll", updateProgress);
+  }, []);
+
   // CTA Button hover animation handlers
   const handleCtaMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
     const btn = e.currentTarget;
@@ -208,8 +244,9 @@ export default function Navbar() {
     const iconBg = btn.querySelector(".cta-icon-bg");
     const iconSvg = btn.querySelector(".cta-icon-svg");
 
-    gsap.killTweensOf([bgFill, text, iconBg, iconSvg]);
+    gsap.killTweensOf([bgFill, text, iconBg, iconSvg, btn]);
 
+    gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
     gsap.to(bgFill, { width: "0%", duration: 0.3, ease: "power3.in" });
     gsap.to(text, { color: "#000000", duration: 0.25, ease: "power3.in" });
     gsap.to(iconBg, { backgroundColor: "#000000", duration: 0.25, ease: "power3.in" });
@@ -217,72 +254,142 @@ export default function Navbar() {
   };
 
   return (
-    <nav ref={navRef} style={{ viewTransitionName: "navbar" }} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? "bg-black/80 backdrop-blur-md border-b border-white/5" : "bg-transparent"}`}>
-      <div className="max-w-7xl mx-auto px-6 py-4">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="logo flex items-center gap-3 group relative z-50" style={{ viewTransitionName: "nav-logo" }}>
-            <div className="relative w-11 h-11" style={{ viewTransitionName: "nav-logo-image" }}>
-              <Image src={settings.logo_url} alt="Innovelous Logo" fill className="object-contain" />
-            </div>
-            <div className="flex flex-col" style={{ viewTransitionName: "nav-logo-text" }}>
-              <span className="text-lg font-bold text-white leading-tight tracking-wide">Innovelous</span>
-              <span className="text-xs text-purple-400 tracking-wider">Tech</span>
-            </div>
-          </Link>
-
-          {/* Navigation Bar - Desktop Middle Bar */}
-          <div ref={menuContainerRef} onMouseLeave={handleMenuMouseLeave} className="hidden md:flex items-center relative bg-neutral-900/60 border border-neutral-800 backdrop-blur-md rounded-full p-1.5">
-            <div ref={hoverPillRef} className="absolute top-1.5 left-0 rounded-full bg-purple-600 pointer-events-none opacity-0 z-0 shadow-[0_0_20px_rgba(147,51,234,0.4)]" />
-            
-            {navItems.map((item) => (
-              <div key={item.label} className="nav-item-wrapper relative z-10" onMouseEnter={(e) => handleMouseEnter(e, item.label)} onMouseLeave={() => handleMouseLeave(item.label)}>
-                {item.href ? (
-                  <TransitionLink href={item.href!} data-cursor="-hidden" className="nav-item block px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200">{item.label}</TransitionLink>
-                ) : (
-                  <div data-cursor="-hidden" className="nav-item px-5 py-2.5 rounded-full text-sm font-medium text-neutral-300 hover:text-white cursor-pointer transition-colors duration-200">{item.label}</div>
-                )}
-                
-                {item.dropdown && (
-                  <div ref={(el) => { dropdownRefs.current[item.label] = el; }} className="absolute top-full left-0 mt-2 w-72 bg-neutral-950 border border-neutral-800 rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.5)] overflow-hidden opacity-0 z-50 pointer-events-auto" style={{ height: 0 }}>
-                    <div className="absolute top-0 left-0 right-0 h-2 -mt-2 bg-transparent pointer-events-auto" />
-                    <div className="py-2 px-1.5">
-                      {item.dropdown.map((dropdownItem) => (
-                        <TransitionLink key={dropdownItem.label} href={dropdownItem.href} data-cursor="-hidden" className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150">{dropdownItem.label}</TransitionLink>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-
-          {/* Desktop CTA Button */}
-          <button data-cursor="-hidden" className="desktop-cta hidden md:flex items-center gap-2.5 relative rounded-full px-5 py-2.5 font-medium text-sm overflow-hidden cursor-pointer bg-white" onMouseEnter={handleCtaMouseEnter} onMouseLeave={handleCtaMouseLeave}>
-            <span className="cta-bg-fill absolute inset-y-0 left-0 w-0 bg-purple-600 rounded-full pointer-events-none z-0" />
-            <span className="cta-text relative z-10 text-black transition-none">Get in Touch</span>
-            <div className="cta-icon-bg relative z-10 w-5 h-5 bg-black rounded-full flex items-center justify-center transition-none">
-              <svg className="cta-icon-svg w-3 h-3 text-white transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" /></svg>
-            </div>
-          </button>
-
-          {/* Mobile Toggle Trigger */}
-          <button 
-            onClick={() => {
-              if (isMobileMenuOpen) setMobileSolutionsOpen(false);
-              setIsMobileMenuOpen(!isMobileMenuOpen);
-            }} 
-            data-cursor="-hidden"
-            className="md:hidden relative z-50 w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-white focus:outline-none transition-colors hover:bg-white/10"
-          >
-            {isMobileMenuOpen ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-            )}
-          </button>
-        </div>
+    <>
+      {/* Top Scroll Progress Bar */}
+      <div className="fixed top-0 left-0 right-0 h-[2.5px] z-[60] bg-transparent pointer-events-none">
+        <div
+          ref={progressBarRef}
+          className="h-full w-0 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-indigo-400 shadow-[0_0_12px_rgba(168,85,247,0.8)] transition-all duration-75 ease-out"
+        />
       </div>
+
+      <nav
+        ref={navRef}
+        style={{ viewTransitionName: "navbar" }}
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+          isScrolled ? "py-2 md:py-3" : "py-4"
+        }`}
+      >
+        <div
+          className={`mx-auto px-6 transition-all duration-500 ${
+            isScrolled
+              ? "max-w-6xl py-2.5 rounded-full bg-black/60 border border-white/10 backdrop-blur-xl shadow-[0_10px_30px_rgba(0,0,0,0.5)]"
+              : "max-w-7xl bg-transparent"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            {/* Logo */}
+            <Link
+              href="/"
+              className="logo flex items-center gap-3 group relative z-50 transition-transform duration-300 hover:scale-[1.03]"
+              style={{ viewTransitionName: "nav-logo" }}
+            >
+              <div className="relative w-10 h-10 md:w-11 md:h-11 transition-transform duration-300 group-hover:rotate-6" style={{ viewTransitionName: "nav-logo-image" }}>
+                <Image src={settings.logo_url} alt="Innovelous Logo" fill className="object-contain" />
+              </div>
+              <div className="flex flex-col" style={{ viewTransitionName: "nav-logo-text" }}>
+                <span className="text-lg font-bold text-white leading-tight tracking-wide">Innovelous</span>
+                <span className="text-xs text-purple-400 tracking-wider">Tech</span>
+              </div>
+            </Link>
+
+            {/* Navigation Bar - Desktop Middle Bar */}
+            <div
+              ref={menuContainerRef}
+              onMouseLeave={handleMenuMouseLeave}
+              className="hidden md:flex items-center relative bg-neutral-900/60 border border-neutral-800 backdrop-blur-md rounded-full p-1.5 shadow-inner"
+            >
+              <div
+                ref={hoverPillRef}
+                className="absolute top-1.5 left-0 rounded-full bg-purple-600 pointer-events-none opacity-0 z-0 shadow-[0_0_20px_rgba(147,51,234,0.4)]"
+              />
+              
+              {navItems.map((item) => (
+                <div
+                  key={item.label}
+                  className="nav-item-wrapper relative z-10"
+                  onMouseEnter={(e) => handleMouseEnter(e, item.label)}
+                  onMouseLeave={() => handleMouseLeave(item.label)}
+                >
+                  {item.href ? (
+                    <TransitionLink
+                      href={item.href!}
+                      data-cursor="-hidden"
+                      className="nav-item block px-5 py-2 rounded-full text-sm font-medium text-neutral-300 hover:text-white transition-colors duration-200"
+                    >
+                      {item.label}
+                    </TransitionLink>
+                  ) : (
+                    <div
+                      data-cursor="-hidden"
+                      className="nav-item px-5 py-2 rounded-full text-sm font-medium text-neutral-300 hover:text-white cursor-pointer transition-colors duration-200"
+                    >
+                      {item.label}
+                    </div>
+                  )}
+                  
+                  {item.dropdown && (
+                    <div
+                      ref={(el) => {
+                        dropdownRefs.current[item.label] = el;
+                      }}
+                      className="absolute top-full left-0 mt-2 w-72 bg-neutral-950/95 border border-neutral-800 backdrop-blur-xl rounded-2xl shadow-[0_10px_30px_rgba(0,0,0,0.7)] overflow-hidden opacity-0 z-50 pointer-events-auto"
+                      style={{ height: 0 }}
+                    >
+                      <div className="absolute top-0 left-0 right-0 h-2 -mt-2 bg-transparent pointer-events-auto" />
+                      <div className="py-2 px-1.5">
+                        {item.dropdown.map((dropdownItem) => (
+                          <TransitionLink
+                            key={dropdownItem.label}
+                            href={dropdownItem.href}
+                            data-cursor="-hidden"
+                            className="dropdown-item block px-4 py-2.5 text-sm text-neutral-400 rounded-xl hover:bg-purple-600/20 hover:text-purple-300 transition-all duration-150"
+                          >
+                            {dropdownItem.label}
+                          </TransitionLink>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Desktop CTA Button */}
+            <button
+              data-cursor="-hidden"
+              onClick={handleCtaClick}
+              className="desktop-cta hidden md:flex items-center gap-2.5 relative rounded-full px-5 py-2.5 font-medium text-sm overflow-hidden cursor-pointer bg-white shadow-[0_0_20px_rgba(255,255,255,0.15)] transition-shadow duration-300 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)]"
+              onMouseEnter={handleCtaMouseEnter}
+              onMouseLeave={handleCtaMouseLeave}
+              onMouseMove={handleCtaMouseMove}
+            >
+              <span className="cta-bg-fill absolute inset-y-0 left-0 w-0 bg-purple-600 rounded-full pointer-events-none z-0" />
+              <span className="cta-text relative z-10 text-black transition-none">Get in Touch</span>
+              <div className="cta-icon-bg relative z-10 w-5 h-5 bg-black rounded-full flex items-center justify-center transition-none">
+                <svg className="cta-icon-svg w-3 h-3 text-white transition-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                </svg>
+              </div>
+            </button>
+
+            {/* Mobile Toggle Trigger */}
+            <button 
+              onClick={() => {
+                if (isMobileMenuOpen) setMobileSolutionsOpen(false);
+                setIsMobileMenuOpen(!isMobileMenuOpen);
+              }} 
+              data-cursor="-hidden"
+              className="md:hidden relative z-50 w-10 h-10 flex items-center justify-center rounded-full border border-white/10 bg-white/5 backdrop-blur-sm text-white focus:outline-none transition-colors hover:bg-white/10"
+            >
+              {isMobileMenuOpen ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+              )}
+            </button>
+          </div>
+        </div>
 
       {/* FULL SCREEN MOBILE MENU OVERLAY */}
       <div 
@@ -394,5 +501,6 @@ export default function Navbar() {
         </div>
       </div>
     </nav>
+  </>
   );
 }

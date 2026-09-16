@@ -72,7 +72,49 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
         0
       );
 
-      // 2. Next cards rise up from bottom as they enter view (synchronized in the master timeline)
+      // 2. Track horizontal scroll progress bar: reaches 100% when "Discover our complete" card comes up
+      const cardsDuration = Math.max(1, projects.length);
+      tl.to(
+        ".fp-progress-indicator",
+        {
+          width: "100%",
+          ease: "none",
+          duration: cardsDuration,
+        },
+        0
+      );
+
+      // 3. Exclude background section from scroll progress bar by fading out indicator when revealing background
+      tl.to(
+        ".fp-progress-container",
+        {
+          opacity: 0,
+          ease: "power2.out",
+          duration: 0.5,
+        },
+        cardsDuration + 0.2
+      );
+
+      // 3. Counter-parallax for project card images to create genuine 3D window depth
+      const imageInners = track.querySelectorAll<HTMLElement>(".fp-image-inner");
+      imageInners.forEach((img, idx) => {
+        tl.fromTo(
+          img,
+          { xPercent: 10 },
+          { xPercent: -10, ease: "none", duration: 1.2 },
+          Math.max(0, idx)
+        );
+      });
+
+      // 4. Background "Our Services" dramatic reveal
+      tl.fromTo(
+        ".bg-services-content",
+        { opacity: 0.1, scale: 0.92, filter: "blur(6px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", ease: "power2.out", duration: 1.2 },
+        totalPanels - 1.8
+      );
+
+      // 5. Next cards rise up from bottom as they enter view (synchronized in the master timeline)
       // k=0 is Title Panel (starts fully visible)
       // k=1 is Card 0 (starts fully visible on the right half)
       // k>=2 are subsequent panels that enter the screen from the right
@@ -204,7 +246,7 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
             </span>
           </div>
 
-          <div className="flex flex-col items-center justify-center flex-1 text-center">
+          <div className="bg-services-content flex flex-col items-center justify-center flex-1 text-center">
             <h2 className="text-6xl md:text-[8vw] lg:text-[9vw] font-medium tracking-tighter leading-[0.85] text-white">
               A.I.<br />
               DESIGN<br />
@@ -225,6 +267,19 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
               <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
             </TransitionLink>
           </div>
+        </div>
+
+        {/* Horizontal scroll progress line indicator */}
+        <div className="fp-progress-container absolute bottom-8 left-14 right-14 z-20 pointer-events-none hidden md:flex items-center gap-4">
+          <span className="text-[10px] font-mono text-neutral-500 tracking-widest uppercase">
+            01
+          </span>
+          <div className="flex-1 h-[2px] bg-neutral-900/80 rounded-full overflow-hidden">
+            <div className="fp-progress-indicator h-full w-0 bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full" />
+          </div>
+          <span className="text-[10px] font-mono text-neutral-500 tracking-widest uppercase">
+            {String(projects.length).padStart(2, "0")}
+          </span>
         </div>
 
         {/* 2. FULL-WIDTH horizontally scrolling track - Solid seamless 50vw panels */}
@@ -289,46 +344,66 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
 
 // ─── DESKTOP CARD ────────────────────────────────────────────────────────────
 function DesktopCard({ project, index }: { project: Project; index: number }) {
+  const cardRef = useRef<HTMLDivElement>(null);
   const imgRef = useRef<HTMLImageElement | HTMLDivElement>(null);
 
   const handleEnter = () => {
     if (!imgRef.current) return;
-    gsap.to(imgRef.current, { scale: 1.04, duration: 0.6, ease: "power2.out" });
+    gsap.to(imgRef.current, { scale: 1.08, duration: 0.6, ease: "power2.out" });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    gsap.to(cardRef.current, {
+      rotateY: x * 6,
+      rotateX: -y * 6,
+      transformPerspective: 1000,
+      duration: 0.3,
+      ease: "power2.out",
+    });
   };
 
   const handleLeave = () => {
+    if (cardRef.current) {
+      gsap.to(cardRef.current, { rotateY: 0, rotateX: 0, duration: 0.5, ease: "power3.out" });
+    }
     if (!imgRef.current) return;
-    gsap.to(imgRef.current, { scale: 1, duration: 0.6, ease: "power2.out" });
+    gsap.to(imgRef.current, { scale: 1.04, duration: 0.6, ease: "power2.out" });
   };
 
   return (
     <div
+      ref={cardRef}
       onMouseEnter={handleEnter}
+      onMouseMove={handleMouseMove}
       onMouseLeave={handleLeave}
       className="relative w-full h-full flex flex-col justify-between cursor-pointer"
     >
       {/* Image block — takes up remaining space to be full height */}
       <div
-        className="relative w-full flex-1 rounded-2xl overflow-hidden bg-neutral-900 mb-6"
+        className="relative w-full flex-1 rounded-2xl overflow-hidden bg-neutral-900 mb-6 shadow-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)]"
       >
         {project.image_url ? (
           <img
             ref={imgRef as React.RefObject<HTMLImageElement>}
             src={project.image_url}
             alt={project.name}
-            className="w-full h-full object-cover"
+            className="fp-image-inner w-full h-full object-cover will-change-transform scale-105"
           />
         ) : (
           <div
             ref={imgRef as React.RefObject<HTMLDivElement>}
-            className="w-full h-full"
+            className="fp-image-inner w-full h-full will-change-transform scale-105"
             style={{ background: project.color || "#1e1b4b" }}
           />
         )}
         {/* Subtle bottom shadow */}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
         {/* Index badge */}
-        <span className="absolute top-5 right-5 text-[10px] font-mono text-white/70 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full">
+        <span className="absolute top-5 right-5 text-[10px] font-mono text-white/70 bg-black/40 backdrop-blur-sm px-2.5 py-1 rounded-full border border-white/5">
           {String(index + 1).padStart(2, "0")}
         </span>
       </div>
@@ -336,7 +411,7 @@ function DesktopCard({ project, index }: { project: Project; index: number }) {
       {/* Meta below image */}
       <div className="flex items-start justify-between gap-4 pr-2">
         <div className="space-y-1.5">
-          <h3 className="text-xl xl:text-2xl font-light tracking-tight text-white leading-tight">
+          <h3 className="text-xl xl:text-2xl font-light tracking-tight text-white leading-tight transition-colors duration-300 hover:text-purple-400">
             {project.name}
           </h3>
           <p className="text-sm text-neutral-400 font-light leading-relaxed max-w-[300px]">

@@ -57,12 +57,6 @@ export default function InteractiveBentoFAQ() {
         Flip.from(stateRef.current, {
             duration: 0.65,
             ease: "power4.inOut",
-            /* 
-              CRITICAL FIX: 
-              We remove 'absolute: true' so the container height doesn't collapse to 0px.
-              By specifying 'width,height', GSAP smoothly alters structural dimensions 
-              directly instead of using scale transforms, avoiding text skewing.
-            */
             props: "width,height",
             stagger: 0.01,
             onComplete: () => {
@@ -70,6 +64,49 @@ export default function InteractiveBentoFAQ() {
             }
         });
     }, { dependencies: [activeId], scope: containerRef });
+
+    // ScrollTrigger entrance animation for header and cards
+    useGSAP(() => {
+        gsap.fromTo(
+            ".faq-header",
+            { opacity: 0, y: 35 },
+            {
+                opacity: 1,
+                y: 0,
+                duration: 1,
+                ease: "power3.out",
+                scrollTrigger: {
+                    trigger: containerRef.current,
+                    start: "top 85%",
+                    toggleActions: "play none none reverse",
+                },
+            }
+        );
+
+        gsap.fromTo(
+            ".bento-card",
+            { opacity: 0, y: 40, scale: 0.96 },
+            {
+                opacity: 1,
+                y: 0,
+                scale: 1,
+                stagger: 0.08,
+                duration: 0.9,
+                ease: "power3.out",
+                scrollTrigger: {
+                    trigger: containerRef.current,
+                    start: "top 80%",
+                    toggleActions: "play none none reverse",
+                },
+            }
+        );
+    }, { scope: containerRef });
+
+    const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        e.currentTarget.style.setProperty("--card-x", `${e.clientX - rect.left}px`);
+        e.currentTarget.style.setProperty("--card-y", `${e.clientY - rect.top}px`);
+    };
 
     return (
         <section className="relative text-[#f3f3f3] min-h-screen py-24 px-6 font-sans selection:bg-purple-900/40 overflow-hidden bg-transparent border-t border-neutral-900/50">
@@ -80,8 +117,12 @@ export default function InteractiveBentoFAQ() {
             <div className="max-w-6xl mx-auto relative z-10">
 
                 {/* Top Header */}
-                <div className="mb-16 pb-10 border-b border-purple-950/20">
-                    <h2 className="text-4xl md:text-6xl font-extralight tracking-tight text-white">
+                <div className="faq-header mb-16 pb-10 border-b border-purple-950/20">
+                    <span className="text-xs font-mono tracking-widest uppercase text-purple-400 mb-3 flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                        Clear Answers
+                    </span>
+                    <h2 className="text-4xl md:text-6xl font-extralight tracking-tight text-white mt-2">
                         Frequently Asked <span className="italic font-serif text-purple-400">Questions</span>
                     </h2>
                 </div>
@@ -99,7 +140,7 @@ export default function InteractiveBentoFAQ() {
                             <div
                                 key={card.id}
                                 data-flip-id={`card-${card.id}`}
-                                className={`bento-card group relative rounded-2xl border p-8 flex flex-col justify-between overflow-hidden cursor-pointer transition-[background-color,border-color,box-shadow] duration-300 select-none backdrop-blur-md
+                                className={`bento-card group relative rounded-2xl border p-8 flex flex-col justify-between overflow-hidden cursor-pointer transition-[background-color,border-color,box-shadow,transform] duration-300 select-none backdrop-blur-md hover:-translate-y-1
                   ${cardLayoutClass}
                   ${isExpanded 
                     ? 'bg-purple-950/20 border-purple-500/40 shadow-[0_0_30px_rgba(168,85,247,0.15)]' 
@@ -107,9 +148,18 @@ export default function InteractiveBentoFAQ() {
                   }
                 `}
                                 onClick={() => handleCardClick(card.id)}
+                                onMouseMove={handleCardMouseMove}
                                 onMouseEnter={() => handleMouseEnter(card.id, isExpanded)}
                                 onMouseLeave={handleMouseLeave}
                             >
+                                {/* Interactive cursor radial spotlight */}
+                                <div
+                                    className="pointer-events-none absolute -inset-px opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-2xl"
+                                    style={{
+                                        background: "radial-gradient(350px circle at var(--card-x, 50%) var(--card-y, 50%), rgba(168, 85, 247, 0.15), transparent 75%)",
+                                    }}
+                                />
+
                                 {/* Low opacity background purple matrix pattern */}
                                 <div className="absolute inset-0 opacity-[0.03] bg-[linear-gradient(to_right,#a855f7_1px,transparent_1px),linear-gradient(to_bottom,#a855f7_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 

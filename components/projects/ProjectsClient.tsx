@@ -70,17 +70,28 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
     };
   }, [selectedProject, lenis]);
 
+  const filteredProjects = useMemo((): Project[] => {
+    if (!selectedMainCategoryId) return projects;
+    return projects.filter((p: Project) => p.main_category_id === selectedMainCategoryId);
+  }, [projects, selectedMainCategoryId]);
+
   useGSAP(() => {
-    if (projects.length > 0) {
-      gsap.from(".project-card", {
-        y: 50,
-        opacity: 0,
-        duration: 0.8,
-        stagger: 0.1,
-        ease: "power3.out",
-      });
+    if (filteredProjects.length > 0) {
+      gsap.fromTo(
+        ".project-card",
+        { y: 40, opacity: 0, scale: 0.97 },
+        {
+          y: 0,
+          opacity: 1,
+          scale: 1,
+          duration: 0.6,
+          stagger: 0.08,
+          ease: "power3.out",
+          overwrite: "auto",
+        }
+      );
     }
-  }, { scope: containerRef, dependencies: [projects] });
+  }, { scope: containerRef, dependencies: [filteredProjects] });
 
   useGSAP(() => {
     if (selectedProject && modalRef.current && modalContentRef.current) {
@@ -99,12 +110,25 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
     }
   };
 
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / rect.width - 0.5;
+    const y = (e.clientY - rect.top) / rect.height - 0.5;
+    gsap.to(e.currentTarget, {
+      rotateY: x * 6,
+      rotateX: -y * 6,
+      transformPerspective: 800,
+      duration: 0.25,
+      ease: "power2.out",
+    });
+  };
+
   const handleCardEnter = (e: React.MouseEvent<HTMLDivElement>) => {
     const projectColor = e.currentTarget.getAttribute("data-color") || "rgba(168, 85, 247, 0.5)";
     const arrow = e.currentTarget.querySelector(".card-arrow");
     gsap.killTweensOf(e.currentTarget);
     gsap.killTweensOf(arrow);
-    gsap.to(e.currentTarget, { y: -5, borderColor: projectColor, duration: 0.3, ease: "power2.out" });
+    gsap.to(e.currentTarget, { y: -6, borderColor: projectColor, duration: 0.3, ease: "power2.out" });
     gsap.to(arrow, { x: 5, duration: 0.3, ease: "power2.out" });
   };
 
@@ -112,7 +136,14 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
     const arrow = e.currentTarget.querySelector(".card-arrow");
     gsap.killTweensOf(e.currentTarget);
     gsap.killTweensOf(arrow);
-    gsap.to(e.currentTarget, { y: 0, borderColor: "rgba(255, 255, 255, 0.1)", duration: 0.3, ease: "power2.out" });
+    gsap.to(e.currentTarget, {
+      y: 0,
+      rotateX: 0,
+      rotateY: 0,
+      borderColor: "rgba(255, 255, 255, 0.1)",
+      duration: 0.4,
+      ease: "power2.out",
+    });
     gsap.to(arrow, { x: 0, duration: 0.3, ease: "power2.out" });
   };
 
@@ -129,11 +160,6 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
       gsap.to(modalImageRef.current, { scale: 1, duration: 0.4, ease: "power2.out" });
     }
   };
-
-  const filteredProjects = useMemo((): Project[] => {
-    if (!selectedMainCategoryId) return projects;
-    return projects.filter((p: Project) => p.main_category_id === selectedMainCategoryId);
-  }, [projects, selectedMainCategoryId]);
 
   return (
     <>
@@ -305,6 +331,7 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
                 data-color={project.color}
                 onClick={() => setSelectedProject(project)}
                 onMouseEnter={handleCardEnter}
+                onMouseMove={handleCardMouseMove}
                 onMouseLeave={handleCardLeave}
                 className="project-card group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm cursor-pointer transition-colors duration-300 hover:bg-white/[0.04] min-h-[500px]"
               >

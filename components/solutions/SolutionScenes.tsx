@@ -47,6 +47,12 @@ function DynamicGeometry({ config }: SceneProps) {
       meshRef.current.rotation.x += delta * 0.15;
       meshRef.current.rotation.y += delta * 0.2;
       
+      // Interpolate mesh position toward pointer in 3D
+      const targetX = (state.pointer.x * state.viewport.width) / 10;
+      const targetY = (state.pointer.y * state.viewport.height) / 10;
+      meshRef.current.position.x += (targetX - meshRef.current.position.x) * 0.05;
+      meshRef.current.position.y += (targetY - meshRef.current.position.y) * 0.05;
+
       // Subtle breathing scale
       const scale = 1 + Math.sin(state.clock.elapsedTime * 0.8) * 0.05;
       meshRef.current.scale.setScalar(scale);

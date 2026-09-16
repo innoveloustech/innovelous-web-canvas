@@ -149,6 +149,14 @@ function ContactCard({ item }: { item: ContactCardItem }) {
     const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
     mousePos.set(x, y);
+
+    gsap.to(e.currentTarget, {
+      rotateY: x * 6,
+      rotateX: y * 6,
+      transformPerspective: 800,
+      duration: 0.3,
+      ease: "power2.out",
+    });
   };
 
   const onCardEnter = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -164,7 +172,15 @@ function ContactCard({ item }: { item: ContactCardItem }) {
   const onCardLeave = (e: React.MouseEvent<HTMLDivElement>) => {
     setIsHovered(false);
     const c = e.currentTarget;
-    gsap.to(c, { borderColor: "rgba(255,255,255,0.07)", backgroundColor: "rgba(255,255,255,0.015)", y: 0, duration: 0.3, ease: "power2.inOut" });
+    gsap.to(c, {
+      rotateY: 0,
+      rotateX: 0,
+      borderColor: "rgba(255,255,255,0.07)",
+      backgroundColor: "rgba(255,255,255,0.015)",
+      y: 0,
+      duration: 0.5,
+      ease: "power2.inOut",
+    });
     const icon = c.querySelector(".card-icon-wrapper");
     const primary = c.querySelector(".card-primary");
     if (icon) gsap.to(icon, { scale: 1, color: "#71717a", duration: 0.25 });
@@ -299,11 +315,17 @@ export default function ContactSection({ showCapabilities, hasBackground = true 
     gsap.to(e.currentTarget, { color: "#ffffff", duration: 0.25 });
     gsap.to(arrow, { x: 4, y: -4, opacity: 1, duration: 0.25 });
   };
+  const onSocialMouseMove = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = (e.clientX - rect.left - rect.width / 2) * 0.35;
+    const y = (e.clientY - rect.top - rect.height / 2) * 0.35;
+    gsap.to(e.currentTarget, { x, y, duration: 0.2, ease: "power2.out" });
+  };
   const onSocialLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const arrow = e.currentTarget.querySelector(".soc-arrow");
     gsap.killTweensOf(e.currentTarget);
     gsap.killTweensOf(arrow);
-    gsap.to(e.currentTarget, { color: "#71717a", duration: 0.25 });
+    gsap.to(e.currentTarget, { x: 0, y: 0, color: "#71717a", duration: 0.4, ease: "elastic.out(1, 0.4)" });
     gsap.to(arrow, { x: 0, y: 0, opacity: 0, duration: 0.25 });
   };
 
@@ -327,7 +349,15 @@ export default function ContactSection({ showCapabilities, hasBackground = true 
             <span className="text-[10px] uppercase tracking-[0.28em] text-neutral-600 font-mono">Follow Along</span>
             <div className="social-row flex flex-wrap items-center gap-x-8 gap-y-3">
               {socialLinks.map((s) => (
-                <a key={s.label} href={s.href} data-cursor="-exclusion" className="social-link flex items-center gap-1.5 text-sm text-zinc-500 font-light tracking-wide inline-block" onMouseEnter={onSocialEnter} onMouseLeave={onSocialLeave}>
+                <a
+                  key={s.label}
+                  href={s.href}
+                  data-cursor="-exclusion"
+                  className="social-link flex items-center gap-1.5 text-sm text-zinc-500 font-light tracking-wide inline-block"
+                  onMouseEnter={onSocialEnter}
+                  onMouseMove={onSocialMouseMove}
+                  onMouseLeave={onSocialLeave}
+                >
                   {s.label}
                   <span className="soc-arrow opacity-0 inline-block">↗</span>
                 </a>

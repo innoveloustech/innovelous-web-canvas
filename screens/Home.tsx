@@ -200,17 +200,37 @@ export default function Home({ projects }: { projects: Project[] }) {
 
   const settings = useSiteSettings();
   const [wordIndex, setWordIndex] = useState(0);
+  const isTransitioningRef = useRef(false);
 
   useEffect(() => {
-    const delay = wordIndex === 0 ? 5000 : 2000;
-    const timeout = setTimeout(() => {
-      setWordIndex((prev) => {
-        const nextIndex = prev + 1;
-        return nextIndex % HERO_WORDS.length;
-      });
-    }, delay);
+    // Comfortable reading time before initiating smooth transition
+    const displayDuration = wordIndex === 0 ? 4500 : 3500;
 
-    return () => clearTimeout(timeout);
+    const timer = setTimeout(() => {
+      if (isTransitioningRef.current) return;
+      isTransitioningRef.current = true;
+
+      const chars = containerRef.current?.querySelectorAll(".hero-char");
+      if (chars && chars.length > 0) {
+        // Coordinated smooth exit: characters glide up and fade out cleanly
+        gsap.to(chars, {
+          y: "-110%",
+          opacity: 0,
+          stagger: { amount: 0.15, from: "start" },
+          duration: 0.35,
+          ease: "power2.in",
+          onComplete: () => {
+            setWordIndex((prev) => (prev + 1) % HERO_WORDS.length);
+            isTransitioningRef.current = false;
+          },
+        });
+      } else {
+        setWordIndex((prev) => (prev + 1) % HERO_WORDS.length);
+        isTransitioningRef.current = false;
+      }
+    }, displayDuration);
+
+    return () => clearTimeout(timer);
   }, [wordIndex]);
 
   useGSAP(
@@ -218,21 +238,45 @@ export default function Home({ projects }: { projects: Project[] }) {
       if (hasAnimatedRef.current) return;
       hasAnimatedRef.current = true;
 
+      // 1. Hero Initial Entrance
       gsap.from(".hero-tag, .hero-sub, .stat-item", {
-        opacity: 0, y: 30, duration: 1, stagger: 0.12, ease: "power3.out", delay: 0.35,
+        opacity: 0,
+        y: 30,
+        duration: 1,
+        stagger: 0.12,
+        ease: "power3.out",
+        delay: 0.35,
       });
 
+      // 2. Hero Scroll Parallax
+      const heroParallax = gsap.timeline({
+        scrollTrigger: {
+          trigger: ".hero-section",
+          start: "top top",
+          end: "bottom top",
+          scrub: 1.2,
+        },
+      });
+      heroParallax
+        .to(".hero-title-wrapper", { y: -90, scale: 0.94, opacity: 0.15, ease: "none" }, 0)
+        .to(".hero-sub", { y: -45, opacity: 0.3, ease: "none" }, 0)
+        .to(".stat-item", { y: -30, opacity: 0.3, stagger: 0.04, ease: "none" }, 0);
+
+      // 3. Subtle Velocity Skew (soft clamp to eliminate text jitter)
       const proxy = { skew: 0 };
       const skewSetter = gsap.quickSetter(skewContentRef.current, "skewY", "deg");
-      const clamp = gsap.utils.clamp(-4, 4);
+      const clamp = gsap.utils.clamp(-1.2, 1.2);
 
       ScrollTrigger.create({
         onUpdate: (self) => {
-          const skew = clamp(self.getVelocity() / -300);
-          if (Math.abs(skew) > Math.abs(proxy.skew)) {
+          const skew = clamp(self.getVelocity() / -450);
+          if (Math.abs(skew) > 0.05) {
             proxy.skew = skew;
             gsap.to(proxy, {
-              skew: 0, duration: 0.8, ease: "power3.out", overwrite: "auto",
+              skew: 0,
+              duration: 0.7,
+              ease: "power2.out",
+              overwrite: "auto",
               onUpdate: () => skewSetter(proxy.skew),
             });
           }
@@ -255,6 +299,7 @@ export default function Home({ projects }: { projects: Project[] }) {
         });
       });
 
+      // 5. Magnetic CTA Button
       const cta = ctaRef.current;
       if (cta) {
         const move = (e: MouseEvent) => {
@@ -262,7 +307,8 @@ export default function Home({ projects }: { projects: Project[] }) {
           gsap.to(cta, {
             x: (e.clientX - rect.left - rect.width / 2) * 0.4,
             y: (e.clientY - rect.top - rect.height / 2) * 0.4,
-            duration: 0.3, ease: "power2.out",
+            duration: 0.3,
+            ease: "power2.out",
           });
         };
         const leave = () => gsap.to(cta, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1, 0.3)" });
@@ -270,47 +316,137 @@ export default function Home({ projects }: { projects: Project[] }) {
         cta.addEventListener("mouseleave", leave);
       }
 
-      const heroWrapper = containerRef.current?.querySelector(".hero-title-wrapper");
-      if (heroWrapper) {
+      // 6. Hero Subtle Mouse Follow (decoupled from scroll parallax)
+      const heroTilt = containerRef.current?.querySelector(".hero-title-tilt");
+      if (heroTilt) {
         const move = (e: MouseEvent) => {
           const x = e.clientX / window.innerWidth - 0.5;
           const y = e.clientY / window.innerHeight - 0.5;
-          gsap.to(heroWrapper, {
-            x: x * 25, y: y * 12, rotateX: -y * 8, rotateY: x * 12,
-            duration: 0.8, ease: "power2.out",
+          gsap.to(heroTilt, {
+            x: x * 18,
+            y: y * 10,
+            duration: 0.8,
+            ease: "power2.out",
           });
         };
-        const leave = () => gsap.to(heroWrapper, { x: 0, y: 0, rotateX: 0, rotateY: 0, duration: 1, ease: "power3.out" });
+        const leave = () =>
+          gsap.to(heroTilt, { x: 0, y: 0, duration: 1, ease: "power3.out" });
         window.addEventListener("mousemove", move);
         containerRef.current?.addEventListener("mouseleave", leave);
       }
 
       ScrollTrigger.create({
-        trigger: serviceRef.current, start: "top top", end: "+=100%",
-        pin: true, pinSpacing: false, pinType: "transform",
+        trigger: serviceRef.current,
+        start: "top top",
+        end: "+=100%",
+        pin: true,
+        pinSpacing: false,
+        pinType: "transform",
       });
 
-      gsap.from(".about-label", { scrollTrigger: { trigger: "#about", start: "top 75%" }, y: 20, opacity: 0, duration: 0.8, ease: "power3.out" });
-      gsap.from(".about-title", { scrollTrigger: { trigger: "#about", start: "top 72%" }, y: 40, opacity: 0, duration: 1, ease: "power3.out", delay: 0.1 });
-      gsap.from(".about-desc", { scrollTrigger: { trigger: "#about", start: "top 68%" }, y: 30, opacity: 0, stagger: 0.15, duration: 0.9, ease: "power3.out", delay: 0.2 });
-      gsap.from(".about-stat", { scrollTrigger: { trigger: "#about", start: "top 65%" }, y: 25, opacity: 0, stagger: 0.12, duration: 0.8, ease: "power3.out", delay: 0.3 });
-      gsap.from(".about-divider", { scrollTrigger: { trigger: "#about", start: "top 70%" }, scaleX: 0, duration: 1.2, ease: "power3.inOut", delay: 0.15 });
+      // 7. About Section Reveals & Column Parallax
+      gsap.from(".about-label", {
+        scrollTrigger: { trigger: "#about", start: "top 75%" },
+        y: 20,
+        opacity: 0,
+        duration: 0.8,
+        ease: "power3.out",
+      });
+      gsap.from(".about-title", {
+        scrollTrigger: { trigger: "#about", start: "top 72%" },
+        y: 40,
+        opacity: 0,
+        duration: 1,
+        ease: "power3.out",
+        delay: 0.1,
+      });
+      gsap.from(".about-desc", {
+        scrollTrigger: { trigger: "#about", start: "top 68%" },
+        y: 30,
+        opacity: 0,
+        stagger: 0.15,
+        duration: 0.9,
+        ease: "power3.out",
+        delay: 0.2,
+      });
+      gsap.from(".about-stat", {
+        scrollTrigger: { trigger: "#about", start: "top 65%" },
+        y: 35,
+        opacity: 0,
+        stagger: 0.12,
+        duration: 0.9,
+        ease: "power3.out",
+        delay: 0.3,
+      });
+      gsap.from(".about-divider", {
+        scrollTrigger: { trigger: "#about", start: "top 70%" },
+        scaleX: 0,
+        duration: 1.2,
+        ease: "power3.inOut",
+        delay: 0.15,
+      });
+
+      // Subtle parallax between left text and right stats
+      gsap.to(".about-stats-col", {
+        scrollTrigger: {
+          trigger: "#about",
+          start: "top bottom",
+          end: "bottom top",
+          scrub: 1.2,
+        },
+        y: -40,
+        ease: "none",
+      });
+
+      // 8. 3D Tilt on the About Quote Card
+      const quoteCard = containerRef.current?.querySelector(".about-stat") as HTMLElement | null;
+      if (quoteCard) {
+        const onQuoteMove = (e: MouseEvent) => {
+          const rect = quoteCard.getBoundingClientRect();
+          const x = (e.clientX - rect.left) / rect.width - 0.5;
+          const y = (e.clientY - rect.top) / rect.height - 0.5;
+          gsap.to(quoteCard, {
+            rotateY: x * 10,
+            rotateX: -y * 10,
+            y: -5,
+            borderColor: "rgba(168,85,247,0.3)",
+            duration: 0.3,
+            ease: "power2.out",
+            transformPerspective: 800,
+          });
+        };
+        const onQuoteLeave = () => {
+          gsap.to(quoteCard, {
+            rotateX: 0,
+            rotateY: 0,
+            y: 0,
+            borderColor: "rgb(38,38,38)",
+            duration: 0.6,
+            ease: "power3.out",
+          });
+        };
+        quoteCard.addEventListener("mousemove", onQuoteMove);
+        quoteCard.addEventListener("mouseleave", onQuoteLeave);
+      }
     },
     { scope: containerRef, dependencies: [] }
   );
 
   useGSAP(
     () => {
+      const chars = containerRef.current?.querySelectorAll(".hero-char");
+      if (!chars || chars.length === 0) return;
+
       gsap.fromTo(
-        ".hero-char",
-        { y: "115%", opacity: 0, rotateX: -90 },
+        chars,
+        { y: "115%", opacity: 0 },
         {
           y: "0%",
           opacity: 1,
-          rotateX: 0,
-          duration: 0.8,
-          stagger: { amount: 0.4, ease: "power2.out", from: "start" },
-          ease: "back.out(1.4)"
+          duration: 0.55,
+          stagger: { amount: 0.2, from: "start" },
+          ease: "power3.out",
+          overwrite: "auto",
         }
       );
     },
@@ -326,7 +462,7 @@ export default function Home({ projects }: { projects: Project[] }) {
         <Navbar />
         <div ref={skewContentRef} className="origin-right w-full home-skew-wrapper">
           {/* HERO SECTION */}
-          <section className="relative min-h-screen flex flex-col justify-between px-6 md:px-16 pt-32 pb-16 bg-transparent">
+          <section className="hero-section relative min-h-screen flex flex-col justify-between px-6 md:px-16 pt-32 pb-16 bg-transparent">
             <div className="hero-tag flex items-start justify-between w-full">
               <div className="flex items-center gap-2">
                 <span className="w-1.5 h-1.5 rounded-full bg-purple-500 structural-pulse" />
@@ -334,8 +470,8 @@ export default function Home({ projects }: { projects: Project[] }) {
               </div>
             </div>
 
-            <div className="hero-title-wrapper w-full my-auto py-16 select-none overflow-hidden" style={{ perspective: 1200 }}>
-              <div className="w-full max-w-full overflow-hidden py-4 flex items-center justify-center">
+            <div className="hero-title-wrapper w-full my-auto py-16 select-none overflow-hidden">
+              <div className="hero-title-tilt w-full max-w-full overflow-hidden py-4 flex items-center justify-center">
                 <h1
                   className="hero-word block font-black leading-[0.85] tracking-[-0.03em] text-center uppercase text-white break-none"
                   style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)" }}
@@ -343,12 +479,14 @@ export default function Home({ projects }: { projects: Project[] }) {
                 >
                   <div key={wordIndex} className="flex items-center justify-center overflow-hidden flex-wrap">
                     {HERO_WORDS[wordIndex].split("").map((char, i) => (
-                      <span key={i} className="hero-char-wrapper inline-block overflow-hidden">
+                      <span key={i} className="hero-char-wrapper inline-block overflow-hidden py-1">
                         <span
-                          className="hero-char inline-block"
-                          style={{ transformOrigin: "bottom center", willChange: "transform, opacity" }}
+                          className="hero-char inline-block will-change-transform"
+                          style={{ transformOrigin: "bottom center" }}
                         >
-                          {char === " " ? "\u00A0" : char}
+                          <span className="inline-block transition-colors duration-200 hover:text-purple-400 cursor-default">
+                            {char === " " ? "\u00A0" : char}
+                          </span>
                         </span>
                       </span>
                     ))}
@@ -366,7 +504,7 @@ export default function Home({ projects }: { projects: Project[] }) {
                   <TransitionLink
                     href="/projects"
                     data-cursor-pointer
-                    className="hero-cta group flex items-center gap-4 bg-neutral-900 border border-neutral-800 px-6 py-4 rounded-full w-fit hover:bg-white transition-colors duration-500"
+                    className="hero-cta group flex items-center gap-4 bg-neutral-900 border border-neutral-800 px-6 py-4 rounded-full w-fit hover:bg-white transition-colors duration-500 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(168,85,247,0.3)]"
                   >
                     <span className="text-white group-hover:text-black text-xs uppercase tracking-widest font-mono font-bold transition-colors duration-500">Explore Our Projects</span>
                     <div className="w-2 h-2 rounded-full bg-purple-500 group-hover:bg-black transition-colors duration-500" />
@@ -376,7 +514,7 @@ export default function Home({ projects }: { projects: Project[] }) {
 
               <div className="flex gap-12 border-t border-neutral-900 pt-6 w-full md:w-auto justify-between md:justify-end">
                 {stats.map((s, i) => (
-                  <div key={i} className="stat-item flex flex-col gap-1">
+                  <div key={i} className="stat-item flex flex-col gap-1 transition-transform duration-300 hover:translate-y-[-2px]">
                     <span className="text-2xl md:text-4xl font-light tracking-tight text-white">{s.value}</span>
                     <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono">{s.label}</span>
                   </div>

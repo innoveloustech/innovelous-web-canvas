@@ -140,7 +140,38 @@ export default function CapabilitiesFallback() {
         0
       );
 
-      // 2. Rising cards as they enter view
+      // 2. Track horizontal scroll progress indicator: full when discovery card comes up
+      const cardsDuration = Math.max(1, practices.length);
+      tl.to(
+        ".cap-progress-indicator",
+        {
+          width: "100%",
+          ease: "none",
+          duration: cardsDuration,
+        },
+        0
+      );
+
+      // 3. Exclude background section from scroll progress by fading out indicator when revealing background
+      tl.to(
+        ".cap-progress-container",
+        {
+          opacity: 0,
+          ease: "power2.out",
+          duration: 0.5,
+        },
+        cardsDuration + 0.2
+      );
+
+      // 3. Background typography reveal
+      tl.fromTo(
+        ".bg-cap-services-content",
+        { opacity: 0.1, scale: 0.92, filter: "blur(6px)" },
+        { opacity: 1, scale: 1, filter: "blur(0px)", ease: "power2.out", duration: 1.2 },
+        totalPanels - 1.8
+      );
+
+      // 4. Rising cards as they enter view
       const panels = track.querySelectorAll<HTMLElement>(".cap-panel");
       panels.forEach((panel, k) => {
         if (k < 2) return;
@@ -309,7 +340,7 @@ export default function CapabilitiesFallback() {
             </span>
           </div>
 
-          <div className="flex flex-col items-center justify-center flex-1 text-center">
+          <div className="bg-cap-services-content flex flex-col items-center justify-center flex-1 text-center">
             <h2 className="text-6xl md:text-[8vw] lg:text-[9vw] font-medium tracking-tighter leading-[0.85] text-white">
               A.I.<br />
               DESIGN<br />
@@ -330,6 +361,19 @@ export default function CapabilitiesFallback() {
               <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
             </TransitionLink>
           </div>
+        </div>
+
+        {/* Horizontal scroll progress indicator */}
+        <div className="cap-progress-container absolute bottom-8 left-14 right-14 z-20 pointer-events-none hidden md:flex items-center gap-4">
+          <span className="text-[10px] font-mono text-neutral-500 tracking-widest uppercase">
+            01
+          </span>
+          <div className="flex-1 h-[2px] bg-neutral-900/80 rounded-full overflow-hidden">
+            <div className="cap-progress-indicator h-full w-0 bg-gradient-to-r from-purple-500 to-indigo-400 rounded-full" />
+          </div>
+          <span className="text-[10px] font-mono text-neutral-500 tracking-widest uppercase">
+            {String(practices.length).padStart(2, "0")}
+          </span>
         </div>
 
         {/* 2. FULL-WIDTH horizontally scrolling track - Solid seamless 50vw panels */}

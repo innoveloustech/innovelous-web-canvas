@@ -1,5 +1,11 @@
 "use client";
 import { useRef, useEffect, useCallback } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+if (typeof window !== "undefined") {
+  gsap.registerPlugin(ScrollTrigger);
+}
 
 const marqueeWords = ["Communication", "·", "Technology", "·", "Innovation", "·", "Excellence", "·", "Solutions", "·"];
 
@@ -23,6 +29,22 @@ export default function DraggableMarquee() {
     return track.scrollWidth / 3;
   }, []);
 
+  // Listen to page scroll velocity and feed it into marquee momentum
+  useEffect(() => {
+    const st = ScrollTrigger.create({
+      onUpdate: (self) => {
+        if (!isDraggingRef.current) {
+          // Accelerate or reverse marquee based on scroll velocity
+          const scrollVel = self.getVelocity() / 250;
+          velRef.current += scrollVel * 0.4;
+          velRef.current = Math.max(-20, Math.min(20, velRef.current));
+        }
+      },
+    });
+
+    return () => st.kill();
+  }, []);
+
   useEffect(() => {
     const track = trackRef.current;
     if (!track) return;
@@ -35,9 +57,9 @@ export default function DraggableMarquee() {
       }
 
       if (!isDraggingRef.current) {
-        // Auto-scroll + decelerate residual drag velocity
-        velRef.current = velRef.current * 0.92; // friction
-        xRef.current -= BASE_SPEED + Math.abs(velRef.current) * Math.sign(velRef.current) * 0.1;
+        // Auto-scroll + decelerate residual drag / scroll velocity
+        velRef.current = velRef.current * 0.94; // friction
+        xRef.current -= BASE_SPEED + velRef.current * 0.15;
       }
 
       // Infinite loop: snap back by one unit when we've scrolled one full copy
@@ -116,8 +138,10 @@ export default function DraggableMarquee() {
         {words.map((word, i) => (
           <span
             key={i}
-            className={`inline-block px-3 md:px-6 text-[10px] md:text-xs font-mono tracking-[0.2em] md:tracking-[0.25em] uppercase ${
-              word === "·" ? "text-purple-500 font-bold" : "text-neutral-600"
+            className={`inline-block px-3 md:px-6 text-[10px] md:text-xs font-mono tracking-[0.2em] md:tracking-[0.25em] uppercase transition-all duration-300 ${
+              word === "·"
+                ? "text-purple-500 font-bold scale-125"
+                : "text-neutral-500 hover:text-white hover:scale-105"
             }`}
           >
             {word}
