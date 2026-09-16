@@ -8,6 +8,7 @@ import type {
 } from "@/lib/types/categories";
 import type { FaqItem, SiteSettings, Testimonial } from "@/lib/site-settings";
 import type { SitePage } from "@/lib/site-pages";
+import type { Solution, SolutionFormData } from "@/lib/types/solutions";
 
 export type {
   Blog,
@@ -21,6 +22,8 @@ export type {
   SiteSettings,
   SubCategory,
   Testimonial,
+  Solution,
+  SolutionFormData,
 };
 
 export type AdminEntity =
@@ -31,7 +34,8 @@ export type AdminEntity =
   | FaqItem
   | Testimonial
   | SiteSettings
-  | SitePage;
+  | SitePage
+  | Solution;
 
 export type AdminMutationState = {
   isPending: boolean;
@@ -55,4 +59,5 @@ export type AdminQueryKey =
   | ["admin", "site-settings"]
   | ["admin", "testimonials"]
   | ["admin", "faqs"]
-  | ["admin", "privacy"];
+  | ["admin", "privacy"]
+  | ["admin", "solutions"];

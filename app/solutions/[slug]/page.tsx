@@ -1,22 +1,23 @@
-import { getSolutionData } from "@/lib/solutions-data";
+import { getSolutions, getSolutionBySlug } from "@/lib/solutions";
 import SolutionClientWrapper from "@/components/solutions/SolutionClientWrapper";
 
-// 1. Tell Next.js explicitly what static slug paths exist at build time for Cloudflare export
+// Ensure the page is entirely static
+export const dynamic = 'force-static';
+
 export async function generateStaticParams() {
-  return [
-    { slug: "hardware" },
-    { slug: "software" },
-  ];
+  const solutions = await getSolutions();
+  return solutions.map((sol) => ({
+    slug: sol.slug,
+  }));
 }
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
-// 2. Pure clean static Server Component acting as the entry point route
 export default async function SolutionPage({ params }: PageProps) {
   const { slug } = await params;
-  const data = getSolutionData(slug);
+  const data = await getSolutionBySlug(slug);
 
   if (!data) {
     return (

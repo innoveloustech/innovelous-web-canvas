@@ -7,33 +7,18 @@ import { useGSAP } from "@gsap/react";
 import CanvasBackground from "@/components/canvas-background";
 import Navbar from "@/components/navbar";
 import Cursor from "@/components/MouseFollower";
-import SolutionScene from "@/components/solutions/SolutionScenes";
 import ContactSection from "@/components/ContactSection";
 import WhatsAppButton from "@/components/whatsapp-button";
 
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import type { Solution } from "@/lib/types/solutions";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
 }
 
-interface ThreeDConfig {
-  geometry: 'torus' | 'icosahedron' | 'grid' | 'particles' | 'ring' | 'cube';
-  color: string;
-  wireframe: boolean;
-}
-
 interface ClientLayoutProps {
-  data: {
-    label: string;
-    category: string;
-    title: string;
-    description: string;
-    ctaText: string;
-    stats: Array<{ value: string; label: string }>;
-    features: string[];
-    threeDConfig: ThreeDConfig;
-  };
+  data: Solution;
 }
 
 export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
@@ -136,7 +121,6 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
       <WhatsAppButton phoneNumber="+92 334 9251936" />
       <Cursor />
       <CanvasBackground />
-      <SolutionScene config={data.threeDConfig} />
       
       <div className="solution-nav sticky top-0 z-50">
         <Navbar />
@@ -150,8 +134,7 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
                   <div className="flex flex-col lg:col-span-12 justify-center">
                     <div className="solution-meta flex items-center gap-4 mb-6">
                       <span
-                        className="text-xs font-mono tracking-[0.25em] uppercase px-3 py-1 border rounded-full"
-                    style={{ color: data.threeDConfig.color, borderColor: data.threeDConfig.color }}
+                        className="text-xs font-mono tracking-[0.25em] uppercase px-3 py-1 border rounded-full text-white border-white"
                       >
                         {data.label}
                       </span>
@@ -191,8 +174,7 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
               <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24">
                 <div className="flex flex-col gap-0 opacity-100">
                   <span
-                    className="text-xs font-mono tracking-[0.25em] uppercase mb-8 block"
-                    style={{ color: data.threeDConfig.color }}
+                    className="text-xs font-mono tracking-[0.25em] uppercase mb-8 block text-white"
                   >
                     Capabilities & Tech
                   </span>
@@ -204,14 +186,14 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
                           <span className="text-[10px] font-mono text-neutral-600">0{i + 1}</span>
                           <h3 
                             className="text-xl md:text-2xl font-normal text-white transition-colors duration-300 group-hover:text-[var(--hover-color)]"
-                        style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
+                        style={{ "--hover-color": "#ffffff" } as React.CSSProperties}
                           >
                             {feature}
                           </h3>
                         </div>
                         <svg
                           className="w-5 h-5 text-neutral-700 transition-transform duration-300 group-hover:translate-x-1 group-hover:text-[var(--hover-color)]"
-                      style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
+                      style={{ "--hover-color": "#ffffff" } as React.CSSProperties}
                           fill="none" stroke="currentColor" viewBox="0 0 24 24"
                         >
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
@@ -235,7 +217,7 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
                       <button className="group relative flex items-center gap-3 bg-white text-black px-8 py-4 rounded-full font-semibold text-sm overflow-hidden transition-transform hover:scale-105">
                         <span
                           className="absolute inset-0 w-0 bg-[var(--hover-color)] group-hover:w-full transition-all duration-500 ease-out"
-                      style={{ "--hover-color": data.threeDConfig.color } as React.CSSProperties}
+                      style={{ "--hover-color": "#333333" } as React.CSSProperties}
                         />
                     <span className="relative z-10 group-hover:text-white transition-colors">{data.ctaText}</span>
                         <svg className="relative z-10 w-4 h-4 text-black group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">

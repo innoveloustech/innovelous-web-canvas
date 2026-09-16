@@ -12,6 +12,7 @@ import TestimonialsTab from "@/components/admin/TestimonialsTab";
 import FaqsTab from "@/components/admin/FaqsTab";
 import PrivacyTab from "@/components/admin/PrivacyTab";
 import AdminQueryProvider from "@/components/admin/AdminQueryProvider";
+import SolutionsTab from "@/components/admin/SolutionsTab";
 
 export default function AdminPortal() {
   const [session, setSession] = useState<Session | null>(null);
@@ -58,6 +59,7 @@ export default function AdminPortal() {
         <main className="flex-1 pt-16 md:pt-0 overflow-y-auto">
           <div className="p-6 md:p-10">
             {activeTab === "dashboard" && <DashboardTab />}
+            {activeTab === "solutions" && <SolutionsTab />}
             {activeTab === "blogs" && <BlogsTab />}
             {activeTab === "projects" && <ProjectsTab />}
             {activeTab === "categories" && <CategoriesTab />}
