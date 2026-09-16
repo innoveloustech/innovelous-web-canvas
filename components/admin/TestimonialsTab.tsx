@@ -2,29 +2,34 @@
 import React, { useState } from "react";
 import type { Testimonial } from "@/lib/types/admin";
 import { useAdminTestimonials } from "@/lib/hooks/admin/useAdminContent";
-import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+import { AdminLoading, AdminError, adminErrorMessage } from "./AdminFeedback";
 
 const EMPTY_TESTIMONIALS: Testimonial[] = [];
 
 export default function TestimonialsTab() {
-  const { data, isLoading, error, saveTestimonials, isSaving } = useAdminTestimonials();
+  const { data, isLoading, error, refetch, saveTestimonials, isSaving } = useAdminTestimonials();
   const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
   const [saved, setSaved] = useState(false);
   // Query data hydrates the editable draft; subsequent changes stay local until save.
   /* eslint-disable react-hooks/set-state-in-effect */
-  React.useEffect(() => setTestimonials(data ?? EMPTY_TESTIMONIALS), [data]);
+  React.useEffect(() => {
+    if (data?.length) setTestimonials(data);
+  }, [data]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  const activeTestimonials = testimonials.length > 0 ? testimonials : (data ?? EMPTY_TESTIMONIALS);
+
   const updateField = (id: number, field: string, value: string | boolean) => {
-    setTestimonials((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, [field]: value } : t))
-    );
+    setTestimonials((prev) => {
+      const base = prev.length > 0 ? prev : (data ?? EMPTY_TESTIMONIALS);
+      return base.map((t) => (t.id === id ? { ...t, [field]: value } : t));
+    });
   };
 
   const handleSave = async () => {
     setSaved(false);
     try {
-      await saveTestimonials(testimonials);
+      await saveTestimonials(activeTestimonials);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
@@ -32,8 +37,15 @@ export default function TestimonialsTab() {
     }
   };
 
-  if (isLoading) return <AdminLoading label="Loading testimonials..." />;
-  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load testimonials")} />;
+  if (isLoading && !data) return <AdminLoading label="Loading testimonials..." />;
+  if (error && !data) {
+    return (
+      <AdminError
+        message={adminErrorMessage(error, "Unable to load testimonials")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -45,7 +57,7 @@ export default function TestimonialsTab() {
       </div>
 
       <div className="space-y-6">
-        {testimonials.map((t, i) => (
+        {activeTestimonials.map((t, i) => (
           <div key={t.id} className="border border-white/10 bg-white/[0.02] rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">

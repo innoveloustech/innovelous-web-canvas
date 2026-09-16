@@ -2,29 +2,34 @@
 import React, { useState } from "react";
 import type { FaqItem } from "@/lib/types/admin";
 import { useAdminFaqs } from "@/lib/hooks/admin/useAdminContent";
-import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+import { AdminLoading, AdminError, adminErrorMessage } from "./AdminFeedback";
 
 const EMPTY_FAQS: FaqItem[] = [];
 
 export default function FaqsTab() {
-  const { data, isLoading, error, saveFaqs, isSaving } = useAdminFaqs();
+  const { data, isLoading, error, refetch, saveFaqs, isSaving } = useAdminFaqs();
   const [faqs, setFaqs] = useState<FaqItem[]>([]);
   const [saved, setSaved] = useState(false);
   // Query data hydrates the editable draft; subsequent changes stay local until save.
   /* eslint-disable react-hooks/set-state-in-effect */
-  React.useEffect(() => setFaqs(data ?? EMPTY_FAQS), [data]);
+  React.useEffect(() => {
+    if (data?.length) setFaqs(data);
+  }, [data]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
+  const activeFaqs = faqs.length > 0 ? faqs : (data ?? EMPTY_FAQS);
+
   const updateField = (id: number, field: string, value: string) => {
-    setFaqs((prev) =>
-      prev.map((f) => (f.id === id ? { ...f, [field]: value } : f))
-    );
+    setFaqs((prev) => {
+      const base = prev.length > 0 ? prev : (data ?? EMPTY_FAQS);
+      return base.map((f) => (f.id === id ? { ...f, [field]: value } : f));
+    });
   };
 
   const handleSave = async () => {
     setSaved(false);
     try {
-      await saveFaqs(faqs);
+      await saveFaqs(activeFaqs);
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: unknown) {
@@ -32,8 +37,15 @@ export default function FaqsTab() {
     }
   };
 
-  if (isLoading) return <AdminLoading label="Loading FAQs..." />;
-  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load FAQs")} />;
+  if (isLoading && !data) return <AdminLoading label="Loading FAQs..." />;
+  if (error && !data) {
+    return (
+      <AdminError
+        message={adminErrorMessage(error, "Unable to load FAQs")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -44,8 +56,8 @@ export default function FaqsTab() {
         </p>
       </div>
 
-      <div className="space-y-6">
-        {faqs.map((f, i) => (
+      <div className="space-y-4">
+        {activeFaqs.map((f, i) => (
           <div key={f.id} className="border border-white/10 bg-white/[0.02] rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <span className="text-xs font-mono text-neutral-600">Q{i + 1}</span>

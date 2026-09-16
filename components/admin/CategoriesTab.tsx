@@ -19,7 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { MainCategory, SubCategory } from "@/lib/types/admin";
 import { useAdminCategories } from "@/lib/hooks/admin/useAdminCategories";
-import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+import { AdminLoading, AdminError, adminErrorMessage } from "./AdminFeedback";
 
 // Sortable Main Category Card
 function SortableMainCategoryCard({
@@ -352,8 +352,18 @@ export default function CategoriesTab() {
     }
   };
 
-  if (isLoading) return <AdminLoading label="Loading categories..." />;
-  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load categories")} />;
+  const activeMainCategories = mainCategories.length > 0 ? mainCategories : loadedMainCategories;
+  const activeSubCategories = subCategories.length > 0 ? subCategories : loadedSubCategories;
+
+  if (isLoading && !loadedMainCategories.length) return <AdminLoading label="Loading categories..." />;
+  if (error && !loadedMainCategories.length) {
+    return (
+      <AdminError
+        message={adminErrorMessage(error, "Unable to load categories")}
+        onRetry={() => void refreshCategories()}
+      />
+    );
+  }
 
   const toggleMainCategory = (id: number) => {
     const newExpanded = new Set(expandedMainCategories);
@@ -366,11 +376,11 @@ export default function CategoriesTab() {
   };
 
   const getSubCategoriesForMain = (mainCategoryId: number) => {
-    return subCategories.filter((sub) => sub.main_category_id === mainCategoryId);
+    return activeSubCategories.filter((sub) => sub.main_category_id === mainCategoryId);
   };
 
   const getSubCategoriesCount = (mainCategoryId: number) => {
-    return subCategories.filter((sub) => sub.main_category_id === mainCategoryId).length;
+    return activeSubCategories.filter((sub) => sub.main_category_id === mainCategoryId).length;
   };
 
   return (
@@ -400,13 +410,13 @@ export default function CategoriesTab() {
             </svg>
             Main Categories
           </h2>
-          <span className="text-xs font-mono text-neutral-600">{mainCategories.length} {mainCategories.length === 1 ? 'category' : 'categories'}</span>
+          <span className="text-xs font-mono text-neutral-600">{activeMainCategories.length} {activeMainCategories.length === 1 ? 'category' : 'categories'}</span>
         </div>
 
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleMainCategoryDragEnd}>
-          <SortableContext items={mainCategories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
+          <SortableContext items={activeMainCategories.map((c) => c.id)} strategy={verticalListSortingStrategy}>
             <div className="space-y-3">
-              {mainCategories.map((category) => (
+              {activeMainCategories.map((category) => (
                 <SortableMainCategoryCard
                   key={category.id}
                   category={category}
@@ -419,7 +429,7 @@ export default function CategoriesTab() {
           </SortableContext>
         </DndContext>
 
-        {mainCategories.length === 0 && (
+        {activeMainCategories.length === 0 && (
           <div className="flex items-center justify-center py-12 border border-dashed border-white/5 rounded-2xl">
             <p className="font-mono text-xs uppercase tracking-widest text-neutral-600">No main categories. Create one to get started.</p>
           </div>
@@ -435,11 +445,11 @@ export default function CategoriesTab() {
             </svg>
             Sub-Categories
           </h2>
-          <span className="text-xs font-mono text-neutral-600">{subCategories.length} {subCategories.length === 1 ? 'sub-category' : 'sub-categories'}</span>
+          <span className="text-xs font-mono text-neutral-600">{activeSubCategories.length} {activeSubCategories.length === 1 ? 'sub-category' : 'sub-categories'}</span>
         </div>
 
         <div className="space-y-4">
-          {mainCategories.map((mainCat) => {
+          {activeMainCategories.map((mainCat) => {
             const subs = getSubCategoriesForMain(mainCat.id);
             const isExpanded = expandedMainCategories.has(mainCat.id);
             

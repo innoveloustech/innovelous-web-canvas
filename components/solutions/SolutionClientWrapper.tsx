@@ -219,7 +219,7 @@ export default function SolutionClientWrapper({ data }: ClientLayoutProps) {
                           className="absolute inset-0 w-0 bg-[var(--hover-color)] group-hover:w-full transition-all duration-500 ease-out"
                       style={{ "--hover-color": "#333333" } as React.CSSProperties}
                         />
-                    <span className="relative z-10 group-hover:text-white transition-colors">{data.ctaText}</span>
+                    <span className="relative z-10 group-hover:text-white transition-colors">{data.cta_text}</span>
                         <svg className="relative z-10 w-4 h-4 text-black group-hover:text-white transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
                         </svg>

@@ -1,10 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { useAdminSettings } from "@/lib/hooks/admin/useAdminContent";
-import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+import { AdminLoading, AdminError, adminErrorMessage } from "./AdminFeedback";
 
 export default function SiteSettingsTab() {
-  const { data: loadedSettings, isLoading, error, saveSettings, uploadSettingsFile, removeSettingsFile, isSaving } = useAdminSettings();
+  const { data: loadedSettings, isLoading, error, refetch, saveSettings, uploadSettingsFile, removeSettingsFile, isSaving } = useAdminSettings();
   const [saved, setSaved] = useState(false);
 
   const [email, setEmail] = useState("");
@@ -77,8 +77,15 @@ export default function SiteSettingsTab() {
     }
   };
 
-  if (isLoading) return <AdminLoading label="Loading settings..." />;
-  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load settings")} />;
+  if (isLoading && !loadedSettings) return <AdminLoading label="Loading settings..." />;
+  if (error && !loadedSettings) {
+    return (
+      <AdminError
+        message={adminErrorMessage(error, "Unable to load settings")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto">

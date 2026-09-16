@@ -13,16 +13,33 @@ import FaqsTab from "@/components/admin/FaqsTab";
 import PrivacyTab from "@/components/admin/PrivacyTab";
 import AdminQueryProvider from "@/components/admin/AdminQueryProvider";
 import SolutionsTab from "@/components/admin/SolutionsTab";
+import { AdminLoading } from "@/components/admin/AdminFeedback";
 
 export default function AdminPortal() {
   const [session, setSession] = useState<Session | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [authEmail, setAuthEmail] = useState("");
   const [authPassword, setAuthPassword] = useState("");
   const [activeTab, setActiveTab] = useState<TabId>("dashboard");
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => setSession(session));
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => setSession(session));
+    supabase.auth
+      .getSession()
+      .then(({ data: { session } }) => {
+        setSession(session);
+        setIsCheckingAuth(false);
+      })
+      .catch(() => {
+        setIsCheckingAuth(false);
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+      setIsCheckingAuth(false);
+    });
+
     return () => subscription.unsubscribe();
   }, []);
 
@@ -31,6 +48,14 @@ export default function AdminPortal() {
     const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
     if (error) alert(`Access Denied: ${error.message}`);
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white">
+        <AdminLoading label="Verifying session..." />
+      </div>
+    );
+  }
 
   if (!session) {
     return (

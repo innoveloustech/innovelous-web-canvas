@@ -8,7 +8,7 @@ export function useAdminSolutions() {
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
-  const { data: solutions, isLoading } = useQuery({
+  const query = useQuery({
     queryKey: ["admin", "solutions"],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -20,6 +20,8 @@ export function useAdminSolutions() {
       return data as Solution[];
     },
   });
+
+  const { data: solutions, isLoading } = query;
 
   const createMutation = useMutation({
     mutationFn: async (newSolution: SolutionFormData) => {
@@ -121,7 +123,8 @@ export function useAdminSolutions() {
     solutions,
     isLoading,
     isPending,
-    error,
+    error: error || (query.error as Error | null),
+    refetch: query.refetch,
     createSolution: (data: SolutionFormData) => createMutation.mutateAsync(data),
     updateSolution: (id: string, data: Partial<SolutionFormData>) =>
       updateMutation.mutateAsync({ id, data }),

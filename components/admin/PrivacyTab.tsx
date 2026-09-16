@@ -2,10 +2,10 @@
 import React, { useState } from "react";
 import QuillEditor from "@/components/admin/QuillEditor";
 import { useAdminPrivacy } from "@/lib/hooks/admin/useAdminContent";
-import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+import { AdminLoading, AdminError, adminErrorMessage } from "./AdminFeedback";
 
 export default function PrivacyTab() {
-  const { data, isLoading, error, savePrivacy, isSaving } = useAdminPrivacy();
+  const { data, isLoading, error, refetch, savePrivacy, isSaving } = useAdminPrivacy();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   /* eslint-disable react-hooks/set-state-in-effect */
@@ -27,8 +27,15 @@ export default function PrivacyTab() {
     }
   };
 
-  if (isLoading) return <AdminLoading label="Loading privacy content..." />;
-  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load privacy content")} />;
+  if (isLoading && !data) return <AdminLoading label="Loading privacy content..." />;
+  if (error && !data) {
+    return (
+      <AdminError
+        message={adminErrorMessage(error, "Unable to load privacy content")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto">

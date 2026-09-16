@@ -21,7 +21,7 @@ import { CSS } from "@dnd-kit/utilities";
 import QuillEditor from "@/components/admin/QuillEditor";
 import type { Blog } from "@/lib/types/admin";
 import { useAdminBlogs } from "@/lib/hooks/admin/useAdminBlogs";
-import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+import { AdminLoading, AdminError, adminErrorMessage } from "./AdminFeedback";
 
 const EMPTY_BLOGS: Blog[] = [];
 
@@ -141,7 +141,7 @@ function SortableBlogCard({
 }
 
 export default function BlogsTab() {
-  const { data: loadedBlogs, isLoading, error, saveBlog, deleteBlog, reorderBlogs, uploadBlogCover, removeBlogFiles } = useAdminBlogs();
+  const { data: loadedBlogs, isLoading, error, refetch, saveBlog, deleteBlog, reorderBlogs, uploadBlogCover, removeBlogFiles } = useAdminBlogs();
   const [blogs, setBlogs] = useState<Blog[]>([]);
   const [activeBlog, setActiveBlog] = useState<Blog | null>(null);
   const [modalMode, setModalMode] = useState<"CREATE" | "UPDATE" | "DELETE" | null>(null);
@@ -354,10 +354,14 @@ export default function BlogsTab() {
     }
   };
 
+  const activeBlogs = useMemo(() => {
+    return blogs.length > 0 ? blogs : (loadedBlogs ?? EMPTY_BLOGS);
+  }, [blogs, loadedBlogs]);
+
   const filteredBlogs = useMemo(() => {
-    if (!searchQuery.trim()) return blogs;
+    if (!searchQuery.trim()) return activeBlogs;
     const q = searchQuery.toLowerCase();
-    return blogs.filter((b) => {
+    return activeBlogs.filter((b) => {
       return (
         b.title?.toLowerCase().includes(q) ||
         b.slug?.toLowerCase().includes(q) ||
@@ -365,10 +369,17 @@ export default function BlogsTab() {
         b.meta_title?.toLowerCase().includes(q)
       );
     });
-  }, [blogs, searchQuery]);
+  }, [activeBlogs, searchQuery]);
 
-  if (isLoading) return <AdminLoading label="Loading blogs..." />;
-  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load blogs")} />;
+  if (isLoading && !loadedBlogs) return <AdminLoading label="Loading blogs..." />;
+  if (error && !loadedBlogs) {
+    return (
+      <AdminError
+        message={adminErrorMessage(error, "Unable to load blogs")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto">

@@ -20,7 +20,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { MainCategory, SubCategory, ProjectWithCategories } from "@/lib/types/admin";
 import { useAdminProjects } from "@/lib/hooks/admin/useAdminProjects";
-import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+import { AdminLoading, AdminError, adminErrorMessage } from "./AdminFeedback";
 
 type Project = ProjectWithCategories;
 
@@ -87,7 +87,7 @@ function SortableProjectCard({
 }
 
 export default function ProjectsTab() {
-  const { data: loadedProjects, isLoading, error, mainCategories: loadedMainCategories, subCategories: loadedSubCategories, showFeatured: loadedShowFeatured, refreshAdminProjects, uploadProjectImage, removeProjectImage, saveProject, deleteProject, reorderProjects, updateFeaturedVisibility } = useAdminProjects();
+  const { data: loadedProjects, isLoading, error, refetch, mainCategories: loadedMainCategories, subCategories: loadedSubCategories, showFeatured: loadedShowFeatured, refreshAdminProjects, uploadProjectImage, removeProjectImage, saveProject, deleteProject, reorderProjects, updateFeaturedVisibility } = useAdminProjects();
   const [projects, setProjects] = useState<Project[]>([]);
   const [mainCategories, setMainCategories] = useState<MainCategory[]>([]);
   const [subCategories, setSubCategories] = useState<SubCategory[]>([]);
@@ -116,10 +116,18 @@ export default function ProjectsTab() {
 
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
-    setProjects((loadedProjects ?? []) as Project[]);
-    setMainCategories(loadedMainCategories);
-    setSubCategories(loadedSubCategories);
-    setShowFeatured(loadedShowFeatured);
+    if (loadedProjects) {
+      setProjects(loadedProjects as Project[]);
+    }
+    if (loadedMainCategories?.length) {
+      setMainCategories(loadedMainCategories);
+    }
+    if (loadedSubCategories?.length) {
+      setSubCategories(loadedSubCategories);
+    }
+    if (typeof loadedShowFeatured === "boolean") {
+      setShowFeatured(loadedShowFeatured);
+    }
   }, [loadedProjects, loadedMainCategories, loadedSubCategories, loadedShowFeatured]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
@@ -267,10 +275,15 @@ export default function ProjectsTab() {
     }
   };
 
+  const activeProjects = useMemo(() => {
+    return projects.length > 0 ? projects : ((loadedProjects ?? []) as Project[]);
+  }, [projects, loadedProjects]);
+
+  // Filter projects by search
   const filteredProjects = useMemo(() => {
-    if (!searchQuery.trim()) return projects;
+    if (!searchQuery.trim()) return activeProjects;
     const q = searchQuery.toLowerCase();
-    return projects.filter((p) => {
+    return activeProjects.filter((p) => {
       const mainCatName = p.main_categories?.name?.toLowerCase() || '';
       const subCatName = p.sub_categories?.name?.toLowerCase() || '';
       const oldCategory = p.category?.toLowerCase() || '';
@@ -280,7 +293,7 @@ export default function ProjectsTab() {
              oldCategory.includes(q) ||
              p.description.toLowerCase().includes(q);
     });
-  }, [projects, searchQuery]);
+  }, [activeProjects, searchQuery]);
 
   // Filter sub-categories based on selected main category
   const filteredSubCategories = useMemo(() => {
@@ -288,8 +301,15 @@ export default function ProjectsTab() {
     return subCategories.filter(sub => sub.main_category_id === mainCategoryId);
   }, [subCategories, mainCategoryId]);
 
-  if (isLoading) return <AdminLoading label="Loading projects..." />;
-  if (error) return <AdminLoading label={adminErrorMessage(error, "Unable to load projects")} />;
+  if (isLoading && !loadedProjects) return <AdminLoading label="Loading projects..." />;
+  if (error && !loadedProjects) {
+    return (
+      <AdminError
+        message={adminErrorMessage(error, "Unable to load projects")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   // Reset sub-category when main category changes
   const handleMainCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {

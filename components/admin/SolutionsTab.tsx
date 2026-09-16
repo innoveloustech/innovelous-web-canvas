@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useMemo } from "react";
 import {
   DndContext,
   closestCenter,
@@ -19,7 +19,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import type { Solution, SolutionFormData } from "@/lib/types/solutions";
 import { useAdminSolutions } from "@/lib/hooks/admin/useAdminSolutions";
-import { AdminLoading, adminErrorMessage } from "./AdminFeedback";
+import { AdminLoading, AdminError, adminErrorMessage } from "./AdminFeedback";
 
 function SortableSolutionCard({
   solution,
@@ -65,9 +65,10 @@ function SortableSolutionCard({
 }
 
 export default function SolutionsTab() {
-  const { solutions, isLoading, error, createSolution, updateSolution, deleteSolution, reorderSolutions } = useAdminSolutions();
+  const { solutions, isLoading, error, refetch, createSolution, updateSolution, deleteSolution, reorderSolutions } = useAdminSolutions();
   const [isEditing, setIsEditing] = useState(false);
   const [editingSolution, setEditingSolution] = useState<Solution | null>(null);
+  const [localOrder, setLocalOrder] = useState<string[] | null>(null);
   const [formData, setFormData] = useState<SolutionFormData>({
     slug: "",
     label: "",
@@ -85,30 +86,45 @@ export default function SolutionsTab() {
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
   );
 
-  const [localItems, setLocalItems] = useState<Solution[]>([]);
-
-  useEffect(() => {
-    if (solutions) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
-      setLocalItems([...solutions].sort((a, b) => a.order - b.order));
+  const displaySolutions = useMemo(() => {
+    if (!solutions) return [];
+    const sorted = [...solutions].sort((a, b) => a.order - b.order);
+    if (!localOrder) return sorted;
+    const map = new Map(sorted.map((s) => [s.id, s]));
+    const ordered: Solution[] = [];
+    for (const id of localOrder) {
+      const s = map.get(id);
+      if (s) ordered.push(s);
     }
-  }, [solutions]);
+    for (const s of sorted) {
+      if (!localOrder.includes(s.id)) ordered.push(s);
+    }
+    return ordered;
+  }, [solutions, localOrder]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     if (over && active.id !== over.id) {
-      setLocalItems((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
-        const newItems = arrayMove(items, oldIndex, newIndex);
-        reorderSolutions(newItems.map((item) => item.id));
-        return newItems;
-      });
+      const currentIds = displaySolutions.map((s) => s.id);
+      const oldIndex = currentIds.indexOf(String(active.id));
+      const newIndex = currentIds.indexOf(String(over.id));
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newIds = arrayMove(currentIds, oldIndex, newIndex);
+        setLocalOrder(newIds);
+        void reorderSolutions(newIds);
+      }
     }
   };
 
-  if (isLoading) return <AdminLoading />;
-  if (error) return <div className="text-red-400 p-4 border border-red-400/20 rounded-lg bg-red-400/5">{adminErrorMessage(error, "Failed to load solutions.")}</div>;
+  if (isLoading && !solutions) return <AdminLoading label="Loading solutions..." />;
+  if (error && !solutions) {
+    return (
+      <AdminError
+        message={adminErrorMessage(error, "Failed to load solutions.")}
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   const handleEdit = (solution: Solution) => {
     setEditingSolution(solution);
@@ -137,7 +153,7 @@ export default function SolutionsTab() {
       stats: [],
       features: [],
       cta_text: "",
-      order: localItems.length,
+      order: displaySolutions.length,
     });
     setIsEditing(true);
   };
@@ -254,7 +270,7 @@ export default function SolutionsTab() {
             <button type="submit" className="px-8 py-3 bg-white text-black font-medium rounded-full hover:bg-white/90 transition-colors">{editingSolution ? "Save Changes" : "Create Solution"}</button>
           </div>
         </form>
-      ) : localItems.length === 0 ? (
+      ) : displaySolutions.length === 0 ? (
         <div className="text-center py-20 border border-white/10 rounded-2xl bg-white/[0.01]">
           <h3 className="text-xl font-medium text-white mb-2">No solutions yet</h3>
           <p className="text-white/50 mb-6 max-w-sm mx-auto">Create your first solution to display it on the website.</p>
@@ -262,9 +278,9 @@ export default function SolutionsTab() {
         </div>
       ) : (
         <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={localItems.map(i => i.id)} strategy={rectSortingStrategy}>
+          <SortableContext items={displaySolutions.map(i => i.id)} strategy={rectSortingStrategy}>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {localItems.map((solution) => (
+              {displaySolutions.map((solution) => (
                 <SortableSolutionCard key={solution.id} solution={solution} onEdit={handleEdit} onDelete={(s) => deleteSolution(s.id)} />
               ))}
             </div>

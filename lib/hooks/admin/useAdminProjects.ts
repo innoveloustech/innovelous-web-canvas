@@ -78,8 +78,15 @@ export function useAdminProjects() {
     if (error) throw error;
     void queryClient.invalidateQueries({ queryKey: ["admin", "site-settings"] });
   };
+  const refetchAll = async () => {
+    await Promise.all([projects.refetch(), categories.refetch(), settings.refetch()]);
+  };
+
   return {
     ...projects,
+    isLoading: projects.isLoading || categories.isLoading,
+    error: projects.error || categories.error,
+    refetch: refetchAll,
     projects: projects.data ?? EMPTY_PROJECTS,
     mainCategories: categories.data?.mainCategories ?? EMPTY_MAIN_CATEGORIES,
     subCategories: categories.data?.subCategories ?? EMPTY_SUB_CATEGORIES,
