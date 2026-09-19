@@ -239,14 +239,18 @@ export default function Home({ projects }: { projects: Project[] }) {
       hasAnimatedRef.current = true;
 
       // 1. Hero Initial Entrance
-      gsap.from(".hero-tag, .hero-sub, .stat-item", {
-        opacity: 0,
-        y: 30,
-        duration: 1,
-        stagger: 0.12,
-        ease: "power3.out",
-        delay: 0.35,
-      });
+      const entranceTween = gsap.fromTo(
+        ".hero-tag, .hero-sub, .stat-item",
+        { opacity: 0, y: 30 },
+        {
+          opacity: 1,
+          y: 0,
+          duration: 1,
+          stagger: 0.12,
+          ease: "power3.out",
+          delay: 0.35,
+        }
+      );
 
       // 2. Hero Scroll Parallax
       const heroParallax = gsap.timeline({
@@ -255,12 +259,32 @@ export default function Home({ projects }: { projects: Project[] }) {
           start: "top top",
           end: "bottom top",
           scrub: 1.2,
+          onUpdate: (self) => {
+            if (self.progress > 0 && entranceTween.isActive()) {
+              entranceTween.progress(1);
+            }
+          },
         },
       });
       heroParallax
-        .to(".hero-title-wrapper", { y: -90, scale: 0.94, opacity: 0.15, ease: "none" }, 0)
-        .to(".hero-sub", { y: -45, opacity: 0.3, ease: "none" }, 0)
-        .to(".stat-item", { y: -30, opacity: 0.3, stagger: 0.04, ease: "none" }, 0);
+        .fromTo(
+          ".hero-title-wrapper",
+          { y: 0, scale: 1, opacity: 1 },
+          { y: -90, scale: 0.94, opacity: 0.15, ease: "none", immediateRender: false },
+          0
+        )
+        .fromTo(
+          ".hero-sub",
+          { y: 0, opacity: 1 },
+          { y: -45, opacity: 0.3, ease: "none", immediateRender: false },
+          0
+        )
+        .fromTo(
+          ".stat-item",
+          { y: 0, opacity: 1 },
+          { y: -30, opacity: 0.3, stagger: 0.04, ease: "none", immediateRender: false },
+          0
+        );
 
       // 3. Subtle Velocity Skew (soft clamp to eliminate text jitter)
       const proxy = { skew: 0 };
@@ -514,8 +538,8 @@ export default function Home({ projects }: { projects: Project[] }) {
 
               <div className="flex gap-12 border-t border-neutral-900 pt-6 w-full md:w-auto justify-between md:justify-end">
                 {stats.map((s, i) => (
-                  <div key={i} className="stat-item flex flex-col gap-1 transition-transform duration-300 hover:translate-y-[-2px]">
-                    <span className="text-2xl md:text-4xl font-light tracking-tight text-white">{s.value}</span>
+                  <div key={i} className="stat-item flex flex-col gap-1 group">
+                    <span className="text-2xl md:text-4xl font-light tracking-tight text-white transition-colors duration-200 group-hover:text-purple-300">{s.value}</span>
                     <span className="text-[10px] uppercase tracking-widest text-neutral-500 font-mono">{s.label}</span>
                   </div>
                 ))}
