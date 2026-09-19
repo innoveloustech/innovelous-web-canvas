@@ -97,10 +97,6 @@ function ParticleField() {
       pointsRef.current.rotation.z = time * 0.002;
       pointsRef.current.rotation.y = time * 0.004;
 
-      // Subtle vertical scroll parallax depth
-      const scrollY = typeof window !== "undefined" ? window.scrollY || 0 : 0;
-      pointsRef.current.position.y += (-scrollY * 0.0025 - pointsRef.current.position.y) * 0.05;
-
       // Convert target NDC mouse coordinates to actual 3D viewport coordinates
       const mouseX = (targetMouse.current.x * state.viewport.width) / 2;
       const mouseY = (targetMouse.current.y * state.viewport.height) / 2;

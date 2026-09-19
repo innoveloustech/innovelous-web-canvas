@@ -6,6 +6,12 @@ import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
 import TransitionLink from "@/components/TransitionLink";
+import {
+  OurServicesBackdrop,
+  OurServicesMobileSection,
+  useFramePreloader,
+  addServicesToTimeline,
+} from "@/components/home/OurServicesScrollSection";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -26,142 +32,176 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
   const sectionRef = useRef<HTMLDivElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => {
+    if (typeof window !== "undefined") {
+      return window.innerWidth < 768;
+    }
+    return false;
+  });
+
+  // Our Services backdrop refs
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasContainerRef = useRef<HTMLDivElement>(null);
+  const ambientGlowRef = useRef<HTMLDivElement>(null);
+  const cardTopRef = useRef<HTMLDivElement>(null);
+  const cardLeftRef = useRef<HTMLDivElement>(null);
+  const cardRightRef = useRef<HTMLDivElement>(null);
+  const frameCounterRef = useRef<HTMLSpanElement>(null);
+
+  const [scale, setScale] = useState(1);
+  const [activeMobileCard, setActiveMobileCard] = useState(0);
+
+  const { renderFrame } = useFramePreloader(canvasRef);
 
   useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
+    const check = () => {
+      const w = window.innerWidth;
+      const h = window.innerHeight;
+      const mobile = w < 768;
+      setIsMobile(mobile);
+      if (!mobile) {
+        const scaleW = (w - 60) / 1200;
+        const scaleH = (h - 100) / 720;
+        setScale(Math.min(1, Math.max(0.75, Math.min(scaleW, scaleH))));
+      } else {
+        setScale(1);
+      }
+    };
     check();
     window.addEventListener("resize", check);
     return () => window.removeEventListener("resize", check);
   }, []);
 
-  useGSAP(() => {
-    if (isMobile || !pinRef.current || !trackRef.current || projects.length === 0) return;
+  useGSAP(
+    () => {
+      if (!sectionRef.current || projects.length === 0) return;
 
-    const ctx = gsap.context(() => {
-      const track = trackRef.current!;
+      const mm = gsap.matchMedia();
 
-      const panelVW = window.innerWidth * 0.5;
-      const totalPanels = projects.length + 2;
-      const endX = -totalPanels * panelVW;
-      const scrollDistance = Math.abs(endX);
+      // DESKTOP: Only pin and animate horizontal track on screens >= 768px
+      mm.add("(min-width: 768px)", () => {
+        if (!pinRef.current || !trackRef.current) return;
+        const track = trackRef.current;
+        const panelVW = window.innerWidth * 0.5;
+        const totalPanels = projects.length + 2;
+        const endX = -totalPanels * panelVW;
+        const scrollDistance = Math.abs(endX);
 
-      // Create a single master timeline to coordinate track scroll and card rise animations
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: pinRef.current,
-          start: "top top",
-          end: `+=${scrollDistance}`,
-          scrub: 1.2,
-          pin: true,
-          pinSpacing: true,
-          pinType: "transform",
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      // 1. Move the horizontal scroll track linearly completely off-screen to reveal the background
-      tl.to(
-        track,
-        {
-          x: endX,
-          ease: "none",
-          duration: totalPanels,
-        },
-        0
-      );
-
-      // 2. Track horizontal scroll progress bar: reaches 100% when "Discover our complete" card comes up
-      const cardsDuration = Math.max(1, projects.length);
-      tl.to(
-        ".fp-progress-indicator",
-        {
-          width: "100%",
-          ease: "none",
-          duration: cardsDuration,
-        },
-        0
-      );
-
-      // 3. Exclude background section from scroll progress bar by fading out indicator when revealing background
-      tl.to(
-        ".fp-progress-container",
-        {
-          opacity: 0,
-          ease: "power2.out",
-          duration: 0.5,
-        },
-        cardsDuration + 0.2
-      );
-
-      // 3. Counter-parallax for project card images to create genuine 3D window depth
-      const imageInners = track.querySelectorAll<HTMLElement>(".fp-image-inner");
-      imageInners.forEach((img, idx) => {
-        tl.fromTo(
-          img,
-          { xPercent: 10 },
-          { xPercent: -10, ease: "none", duration: 1.2 },
-          Math.max(0, idx)
-        );
-      });
-
-      // 4. Background "Our Services" dramatic reveal
-      tl.fromTo(
-        ".bg-services-content",
-        { opacity: 0.1, scale: 0.92, filter: "blur(6px)" },
-        { opacity: 1, scale: 1, filter: "blur(0px)", ease: "power2.out", duration: 1.2 },
-        totalPanels - 1.8
-      );
-
-      // 5. Next cards rise up from bottom as they enter view (synchronized in the master timeline)
-      // k=0 is Title Panel (starts fully visible)
-      // k=1 is Card 0 (starts fully visible on the right half)
-      // k>=2 are subsequent panels that enter the screen from the right
-      const panels = track.querySelectorAll<HTMLElement>(".fp-card");
-      panels.forEach((panel, k) => {
-        if (k < 2) return;
-
-        // Card k enters during timeline interval [k - 2, k - 1]
-        // It rises to the top quickly (over 0.7s) to ensure it reaches full height soon after entering
-        tl.fromTo(
-          panel,
-          { y: 160 },
-          {
-            y: 0,
-            ease: "power2.out",
-            duration: 0.7,
-          },
-          k - 2
-        );
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [isMobile, projects]);
-
-  useGSAP(() => {
-    if (!isMobile || !sectionRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".fp-card",
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          stagger: 0.15,
-          ease: "power3.out",
+        const tl = gsap.timeline({
           scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 85%",
-            toggleActions: "play none none reverse",
+            trigger: pinRef.current,
+            start: "top top",
+            end: `+=${scrollDistance + 3800}`,
+            scrub: 1.2,
+            pin: true,
+            pinSpacing: true,
+            pinType: "transform",
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
           },
-        }
-      );
-    }, sectionRef);
-    return () => ctx.revert();
-  }, [isMobile, projects]);
+        });
+
+        // 1. Move the horizontal scroll track completely off-screen to reveal the background
+        tl.to(
+          track,
+          {
+            x: endX,
+            ease: "none",
+            duration: totalPanels,
+          },
+          0
+        );
+
+        // 2. Track horizontal scroll progress bar
+        const cardsDuration = Math.max(1, projects.length);
+        tl.to(
+          ".fp-progress-indicator",
+          {
+            width: "100%",
+            ease: "none",
+            duration: cardsDuration,
+          },
+          0
+        );
+
+        // 3. Exclude background section from scroll progress bar
+        tl.to(
+          ".fp-progress-container",
+          {
+            opacity: 0,
+            ease: "power2.out",
+            duration: 0.5,
+          },
+          cardsDuration + 0.2
+        );
+
+        // 4. Counter-parallax for project card images
+        const imageInners = track.querySelectorAll<HTMLElement>(".fp-image-inner");
+        imageInners.forEach((img, idx) => {
+          tl.fromTo(
+            img,
+            { xPercent: 10 },
+            { xPercent: -10, ease: "none", duration: 1.2 },
+            Math.max(0, idx)
+          );
+        });
+
+        // 5. Next cards rise up from bottom as they enter view
+        const panels = track.querySelectorAll<HTMLElement>(".fp-card");
+        panels.forEach((panel, k) => {
+          if (k < 2) return;
+          tl.fromTo(
+            panel,
+            { y: 160 },
+            {
+              y: 0,
+              ease: "power2.out",
+              duration: 0.7,
+            },
+            k - 2
+          );
+        });
+
+        // 6. Our Services narrative unfolds behind the sliding cards
+        addServicesToTimeline({
+          timeline: tl,
+          startTime: totalPanels - 0.4,
+          duration: 5.5,
+          isMobile: false,
+          canvasContainer: canvasContainerRef.current,
+          ambientGlow: ambientGlowRef.current,
+          cardTop: cardTopRef.current,
+          cardLeft: cardLeftRef.current,
+          cardRight: cardRightRef.current,
+          frameCounter: frameCounterRef.current,
+          renderFrame,
+        });
+      });
+
+      // MOBILE: Standard scroll fade-in, ZERO pinning, ZERO extra scroll space
+      mm.add("(max-width: 767px)", () => {
+        gsap.fromTo(
+          ".fp-card",
+          { opacity: 0, y: 30 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            stagger: 0.15,
+            ease: "power3.out",
+            scrollTrigger: {
+              trigger: sectionRef.current,
+              start: "top 85%",
+              toggleActions: "play none none reverse",
+            },
+          }
+        );
+      });
+
+      return () => mm.revert();
+    },
+    { scope: sectionRef, dependencies: [isMobile, projects, renderFrame] }
+  );
 
   if (projects.length === 0) return null;
 
@@ -198,31 +238,14 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
               VIEW ALL PROJECTS →
             </TransitionLink>
           </div>
-
-          {/* Mobile Our Services */}
-          <div className="fp-card flex flex-col justify-between py-16 px-4 min-h-[60vh] text-center bg-transparent mt-12">
-            <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase mb-12 block">
-              Our Services
-            </span>
-            <h2 className="text-5xl sm:text-6xl font-medium tracking-tighter leading-[0.85] text-white mb-16">
-              A.I.<br />
-              DESIGN<br />
-              DEVELOPMENT<br />
-              BRANDING
-            </h2>
-            <div className="flex flex-col items-center gap-6 mt-auto">
-              <div className="text-[9px] font-mono tracking-widest text-neutral-400 uppercase flex items-center gap-2">
-                <span className="text-white text-[7px]">■</span> DESIGN WITH INTENT. BUILT TO WORK.
-              </div>
-              <TransitionLink
-                href="/services"
-                className="text-[10px] font-mono tracking-widest uppercase text-neutral-400 hover:text-white transition-colors underline underline-offset-4"
-              >
-                VIEW SERVICES →
-              </TransitionLink>
-            </div>
-          </div>
         </div>
+
+        {/* Mobile Our Services narrative */}
+        <OurServicesMobileSection
+          canvasRef={canvasRef}
+          activeMobileCard={activeMobileCard}
+          setActiveMobileCard={setActiveMobileCard}
+        />
       </section>
     );
   }
@@ -233,41 +256,21 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
   return (
     <section
       ref={sectionRef}
-      className="relative w-full text-white"
+      className="relative w-full text-white bg-transparent"
     >
       {/* Pinned full-screen container */}
-      <div ref={pinRef} className="relative w-full h-screen overflow-hidden">
-
-        {/* 1. BACKGROUND "OUR SERVICES" SCREEN (Revealed when track slides away) */}
-        <div className="absolute inset-0 w-full h-full flex flex-col justify-between py-24 px-14 xl:px-20 z-0 pointer-events-none bg-transparent">
-          <div className="w-full flex justify-center">
-            <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase">
-              Our Services
-            </span>
-          </div>
-
-          <div className="bg-services-content flex flex-col items-center justify-center flex-1 text-center">
-            <h2 className="text-6xl md:text-[8vw] lg:text-[9vw] font-medium tracking-tighter leading-[0.85] text-white">
-              A.I.<br />
-              DESIGN<br />
-              DEVELOPMENT<br />
-              BRANDING
-            </h2>
-          </div>
-
-          <div className="flex items-center justify-between w-full pointer-events-auto">
-            <div className="text-[10px] md:text-[11px] font-mono tracking-widest text-neutral-400 uppercase flex items-center gap-3">
-              <span className="text-white text-[8px]">■</span> DESIGN WITH INTENT. BUILT TO WORK.
-            </div>
-            <TransitionLink
-              href="/services"
-              className="inline-flex items-center gap-2 text-[11px] font-mono tracking-widest uppercase text-neutral-400 hover:text-white transition-colors duration-300 group border-b border-neutral-800 pb-1 hover:border-white"
-            >
-              VIEW SERVICES
-              <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
-            </TransitionLink>
-          </div>
-        </div>
+      <div ref={pinRef} className="relative w-full h-screen overflow-x-clip bg-transparent">
+        {/* 1. OUR SERVICES BACKDROP (Revealed when horizontal track slides away) */}
+        <OurServicesBackdrop
+          canvasRef={canvasRef}
+          canvasContainerRef={canvasContainerRef}
+          ambientGlowRef={ambientGlowRef}
+          cardTopRef={cardTopRef}
+          cardLeftRef={cardLeftRef}
+          cardRightRef={cardRightRef}
+          frameCounterRef={frameCounterRef}
+          scale={scale}
+        />
 
         {/* Horizontal scroll progress line indicator */}
         <div className="fp-progress-container absolute bottom-8 left-14 right-14 z-20 pointer-events-none hidden md:flex items-center gap-4">

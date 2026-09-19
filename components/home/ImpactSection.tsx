@@ -159,10 +159,13 @@ export default function ImpactSection() {
   return (
     <section
       ref={containerRef}
-      className="relative w-full bg-transparent py-24 md:py-36 text-neutral-100 overflow-hidden"
+      className="relative w-full bg-transparent py-24 md:py-36 text-neutral-100 overflow-x-clip"
     >
+      {/* Continuous ambient purple glow bridging seamlessly from Our Services into ImpactSection */}
+      <div className="absolute -top-36 left-1/2 -translate-x-1/2 w-[850px] md:w-[1200px] h-[500px] rounded-full bg-purple-600/25 blur-[140px] pointer-events-none" />
+
       {/* Soft background ambient glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-purple-950/10 blur-[140px] pointer-events-none rounded-full" />
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-purple-950/20 blur-[140px] pointer-events-none rounded-full" />
 
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
 
