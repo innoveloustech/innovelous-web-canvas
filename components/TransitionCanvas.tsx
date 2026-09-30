@@ -1,7 +1,7 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useRef, useEffect, useMemo } from "react";
+import { useRef, useEffect, useMemo, useState } from "react";
 import * as THREE from "three";
 import gsap from "gsap";
 import { useRouter } from "next/navigation";
@@ -156,13 +156,16 @@ const ACTIVE_SHADER: keyof typeof SHADERS = "rgbGlitch";
 // ==========================================
 // 4. R3F COMPONENT WITH GSAP ROUTING
 // ==========================================
-function PixelShaderScene() {
+function PixelShaderScene({
+  transitionData,
+  onFinish,
+}: {
+  transitionData: { href?: string; isPopState?: boolean };
+  onFinish: () => void;
+}) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const router = useRouter();
-  const isTransitioning = useRef(false);
   const { viewport } = useThree();
-
-  // Always use the RGB Glitch shader
 
   const uniforms = useMemo(
     () => ({
@@ -175,92 +178,60 @@ function PixelShaderScene() {
   );
 
   useFrame((state) => {
+    if (typeof document !== "undefined" && document.hidden) return;
     if (materialRef.current) {
       materialRef.current.uniforms.uTime.value = state.clock.getElapsedTime();
     }
   });
 
   useEffect(() => {
-    const handleStart = (e: Event) => {
-      const customEvent = e as CustomEvent;
-      const { href } = customEvent.detail;
-      if (!materialRef.current || isTransitioning.current) return;
+    if (!materialRef.current) return;
 
-      isTransitioning.current = true;
+    materialRef.current.fragmentShader = SHADERS[ACTIVE_SHADER];
+    materialRef.current.needsUpdate = true;
+    const uProgress = materialRef.current.uniforms.uProgress;
 
-      // Ensure the RGB Glitch shader is active
-      materialRef.current.fragmentShader = SHADERS[ACTIVE_SHADER];
-      materialRef.current.needsUpdate = true;
-
-      const uProgress = materialRef.current.uniforms.uProgress;
-
-      // Single self-contained timeline:
-      //   1. Glitch sweeps in (1.2s)
-      //   2. Navigate to new page at the peak
-      //   3. Glitch sweeps back out (0.9s)
-      // This prevents any double-navigation and the resulting black screen.
+    if (transitionData.isPopState) {
+      document.body.style.pointerEvents = "none";
       gsap.timeline()
         .to(uProgress, {
           value: 1.0,
-          duration: 0.75,
+          duration: 0.35,
           ease: "power2.inOut",
-        })
-        .call(() => {
-          // Navigate at the glitch peak — page swap is hidden under the overlay
-          router.push(href);
         })
         .to(uProgress, {
           value: 0.0,
-          duration: 0.5,
+          duration: 0.35,
           ease: "power2.inOut",
           delay: 0.1,
           onComplete: () => {
-            isTransitioning.current = false;
-            document.body.style.pointerEvents = "";
+            onFinish();
           },
         });
-    };
-
-    const handlePopState = () => {
-      if (!materialRef.current || isTransitioning.current) return;
-
-      isTransitioning.current = true;
+    } else if (transitionData.href) {
       document.body.style.pointerEvents = "none";
-
-      materialRef.current.fragmentShader = SHADERS[ACTIVE_SHADER];
-      materialRef.current.needsUpdate = true;
-
-      const uProgress = materialRef.current.uniforms.uProgress;
-
-      // On popstate, Next.js has already handled the route change instantly.
-      // We cannot prevent or delay it — the DOM has already swapped.
-      // Instead, we immediately cover the screen with the shader to mask the
-      // snap, then fade back out, giving the illusion of a smooth transition.
       gsap.timeline()
         .to(uProgress, {
           value: 1.0,
-          duration: 0.4,
+          duration: 0.65,
           ease: "power2.inOut",
+        })
+        .call(() => {
+          if (transitionData.href) router.push(transitionData.href);
         })
         .to(uProgress, {
           value: 0.0,
-          duration: 0.4,
+          duration: 0.45,
           ease: "power2.inOut",
-          delay: 0.15,
+          delay: 0.1,
           onComplete: () => {
-            isTransitioning.current = false;
-            document.body.style.pointerEvents = "";
+            onFinish();
           },
         });
-    };
-
-    window.addEventListener("start-3d-transition", handleStart);
-    window.addEventListener("popstate", handlePopState);
-    return () => {
-      window.removeEventListener("start-3d-transition", handleStart);
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, [router]);
+    } else {
+      onFinish();
+    }
+  }, [transitionData, onFinish, router]);
 
   return (
     <mesh>
@@ -277,16 +248,48 @@ function PixelShaderScene() {
 }
 
 // ==========================================
-// 5. MAIN EXPORT
+// 5. MAIN EXPORT - Only mount Canvas on demand
 // ==========================================
 export default function TransitionCanvas() {
+  const [transitionData, setTransitionData] = useState<{ href?: string; isPopState?: boolean } | null>(null);
+
+  useEffect(() => {
+    const handleStart = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      setTransitionData({ href: customEvent.detail?.href, isPopState: false });
+    };
+
+    const handlePopState = () => {
+      setTransitionData({ isPopState: true });
+    };
+
+    window.addEventListener("start-3d-transition", handleStart);
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("start-3d-transition", handleStart);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
+
+  if (!transitionData) return null;
+
   return (
     <div className="fixed inset-0 z-[9999] pointer-events-none">
       <Canvas
         camera={{ position: [0, 0, 5], fov: 50 }}
         style={{ pointerEvents: "none" }}
+        gl={{ antialias: false, powerPreference: "default" }}
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener("webglcontextlost", (e) => e.preventDefault(), false);
+        }}
       >
-        <PixelShaderScene />
+        <PixelShaderScene
+          transitionData={transitionData}
+          onFinish={() => {
+            setTransitionData(null);
+            document.body.style.pointerEvents = "";
+          }}
+        />
       </Canvas>
     </div>
   );

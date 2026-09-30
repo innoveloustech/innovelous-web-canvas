@@ -47,7 +47,7 @@ const fragmentShader = `
   }
 `;
 
-function ParticleField() {
+function ParticleField({ count = COUNT }: { count?: number }) {
   const materialRef = useRef<THREE.ShaderMaterial>(null);
   const pointsRef = useRef<THREE.Points>(null);
 
@@ -69,16 +69,16 @@ function ParticleField() {
     return () => window.removeEventListener("mousemove", handleMouseMove);
   }, []);
 
-  const [positions] = useState(() => {
-    const pos = new Float32Array(COUNT * 3);
-    for (let i = 0; i < COUNT; i++) {
+  const positions = useMemo(() => {
+    const pos = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
       // Pushed the boundaries wider so they cover the outer layout edges natively
       pos[i * 3] = (Math.random() - 0.5) * 60;
       pos[i * 3 + 1] = (Math.random() - 0.5) * 35;
       pos[i * 3 + 2] = (Math.random() - 0.5) * 15;
     }
     return pos;
-  });
+  }, [count]);
 
   const uniforms = useMemo(
     () => ({
@@ -89,6 +89,9 @@ function ParticleField() {
   );
 
   useFrame((state) => {
+    // CRITICAL: Stop rendering if tab is hidden / switched to avoid GPU crash
+    if (typeof document !== "undefined" && document.hidden) return;
+
     const time = state.clock.getElapsedTime();
     if (materialRef.current) materialRef.current.uniforms.uTime.value = time;
     
@@ -122,7 +125,7 @@ function ParticleField() {
 
   return (
     <points ref={pointsRef}>
-      <bufferGeometry>
+      <bufferGeometry key={count}>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
       </bufferGeometry>
       <shaderMaterial
@@ -139,17 +142,37 @@ function ParticleField() {
 }
 
 export default function CanvasBackground() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
   return (
     <div className="fixed inset-0 -z-10 pointer-events-none bg-black">
       <Canvas
-        dpr={[1, 1.5]}
+        dpr={isMobile ? 1 : [1, 1.5]}
         camera={{ position: [0, 0, 20], fov: 55 }}
         gl={{
           antialias: false,
-          powerPreference: "high-performance",
+          powerPreference: isMobile ? "default" : "high-performance",
+          failIfMajorPerformanceCaveat: false,
+        }}
+        onCreated={({ gl }) => {
+          // CRITICAL for mobile tab switching:
+          // In standard WebGL, preventDefault() on webglcontextlost tells the browser
+          // that the application intends to restore context when the tab returns!
+          const canvasEl = gl.domElement;
+          const handleContextLost = (e: Event) => {
+            e.preventDefault();
+          };
+          canvasEl.addEventListener("webglcontextlost", handleContextLost, false);
         }}
       >
-        <ParticleField />
+        <ParticleField count={isMobile ? 180 : COUNT} />
       </Canvas>
     </div>
   );

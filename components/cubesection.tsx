@@ -114,6 +114,7 @@ function TestimonialCube({ scrollVelocityRef }: { scrollVelocityRef: React.RefOb
   const currentScale = isMobile ? 0.55 : 0.95;
 
   useFrame((state, delta) => {
+    if (typeof document !== "undefined" && document.hidden) return;
     if (groupRef.current) {
       const scrollVel = scrollVelocityRef.current || 0;
       // Gently decelerate
@@ -224,6 +225,9 @@ export default function CubeSection() {
       <Canvas
         camera={{ position: [0, 0, 9], fov: 45 }}
         gl={{ antialias: true, alpha: true }}
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener("webglcontextlost", (e) => e.preventDefault(), false);
+        }}
       >
         <ambientLight intensity={1.3} />
         <pointLight position={[10, 10, 10]} intensity={1.5} color="#ffffff" />

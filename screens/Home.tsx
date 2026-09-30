@@ -80,9 +80,15 @@ const LiquidAboutBackground = () => {
     );
     camera.position.z = 10;
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    const isMobile = window.innerWidth < 768;
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: !isMobile, powerPreference: isMobile ? "default" : "high-performance" });
     renderer.setSize(totalWidth, totalHeight);
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setPixelRatio(isMobile ? 1 : Math.min(window.devicePixelRatio, 2));
+
+    const handleContextLost = (e: Event) => {
+      e.preventDefault();
+    };
+    canvas.addEventListener("webglcontextlost", handleContextLost, false);
 
     const vertexShader = `
       uniform float uVelocity;
@@ -112,7 +118,8 @@ const LiquidAboutBackground = () => {
       }
     `;
 
-    const geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 64, 64);
+    const segments = isMobile ? 24 : 64;
+    const geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, segments, segments);
     const material = new THREE.ShaderMaterial({
       vertexShader,
       fragmentShader,
@@ -138,7 +145,7 @@ const LiquidAboutBackground = () => {
         renderer.setSize(totalWidth, totalHeight);
 
         plane.geometry.dispose();
-        plane.geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, 64, 64);
+        plane.geometry = new THREE.PlaneGeometry(totalWidth, planeHeight, segments, segments);
       }
     });
     resizeObserver.observe(container);
@@ -154,6 +161,12 @@ const LiquidAboutBackground = () => {
     });
 
     const render = (time: number) => {
+      // Pause if tab is hidden / in background, or if context is currently lost
+      if (document.hidden || renderer.getContext().isContextLost()) {
+        animationId = requestAnimationFrame(render);
+        return;
+      }
+
       const dt = Math.min((time - lastTime) / 1000, 0.1);
       lastTime = time;
 
@@ -174,6 +187,7 @@ const LiquidAboutBackground = () => {
       cancelAnimationFrame(animationId);
       resizeObserver.disconnect();
       st.kill();
+      canvas.removeEventListener("webglcontextlost", handleContextLost);
       renderer.dispose();
       geometry.dispose();
       material.dispose();

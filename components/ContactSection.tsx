@@ -1,11 +1,9 @@
 "use client";
 
-import { useRef, useMemo, useState, useLayoutEffect } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { useRef, useState, useLayoutEffect, useEffect } from "react";
 import { useGSAP } from "@gsap/react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import * as THREE from "three";
 import Link from "next/link";
 import { useSiteSettings } from "@/components/SiteSettingsProvider";
 
@@ -39,89 +37,108 @@ const LINES = [
   { text: "Let's Talk.", ghost: true },
 ];
 
-// ─── Declarative R3F Hover Interactive Particles ──────────────────────────────
-const CARD_COUNT = 100;
+// ─── Lightweight 2D Canvas Card Particles (0 WebGL Contexts, Zero Crash on Tab Switch) ──────
+function CardParticles2D({ isHovered, mousePos }: { isHovered: boolean; mousePos: { x: number; y: number } }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const hoverRef = useRef(isHovered);
+  const mouseRef = useRef(mousePos);
 
-const cardVertexShader = `
-  uniform float uTime;
-  uniform float uHover;
-  uniform vec2 uMouse;
-  varying vec3 vPosition;
-  varying float vDistToMouse;
+  useEffect(() => {
+    hoverRef.current = isHovered;
+  }, [isHovered]);
 
-  void main() {
-    vPosition = position;
-    vec3 pos = position;
-    pos.y += sin(uTime * 0.4 + pos.x * 0.3) * 0.15;
-    pos.x += cos(uTime * 0.3 + pos.y * 0.3) * 0.10;
-    vec3 targetMousePos = vec3(uMouse * 10.0, 0.0);
-    float dist = distance(pos, targetMousePos);
-    vDistToMouse = dist;
-    if (uHover > 0.01) {
-      vec3 direction = targetMousePos - pos;
-      float pullForce = smoothstep(8.0, 0.0, dist) * uHover * 0.35;
-      pos += direction * pullForce;
-    }
-    vec4 mvPosition = modelViewMatrix * vec4(pos, 1.0);
-    gl_Position = projectionMatrix * mvPosition;
-    gl_PointSize = 0.55 * (300.0 / -mvPosition.z);
-  }
-`;
+  useEffect(() => {
+    mouseRef.current = mousePos;
+  }, [mousePos]);
 
-const cardFragmentShader = `
-  varying float vDistToMouse;
-  uniform float uHover;
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
-  void main() {
-    float distanceToCenter = length(gl_PointCoord - vec2(0.5));
-    if (distanceToCenter > 0.5) discard;
-    vec3 baseColor = vec3(0.44, 0.44, 0.50);
-    vec3 hoverColor = vec3(0.66, 0.33, 0.97);
-    float interactionGlow = smoothstep(4.0, 0.0, vDistToMouse) * uHover;
-    vec3 finalColor = mix(baseColor, hoverColor, interactionGlow);
-    float alphaProfile = (0.09 + interactionGlow * 0.16) * (1.0 - distanceToCenter * 2.0);
-    gl_FragColor = vec4(finalColor, alphaProfile);
-  }
-`;
+    let animId: number;
+    let width = 0;
+    let height = 0;
 
-function CardParticles({ isHovered, mousePos }: { isHovered: boolean; mousePos: THREE.Vector2 }) {
-  const materialRef = useRef<THREE.ShaderMaterial>(null);
-  const pointsRef = useRef<THREE.Points>(null);
+    const resize = () => {
+      if (!canvas) return;
+      width = canvas.width = canvas.offsetWidth || 320;
+      height = canvas.height = canvas.offsetHeight || 220;
+    };
+    resize();
+    window.addEventListener("resize", resize);
 
-  const [positions] = useState(() => {
-    const pos = new Float32Array(CARD_COUNT * 3);
-    for (let i = 0; i < CARD_COUNT; i++) {
-      pos[i * 3] = (Math.random() - 0.5) * 16;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 10;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 4;
-    }
-    return pos;
-  });
+    const count = 30;
+    const particles = Array.from({ length: count }, () => ({
+      x: Math.random() * (width || 300),
+      y: Math.random() * (height || 200),
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      radius: Math.random() * 1.5 + 0.8,
+      baseAlpha: Math.random() * 0.2 + 0.1,
+    }));
 
-  const uniforms = useMemo(() => ({
-    uTime: { value: 0 },
-    uHover: { value: 0 },
-    uMouse: { value: new THREE.Vector2(0, 0) },
-  }), []);
+    let currentHover = 0;
 
-  useFrame((state) => {
-    const time = state.clock.getElapsedTime();
-    if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = time;
-      const targetHover = isHovered ? 1.0 : 0.0;
-      materialRef.current.uniforms.uHover.value += (targetHover - materialRef.current.uniforms.uHover.value) * 0.1;
-      materialRef.current.uniforms.uMouse.value.lerp(mousePos, 0.1);
-    }
-    if (pointsRef.current) pointsRef.current.rotation.z = time * 0.01;
-  });
+    const render = () => {
+      // Pause completely if tab is hidden / switched
+      if (document.hidden) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+
+      currentHover += ((hoverRef.current ? 1 : 0) - currentHover) * 0.1;
+      ctx.clearRect(0, 0, width, height);
+
+      const targetX = ((mouseRef.current.x + 1) / 2) * width;
+      const targetY = ((-mouseRef.current.y + 1) / 2) * height;
+
+      for (let i = 0; i < count; i++) {
+        const p = particles[i];
+        p.x += p.vx * (1 + currentHover * 0.6);
+        p.y += p.vy * (1 + currentHover * 0.6);
+
+        if (currentHover > 0.05) {
+          const dx = targetX - p.x;
+          const dy = targetY - p.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120 && dist > 1) {
+            p.x += (dx / dist) * currentHover * 0.8;
+            p.y += (dy / dist) * currentHover * 0.8;
+          }
+        }
+
+        if (p.x < 0) p.x = width;
+        if (p.x > width) p.x = 0;
+        if (p.y < 0) p.y = height;
+        if (p.y > height) p.y = 0;
+
+        const alpha = p.baseAlpha + currentHover * 0.35;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+        ctx.fillStyle = currentHover > 0.1
+          ? `rgba(168, 85, 247, ${alpha})`
+          : `rgba(140, 140, 160, ${alpha})`;
+        ctx.fill();
+      }
+
+      animId = requestAnimationFrame(render);
+    };
+
+    animId = requestAnimationFrame(render);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
 
   return (
-    <points ref={pointsRef}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-      </bufferGeometry>
-      <shaderMaterial ref={materialRef} vertexShader={cardVertexShader} fragmentShader={cardFragmentShader} uniforms={uniforms} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
-    </points>
+    <canvas
+      ref={canvasRef}
+      className="w-full h-full block pointer-events-none"
+    />
   );
 }
 
@@ -136,7 +153,7 @@ interface ContactCardItem {
 function ContactCard({ item }: { item: ContactCardItem }) {
   const [isHovered, setIsHovered] = useState(false);
   const [copied, setCopied] = useState(false);
-  const mousePos = useMemo(() => new THREE.Vector2(0, 0), []);
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(item.primary);
@@ -148,7 +165,7 @@ function ContactCard({ item }: { item: ContactCardItem }) {
     const rect = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
-    mousePos.set(x, y);
+    setMousePos({ x, y });
 
     gsap.to(e.currentTarget, {
       rotateY: x * 6,
@@ -202,9 +219,7 @@ function ContactCard({ item }: { item: ContactCardItem }) {
       onMouseLeave={onCardLeave}
     >
       <div className="absolute inset-0 z-0 opacity-60 transition-opacity duration-300 hover:opacity-100 pointer-events-none">
-        <Canvas dpr={[1, 1.5]} camera={{ position: [0, 0, 5], fov: 60 }} gl={{ antialias: false, powerPreference: "high-performance" }}>
-          <CardParticles isHovered={isHovered} mousePos={mousePos} />
-        </Canvas>
+        <CardParticles2D isHovered={isHovered} mousePos={mousePos} />
       </div>
 
       <div className="relative z-10 flex flex-col h-full pointer-events-none">

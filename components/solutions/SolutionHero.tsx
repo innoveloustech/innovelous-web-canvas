@@ -42,6 +42,7 @@ function DynamicGeometry({ config }: SceneProps) {
   }, [config.color, config.wireframe]);
 
   useFrame((state, delta) => {
+    if (typeof document !== "undefined" && document.hidden) return;
     if (meshRef.current) {
       meshRef.current.rotation.x += delta * 0.15;
       meshRef.current.rotation.y += delta * 0.2;
@@ -76,6 +77,9 @@ export default function SolutionHero({ config }: SceneProps) {
         camera={{ position: [0, 0, 5], fov: 45 }}
         gl={{ antialias: true, alpha: true }}
         className="opacity-60"
+        onCreated={({ gl }) => {
+          gl.domElement.addEventListener("webglcontextlost", (e) => e.preventDefault(), false);
+        }}
       >
         <ambientLight intensity={0.4} />
         <pointLight position={[5, 5, 5]} intensity={1.5} color={config.color} />
