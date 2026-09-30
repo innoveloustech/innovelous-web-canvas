@@ -63,7 +63,7 @@ function SortableProjectCard({
               <span className="text-[9px] font-mono tracking-widest uppercase px-2 py-0.5 border rounded-full border-yellow-500/50 text-yellow-400">Featured</span>
             )}
             {project.image_url && (
-              <div className="w-12 h-12 rounded-lg border border-white/10 overflow-hidden bg-black flex-shrink-0">
+              <div className="w-16 h-9 aspect-[16/9] rounded-lg border border-white/10 overflow-hidden bg-black flex-shrink-0">
                 <img src={project.image_url} alt="asset node preview" className="w-full h-full object-cover" />
               </div>
             )}
@@ -482,13 +482,27 @@ export default function ProjectsTab() {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">Thumbnail Media Asset Representation</label>
+                    <label className="block text-[10px] uppercase tracking-wider text-neutral-500 font-mono mb-1">
+                      Thumbnail Media Asset (Fixed Landscape 16:9 &mdash; Recommended: 1280 &times; 720 px)
+                    </label>
                     <div className="p-4 border border-dashed border-white/10 rounded-xl text-center relative hover:border-white/20 transition-colors">
                       <input type="file" accept="image/*" onChange={e => setMediaFile(e.target.files ? e.target.files[0] : null)} required={modalMode === "CREATE"} className="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                       <p className="text-xs text-neutral-400 font-light">
-                        {mediaFile ? `Queued: ${mediaFile.name}` : modalMode === "UPDATE" ? "Leave blank to keep current thumbnail asset" : "Click or drop thumbnail image asset package here"}
+                        {mediaFile ? `Queued: ${mediaFile.name}` : modalMode === "UPDATE" ? "Leave blank to keep current thumbnail asset" : "Click or drop thumbnail image asset package here (16:9 Landscape, e.g. 1280×720 px)"}
                       </p>
                     </div>
+                    {(mediaFile || (modalMode === "UPDATE" && activeProject?.image_url)) && (
+                      <div className="mt-3 relative w-full aspect-[16/9] max-h-52 rounded-xl overflow-hidden border border-white/10 bg-black">
+                        <img
+                          src={mediaFile ? URL.createObjectURL(mediaFile) : activeProject?.image_url}
+                          alt="Thumbnail Preview"
+                          className="w-full h-full object-cover"
+                        />
+                        <span className="absolute bottom-2 right-2 text-[9px] font-mono uppercase bg-black/70 backdrop-blur-sm text-neutral-300 px-2 py-0.5 rounded border border-white/10">
+                          16:9 Landscape Preview
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2 justify-end pt-4 border-t border-white/5 mt-6">
                     <button type="button" onClick={dismissModalContext} className="px-4 py-2.5 text-xs uppercase tracking-wider font-medium text-neutral-400 hover:text-white transition-colors">Cancel</button>

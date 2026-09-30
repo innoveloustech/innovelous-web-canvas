@@ -333,9 +333,9 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
                 onMouseEnter={handleCardEnter}
                 onMouseMove={handleCardMouseMove}
                 onMouseLeave={handleCardLeave}
-                className="project-card group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm cursor-pointer transition-colors duration-300 hover:bg-white/[0.04] min-h-[500px]"
+                className="project-card group relative flex flex-col justify-between overflow-hidden rounded-3xl border border-white/10 bg-white/[0.02] backdrop-blur-sm cursor-pointer transition-colors duration-300 hover:bg-white/[0.04]"
               >
-                <div className="relative h-64 overflow-hidden border-b border-white/10 bg-neutral-900">
+                <div className="relative w-full aspect-[16/9] overflow-hidden border-b border-white/10 bg-neutral-900">
                   {project.image_url ? (
                     <img
                       src={project.image_url}
@@ -402,7 +402,7 @@ export default function ProjectsClient({ initialProjects, initialMainCategories 
 
             <div className="grid grid-cols-1 lg:grid-cols-2 overflow-y-auto overscroll-contain">
               <div
-                className="relative h-64 lg:h-auto lg:sticky lg:top-0 min-h-[300px] lg:min-h-[500px] bg-neutral-900 overflow-hidden cursor-pointer group"
+                className="relative w-full aspect-[16/9] lg:aspect-auto lg:h-full min-h-[260px] lg:min-h-[480px] bg-neutral-900 overflow-hidden cursor-pointer group"
                 onMouseEnter={handleModalImageEnter}
                 onMouseLeave={handleModalImageLeave}
               >

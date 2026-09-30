@@ -382,9 +382,9 @@ function DesktopCard({ project, index }: { project: Project; index: number }) {
       onMouseLeave={handleLeave}
       className="relative w-full h-full flex flex-col justify-between cursor-pointer"
     >
-      {/* Image block — takes up remaining space to be full height */}
+      {/* Image block — fixed 16:9 landscape aspect ratio */}
       <div
-        className="relative w-full flex-1 rounded-2xl overflow-hidden bg-neutral-900 mb-6 shadow-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)]"
+        className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-neutral-900 mb-6 shadow-2xl transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.15)]"
       >
         {project.image_url ? (
           <img
@@ -439,8 +439,7 @@ function MobileCard({ project, index }: { project: Project; index: number }) {
   return (
     <div className="fp-card flex flex-col gap-4">
       <div
-        className="relative w-full rounded-2xl overflow-hidden bg-neutral-900"
-        style={{ height: "56vw" }}
+        className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-neutral-900"
       >
         {project.image_url ? (
           <img
