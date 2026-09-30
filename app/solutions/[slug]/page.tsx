@@ -6,6 +6,9 @@ export const dynamic = 'force-static';
 
 export async function generateStaticParams() {
   const solutions = await getSolutions();
+  if (!solutions || solutions.length === 0) {
+    return [{ slug: "hardware" }, { slug: "software" }];
+  }
   return solutions.map((sol) => ({
     slug: sol.slug,
   }));

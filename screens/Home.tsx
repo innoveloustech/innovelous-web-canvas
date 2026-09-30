@@ -39,6 +39,16 @@ const services = [
 
 const HERO_WORDS = ["INNOVELOUS", "AI Products", "Web & Apps"];
 
+const getHeroFontSize = (text: string) => {
+  const len = text.length;
+  if (len <= 7) return "clamp(2.75rem, 13vw, 10rem)";
+  if (len <= 9) return "clamp(2.4rem, 11vw, 10rem)";
+  if (len <= 11) return "clamp(1.95rem, 8.8vw, 9.5rem)";
+  if (len <= 13) return "clamp(1.7rem, 7.5vw, 8.5rem)";
+  if (len <= 16) return "clamp(1.4rem, 6.2vw, 7.5rem)";
+  return "clamp(1.2rem, 5.2vw, 6.5rem)";
+};
+
 interface Project {
   id: number;
   name: string;
@@ -512,10 +522,10 @@ export default function Home({ projects }: { projects: Project[] }) {
               <div className="hero-title-tilt w-full max-w-full overflow-hidden py-4 flex items-center justify-center">
                 <h1
                   className="hero-word block font-black leading-[0.85] tracking-[-0.03em] text-center uppercase text-white break-none"
-                  style={{ fontSize: "clamp(3.5rem, 11.5vw, 10rem)" }}
+                  style={{ fontSize: getHeroFontSize(HERO_WORDS[wordIndex]) }}
                   data-cursor-text=" "
                 >
-                  <div key={wordIndex} className="flex items-center justify-center overflow-hidden flex-wrap">
+                  <div key={wordIndex} className="flex items-center justify-center overflow-hidden flex-nowrap whitespace-nowrap">
                     {HERO_WORDS[wordIndex].split("").map((char, i) => (
                       <span key={i} className="hero-char-wrapper inline-block overflow-hidden py-1">
                         <span

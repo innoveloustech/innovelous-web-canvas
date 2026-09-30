@@ -81,28 +81,40 @@ export type SiteData = {
 };
 
 export async function getSiteSettings(): Promise<SiteSettings | null> {
-  const { data } = await supabase
-    .from('site_settings')
-    .select('*')
-    .eq('id', 1)
-    .single();
-  return data;
+  try {
+    const { data } = await supabase
+      .from('site_settings')
+      .select('*')
+      .eq('id', 1)
+      .single();
+    return data;
+  } catch {
+    return null;
+  }
 }
 
 export async function getTestimonials(): Promise<Testimonial[]> {
-  const { data } = await supabase
-    .from('testimonials')
-    .select('*')
-    .order('sort_order', { ascending: true });
-  return data || [];
+  try {
+    const { data } = await supabase
+      .from('testimonials')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    return data || [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getFaqs(): Promise<FaqItem[]> {
-  const { data } = await supabase
-    .from('faqs')
-    .select('*')
-    .order('sort_order', { ascending: true });
-  return data || [];
+  try {
+    const { data } = await supabase
+      .from('faqs')
+      .select('*')
+      .order('sort_order', { ascending: true });
+    return data || [];
+  } catch {
+    return [];
+  }
 }
 
 export async function getSiteData(): Promise<SiteData> {
