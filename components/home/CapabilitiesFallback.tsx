@@ -96,131 +96,107 @@ export default function CapabilitiesFallback() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  useGSAP(
+    () => {
+      if (!sectionRef.current) return;
 
-  useGSAP(() => {
-    if (isMobile || !pinRef.current || !trackRef.current) return;
+      const mm = gsap.matchMedia();
 
-    const ctx = gsap.context(() => {
-      const track = trackRef.current!;
-      const panelVW = window.innerWidth * 0.5;
-      const totalPanels = practices.length + 2;
-      const endX = -totalPanels * panelVW;
-      const scrollDistance = Math.abs(endX);
+      // Desktop and Laptop ONLY (>= 1024px)
+      mm.add("(min-width: 1024px)", () => {
+        if (!pinRef.current || !trackRef.current) return;
 
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: pinRef.current,
-          start: "top top",
-          end: "+=" + scrollDistance,
-          scrub: 1.2,
-          pin: true,
-          pinSpacing: true,
-          pinType: "transform",
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-        },
-      });
+        const track = trackRef.current;
+        const panelVW = window.innerWidth * 0.5;
+        const totalPanels = practices.length + 2;
+        const endX = -totalPanels * panelVW;
+        const scrollDistance = Math.abs(endX);
 
-      // 1. Move the horizontal scroll track off-screen to reveal "Our Services" behind
-      tl.to(
-        track,
-        {
-          x: endX,
-          ease: "none",
-          duration: totalPanels,
-        },
-        0
-      );
-
-      // 2. Track horizontal scroll progress indicator: full when discovery card comes up
-      const cardsDuration = Math.max(1, practices.length);
-      tl.to(
-        ".cap-progress-indicator",
-        {
-          width: "100%",
-          ease: "none",
-          duration: cardsDuration,
-        },
-        0
-      );
-
-      // 3. Exclude background section from scroll progress by fading out indicator when revealing background
-      tl.to(
-        ".cap-progress-container",
-        {
-          opacity: 0,
-          ease: "power2.out",
-          duration: 0.5,
-        },
-        cardsDuration + 0.2
-      );
-
-      // 3. Background typography reveal
-      tl.fromTo(
-        ".bg-cap-services-content",
-        { opacity: 0.1, scale: 0.92, filter: "blur(6px)" },
-        { opacity: 1, scale: 1, filter: "blur(0px)", ease: "power2.out", duration: 1.2 },
-        totalPanels - 1.8
-      );
-
-      // 4. Rising cards as they enter view
-      const panels = track.querySelectorAll<HTMLElement>(".cap-panel");
-      panels.forEach((panel, k) => {
-        if (k < 2) return;
-        tl.fromTo(
-          panel,
-          { y: 160 },
-          {
-            y: 0,
-            ease: "power2.out",
-            duration: 0.7,
-          },
-          k - 2
-        );
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [isMobile]);
-
-  useGSAP(() => {
-    if (!isMobile || !sectionRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".cap-panel",
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          stagger: 0.15,
-          ease: "power3.out",
+        const tl = gsap.timeline({
           scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 85%",
-            toggleActions: "play none none reverse",
+            trigger: pinRef.current,
+            start: "top top",
+            end: "+=" + scrollDistance,
+            scrub: 1.2,
+            pin: true,
+            pinSpacing: true,
+            pinType: "transform",
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
           },
-        }
-      );
-    }, sectionRef);
-    return () => ctx.revert();
-  }, [isMobile]);
+        });
 
-  // ─── MOBILE VIEW ─────────────────────────────────────────────────────────────
-  if (isMobile) {
-    return (
-      <section
-        ref={sectionRef}
-        className="relative w-full bg-zinc-950 py-20 text-white overflow-hidden"
-      >
+        // 1. Move the horizontal scroll track off-screen to reveal "Our Services" behind
+        tl.to(
+          track,
+          {
+            x: endX,
+            ease: "none",
+            duration: totalPanels,
+          },
+          0
+        );
+
+        // 2. Track horizontal scroll progress indicator: full when discovery card comes up
+        const cardsDuration = Math.max(1, practices.length);
+        tl.to(
+          ".cap-progress-indicator",
+          {
+            width: "100%",
+            ease: "none",
+            duration: cardsDuration,
+          },
+          0
+        );
+
+        // 3. Exclude background section from scroll progress by fading out indicator when revealing background
+        tl.to(
+          ".cap-progress-container",
+          {
+            opacity: 0,
+            ease: "power2.out",
+            duration: 0.5,
+          },
+          cardsDuration + 0.2
+        );
+
+        // 3. Background typography reveal
+        tl.fromTo(
+          ".bg-cap-services-content",
+          { opacity: 0.1, scale: 0.92, filter: "blur(6px)" },
+          { opacity: 1, scale: 1, filter: "blur(0px)", ease: "power2.out", duration: 1.2 },
+          totalPanels - 1.8
+        );
+
+        // 4. Rising cards as they enter view
+        const panels = track.querySelectorAll<HTMLElement>(".cap-panel");
+        panels.forEach((panel, k) => {
+          if (k < 2) return;
+          tl.fromTo(
+            panel,
+            { y: 160 },
+            {
+              y: 0,
+              ease: "power2.out",
+              duration: 0.7,
+            },
+            k - 2
+          );
+        });
+      });
+
+      return () => mm.revert();
+    },
+    { scope: sectionRef }
+  );
+
+  const totalPanels = practices.length + 2;
+
+  return (
+    <section ref={sectionRef} className="relative w-full text-white">
+      {/* ─── MOBILE VIEW (Normal natural scrolling, no scroll pin effect) ─── */}
+      <div className="block lg:hidden w-full bg-zinc-950 py-16 sm:py-20 text-white overflow-hidden">
         <div className="px-6 mb-12">
           <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase block mb-3">
             What We Do
@@ -234,7 +210,7 @@ export default function CapabilitiesFallback() {
           {practices.map((item) => (
             <div
               key={item.id}
-              className="cap-panel rounded-2xl bg-zinc-900 border border-neutral-800 p-7 flex flex-col justify-between"
+              className="rounded-2xl bg-zinc-900 border border-neutral-800 p-7 flex flex-col justify-between"
             >
               <div>
                 <div className="flex items-center justify-between gap-4 mb-4">
@@ -285,7 +261,7 @@ export default function CapabilitiesFallback() {
           ))}
 
           {/* End card */}
-          <div className="cap-panel rounded-2xl bg-zinc-900 border border-neutral-800 p-10 flex flex-col justify-center items-center text-center space-y-5 min-h-[240px]">
+          <div className="rounded-2xl bg-zinc-900 border border-neutral-800 p-10 flex flex-col justify-center items-center text-center space-y-5 min-h-[240px]">
             <p className="text-xl font-light text-neutral-300 leading-snug max-w-[240px]">
               Have an idea in mind? We would love to hear what you are working on.
             </p>
@@ -298,7 +274,7 @@ export default function CapabilitiesFallback() {
           </div>
 
           {/* Mobile Our Services */}
-          <div className="cap-panel flex flex-col justify-between py-16 px-4 min-h-[60vh] text-center bg-transparent mt-12">
+          <div className="flex flex-col justify-between py-16 px-4 min-h-[60vh] text-center bg-transparent mt-12">
             <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase mb-12 block">
               Our Services
             </span>
@@ -321,17 +297,12 @@ export default function CapabilitiesFallback() {
             </div>
           </div>
         </div>
-      </section>
-    );
-  }
+      </div>
 
-  // ─── DESKTOP VIEW ────────────────────────────────────────────────────────────
-  const totalPanels = practices.length + 2;
-
-  return (
-    <section ref={sectionRef} className="relative w-full text-white">
-      {/* Pinned full-screen container */}
-      <div ref={pinRef} className="relative w-full h-screen overflow-hidden">
+      {/* ─── DESKTOP VIEW (Kept pinned scroll effect) ─── */}
+      <div className="hidden lg:block relative w-full">
+        {/* Pinned full-screen container */}
+        <div ref={pinRef} className="relative w-full h-screen overflow-hidden">
         {/* 1. BACKGROUND "OUR SERVICES" SCREEN (Revealed when horizontal track slides away) */}
         <div className="absolute inset-0 w-full h-full flex flex-col justify-between py-24 px-14 xl:px-20 z-0 pointer-events-none bg-transparent">
           <div className="w-full flex justify-center">
@@ -486,6 +457,7 @@ export default function CapabilitiesFallback() {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </section>
   );

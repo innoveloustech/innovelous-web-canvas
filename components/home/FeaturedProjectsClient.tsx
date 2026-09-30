@@ -26,152 +26,125 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
   const sectionRef = useRef<HTMLDivElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
-  const [isMobile, setIsMobile] = useState(false);
 
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 768);
-    check();
-    window.addEventListener("resize", check);
-    return () => window.removeEventListener("resize", check);
-  }, []);
+  useGSAP(
+    () => {
+      if (!sectionRef.current || projects.length === 0) return;
 
-  useGSAP(() => {
-    if (isMobile || !pinRef.current || !trackRef.current || projects.length === 0) return;
+      const mm = gsap.matchMedia();
 
-    const ctx = gsap.context(() => {
-      const track = trackRef.current!;
+      // Desktop and Laptop ONLY (>= 1024px)
+      mm.add("(min-width: 1024px)", () => {
+        if (!pinRef.current || !trackRef.current) return;
 
-      const panelVW = window.innerWidth * 0.5;
-      const totalPanels = projects.length + 2;
-      const endX = -totalPanels * panelVW;
-      const scrollDistance = Math.abs(endX);
+        const track = trackRef.current;
+        const panelVW = window.innerWidth * 0.5;
+        const totalPanels = projects.length + 2;
+        const endX = -totalPanels * panelVW;
+        const scrollDistance = Math.abs(endX);
 
-      // Create a single master timeline to coordinate track scroll and card rise animations
-      const tl = gsap.timeline({
-        scrollTrigger: {
-          trigger: pinRef.current,
-          start: "top top",
-          end: `+=${scrollDistance}`,
-          scrub: 1.2,
-          pin: true,
-          pinSpacing: true,
-          pinType: "transform",
-          anticipatePin: 1,
-          invalidateOnRefresh: true,
-        },
-      });
-
-      // 1. Move the horizontal scroll track linearly completely off-screen to reveal the background
-      tl.to(
-        track,
-        {
-          x: endX,
-          ease: "none",
-          duration: totalPanels,
-        },
-        0
-      );
-
-      // 2. Track horizontal scroll progress bar: reaches 100% when "Discover our complete" card comes up
-      const cardsDuration = Math.max(1, projects.length);
-      tl.to(
-        ".fp-progress-indicator",
-        {
-          width: "100%",
-          ease: "none",
-          duration: cardsDuration,
-        },
-        0
-      );
-
-      // 3. Exclude background section from scroll progress bar by fading out indicator when revealing background
-      tl.to(
-        ".fp-progress-container",
-        {
-          opacity: 0,
-          ease: "power2.out",
-          duration: 0.5,
-        },
-        cardsDuration + 0.2
-      );
-
-      // 3. Counter-parallax for project card images to create genuine 3D window depth
-      const imageInners = track.querySelectorAll<HTMLElement>(".fp-image-inner");
-      imageInners.forEach((img, idx) => {
-        tl.fromTo(
-          img,
-          { xPercent: 10 },
-          { xPercent: -10, ease: "none", duration: 1.2 },
-          Math.max(0, idx)
-        );
-      });
-
-      // 4. Background "Our Services" dramatic reveal
-      tl.fromTo(
-        ".bg-services-content",
-        { opacity: 0.1, scale: 0.92, filter: "blur(6px)" },
-        { opacity: 1, scale: 1, filter: "blur(0px)", ease: "power2.out", duration: 1.2 },
-        totalPanels - 1.8
-      );
-
-      // 5. Next cards rise up from bottom as they enter view (synchronized in the master timeline)
-      // k=0 is Title Panel (starts fully visible)
-      // k=1 is Card 0 (starts fully visible on the right half)
-      // k>=2 are subsequent panels that enter the screen from the right
-      const panels = track.querySelectorAll<HTMLElement>(".fp-card");
-      panels.forEach((panel, k) => {
-        if (k < 2) return;
-
-        // Card k enters during timeline interval [k - 2, k - 1]
-        // It rises to the top quickly (over 0.7s) to ensure it reaches full height soon after entering
-        tl.fromTo(
-          panel,
-          { y: 160 },
-          {
-            y: 0,
-            ease: "power2.out",
-            duration: 0.7,
-          },
-          k - 2
-        );
-      });
-    }, sectionRef);
-
-    return () => ctx.revert();
-  }, [isMobile, projects]);
-
-  useGSAP(() => {
-    if (!isMobile || !sectionRef.current) return;
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        ".fp-card",
-        { opacity: 0, y: 30 },
-        {
-          opacity: 1,
-          y: 0,
-          duration: 0.8,
-          stagger: 0.15,
-          ease: "power3.out",
+        // Create a single master timeline to coordinate track scroll and card rise animations
+        const tl = gsap.timeline({
           scrollTrigger: {
-            trigger: sectionRef.current,
-            start: "top 85%",
-            toggleActions: "play none none reverse",
+            trigger: pinRef.current,
+            start: "top top",
+            end: `+=${scrollDistance}`,
+            scrub: 1.2,
+            pin: true,
+            pinSpacing: true,
+            pinType: "transform",
+            anticipatePin: 1,
+            invalidateOnRefresh: true,
           },
-        }
-      );
-    }, sectionRef);
-    return () => ctx.revert();
-  }, [isMobile, projects]);
+        });
+
+        // 1. Move the horizontal scroll track linearly completely off-screen to reveal the background
+        tl.to(
+          track,
+          {
+            x: endX,
+            ease: "none",
+            duration: totalPanels,
+          },
+          0
+        );
+
+        // 2. Track horizontal scroll progress bar: reaches 100% when "Discover our complete" card comes up
+        const cardsDuration = Math.max(1, projects.length);
+        tl.to(
+          ".fp-progress-indicator",
+          {
+            width: "100%",
+            ease: "none",
+            duration: cardsDuration,
+          },
+          0
+        );
+
+        // 3. Exclude background section from scroll progress bar by fading out indicator when revealing background
+        tl.to(
+          ".fp-progress-container",
+          {
+            opacity: 0,
+            ease: "power2.out",
+            duration: 0.5,
+          },
+          cardsDuration + 0.2
+        );
+
+        // 4. Counter-parallax for project card images to create genuine 3D window depth
+        const imageInners = track.querySelectorAll<HTMLElement>(".fp-image-inner");
+        imageInners.forEach((img, idx) => {
+          tl.fromTo(
+            img,
+            { xPercent: 10 },
+            { xPercent: -10, ease: "none", duration: 1.2 },
+            Math.max(0, idx)
+          );
+        });
+
+        // 5. Background "Our Services" dramatic reveal
+        tl.fromTo(
+          ".bg-services-content",
+          { opacity: 0.1, scale: 0.92, filter: "blur(6px)" },
+          { opacity: 1, scale: 1, filter: "blur(0px)", ease: "power2.out", duration: 1.2 },
+          totalPanels - 1.8
+        );
+
+        // 6. Next cards rise up from bottom as they enter view (synchronized in the master timeline)
+        const panels = track.querySelectorAll<HTMLElement>(".fp-card");
+        panels.forEach((panel, k) => {
+          if (k < 2) return;
+
+          tl.fromTo(
+            panel,
+            { y: 160 },
+            {
+              y: 0,
+              ease: "power2.out",
+              duration: 0.7,
+            },
+            k - 2
+          );
+        });
+      });
+
+      return () => mm.revert();
+    },
+    { scope: sectionRef, dependencies: [projects] }
+  );
 
   if (projects.length === 0) return null;
 
-  // ─── MOBILE ───────────────────────────────────────────────────────────────
-  if (isMobile) {
-    return (
-      <section
-        ref={sectionRef}
-        className="relative w-full bg-zinc-950 py-20 text-white overflow-hidden"
-      >
+  const totalPanels = projects.length + 2;
+
+  return (
+    <section
+      ref={sectionRef}
+      className="relative w-full text-white"
+    >
+      {/* ─── MOBILE SIZE (Normal natural scrolling, no scroll pin effect) ─── */}
+      <div className="block lg:hidden w-full bg-zinc-950 py-16 sm:py-20 text-white overflow-hidden">
         <div className="px-6 mb-12">
           <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase block mb-3">
             Selected Work
@@ -187,7 +160,7 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
           ))}
 
           {/* End card */}
-          <div className="fp-card rounded-2xl bg-zinc-900 border border-neutral-800 p-10 flex flex-col justify-center items-center text-center space-y-5 min-h-[260px]">
+          <div className="rounded-2xl bg-zinc-900 border border-neutral-800 p-10 flex flex-col justify-center items-center text-center space-y-5 min-h-[260px]">
             <p className="text-xl font-light text-neutral-300 leading-snug max-w-[220px]">
               Discover our complete collection of digital experiences, brands, and platforms.
             </p>
@@ -200,7 +173,7 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
           </div>
 
           {/* Mobile Our Services */}
-          <div className="fp-card flex flex-col justify-between py-16 px-4 min-h-[60vh] text-center bg-transparent mt-12">
+          <div className="flex flex-col justify-between py-16 px-4 min-h-[60vh] text-center bg-transparent mt-12">
             <span className="text-[10px] font-mono tracking-[0.25em] text-neutral-500 uppercase mb-12 block">
               Our Services
             </span>
@@ -223,20 +196,12 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
             </div>
           </div>
         </div>
-      </section>
-    );
-  }
+      </div>
 
-  // ─── DESKTOP ──────────────────────────────────────────────────────────────
-  const totalPanels = projects.length + 2;
-
-  return (
-    <section
-      ref={sectionRef}
-      className="relative w-full text-white"
-    >
-      {/* Pinned full-screen container */}
-      <div ref={pinRef} className="relative w-full h-screen overflow-hidden">
+      {/* ─── DESKTOP & LAPTOP (Kept pinned scroll effect) ─── */}
+      <div className="hidden lg:block relative w-full">
+        {/* Pinned full-screen container */}
+        <div ref={pinRef} className="relative w-full h-screen overflow-hidden">
 
         {/* 1. BACKGROUND "OUR SERVICES" SCREEN (Revealed when track slides away) */}
         <div className="absolute inset-0 w-full h-full flex flex-col justify-between py-24 px-14 xl:px-20 z-0 pointer-events-none bg-transparent">
@@ -337,6 +302,7 @@ export default function FeaturedProjectsClient({ projects }: { projects: Project
             </div>
           </div>
         </div>
+      </div>
       </div>
     </section>
   );
