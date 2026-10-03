@@ -21,7 +21,7 @@ import CategoryManager from '@/components/CategoryManager';
 
 // Define types centrally or import them
 interface Project {
-  id: string; name: string; description: string; technologies: string[]; image_urls?: string[]; demo_url?: string; category: string;
+  id: string; name: string; description: string; technologies: string[]; image_urls?: string[]; demo_url?: string; categories: string[]; pinned: boolean;
 }
 interface Order {
   id: string; name: string; email: string; phone: string; projectTitle: string; description: string; budget: string; timeline: string; status: 'pending' | 'in-progress' | 'completed'; submittedAt: string; fileUrls?: string[];
